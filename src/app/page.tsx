@@ -64,9 +64,8 @@ export default function LoomStudioPage() {
       const currentlyOpening = !prev[panel];
 
       if (isMobile) {
-        // On mobile, opening one panel closes others of a similar type or ensures focus
+        // On mobile, opening one panel closes others
         if (currentlyOpening) {
-          // Close all other panels when opening a new one
           newState.palette = panel === 'palette';
           newState.inspector = panel === 'inspector';
           newState.timeline = panel === 'timeline';
@@ -104,7 +103,8 @@ export default function LoomStudioPage() {
         onFlowGenerated={handleFlowGenerated}
         panelVisibility={panelVisibility}
         togglePanel={togglePanel}
-        isMobile={!!isMobile}
+        isMobile={isMobile}
+        anyMobilePanelOpen={anyMobilePanelOpen}
       />
       <main className={`flex-1 relative flex overflow-hidden ${isMobile ? 'p-0' : 'p-4 gap-4'} ${isMobile ? 'pb-16' : ''}`}> {/* Added pb-16 for mobile */}
         <div className={`flex-1 h-full transition-opacity duration-300 ${anyMobilePanelOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
@@ -130,7 +130,7 @@ export default function LoomStudioPage() {
               )}
             </div>
             {panelVisibility.agentHub && (
-              <AgentHubPanel className="absolute bottom-4 right-4 z-10 max-h-[calc(50vh-2rem)]" onClose={() => togglePanel('agentHub')} />
+              <AgentHubPanel className="absolute bottom-[calc(50vh+0.5rem)] right-4 z-10 max-h-[calc(50vh-2.5rem)]" onClose={() => togglePanel('agentHub')} />
             )}
           </>
         ) : (
@@ -144,15 +144,15 @@ export default function LoomStudioPage() {
               {panelVisibility.inspector && <InspectorPanel className="h-full p-1" onClose={() => togglePanel('inspector')} />}
             </div>
             
-            <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${(panelVisibility.agentHub && !panelVisibility.inspector) ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
               {panelVisibility.agentHub && <AgentHubPanel className="h-full p-1" onClose={() => togglePanel('agentHub')} />}
             </div>
 
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${isMobile ? (panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full') : ''} ${isMobile ? 'mb-14' : ''}`}>
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
               {panelVisibility.timeline && <TimelinePanel className="h-full p-1" onClose={() => togglePanel('timeline')} />}
             </div>
 
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${(isMobile && panelVisibility.console && !panelVisibility.timeline) ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
               {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} />}
             </div>
             

@@ -4,7 +4,7 @@ import type { GenerateFlowFormState } from '@/lib/actions/ai';
 import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BrainCircuit, Search, Settings, UserCircle, Menu, Settings2, Terminal, Bot, LayoutGrid, ListOrdered, Check } from 'lucide-react';
+import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, Check } from 'lucide-react';
 import type { PanelVisibility } from '@/app/page';
 import {
   DropdownMenu,
@@ -19,10 +19,11 @@ interface TopBarProps {
   panelVisibility: PanelVisibility;
   togglePanel: (panel: keyof PanelVisibility) => void;
   isMobile: boolean;
+  anyMobilePanelOpen: boolean;
 }
 
-export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile }: TopBarProps) {
-  const showAiForm = !isMobile || (!panelVisibility.palette && !panelVisibility.inspector && !panelVisibility.agentHub && !panelVisibility.timeline && !panelVisibility.console);
+export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen }: TopBarProps) {
+  const showAiForm = !isMobile || !anyMobilePanelOpen;
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 shadow-sm backdrop-blur-lg sm:px-6 lg:px-8">
