@@ -4,13 +4,14 @@ import type { GenerateFlowFormState } from '@/lib/actions/ai';
 import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BrainCircuit, Search, Settings, UserCircle, LayoutGrid, ListOrdered, Terminal, Bot, Menu, Check } from 'lucide-react';
-import type { PanelVisibility } from '@/app/page'; // Assuming PanelVisibility is exported from page.tsx or a shared types file
+import { BrainCircuit, Search, Settings, UserCircle, Menu, Settings2, Terminal, Bot, LayoutGrid, ListOrdered, Check } from 'lucide-react';
+import type { PanelVisibility } from '@/app/page';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 interface TopBarProps {
@@ -21,7 +22,7 @@ interface TopBarProps {
 }
 
 export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile }: TopBarProps) {
-  const showAiForm = !isMobile || (!panelVisibility.palette && !panelVisibility.inspector && !panelVisibility.agentHub);
+  const showAiForm = !isMobile || (!panelVisibility.palette && !panelVisibility.inspector && !panelVisibility.agentHub && !panelVisibility.timeline && !panelVisibility.console);
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 shadow-sm backdrop-blur-lg sm:px-6 lg:px-8">
@@ -31,34 +32,21 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="mr-1">
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Open Panels Menu</span>
+                <span className="sr-only">Open Menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => togglePanel('palette')} className="cursor-pointer">
-                <LayoutGrid className="mr-2 h-4 w-4" />
-                <span>Palette</span>
-                {panelVisibility.palette && <Check className="ml-auto h-4 w-4 text-primary" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => togglePanel('inspector')} className="cursor-pointer">
-                <Settings2 className="mr-2 h-4 w-4" />
-                <span>Inspector</span>
-                {panelVisibility.inspector && <Check className="ml-auto h-4 w-4 text-primary" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => togglePanel('timeline')} className="cursor-pointer">
-                <ListOrdered className="mr-2 h-4 w-4" />
-                <span>Timeline</span>
-                {panelVisibility.timeline && <Check className="ml-auto h-4 w-4 text-primary" />}
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => togglePanel('console')} className="cursor-pointer">
                 <Terminal className="mr-2 h-4 w-4" />
                 <span>Console</span>
                 {panelVisibility.console && <Check className="ml-auto h-4 w-4 text-primary" />}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => togglePanel('agentHub')} className="cursor-pointer">
-                <Bot className="mr-2 h-4 w-4" />
-                <span>Agent Hub</span>
-                {panelVisibility.agentHub && <Check className="ml-auto h-4 w-4 text-primary" />}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled>
+                 <UserCircle className="mr-2 h-4 w-4" /> Agent Context
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                 <Settings className="mr-2 h-4 w-4" /> Settings
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -89,7 +77,7 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
           <Search className="h-5 w-5" />
           <span className="sr-only">Command Palette</span>
         </Button>
-        {!isMobile && ( // Hide these less critical buttons on mobile to save space
+        {!isMobile && (
           <>
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" title="Agent Context">
               <UserCircle className="h-5 w-5" />
@@ -105,4 +93,3 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
     </header>
   );
 }
-

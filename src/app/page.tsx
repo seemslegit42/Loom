@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { TopBar } from '@/components/layout/top-bar';
+import { BottomBar } from '@/components/layout/bottom-bar';
 import { CanvasZone } from '@/components/canvas/canvas-zone';
 import { PalettePanel } from '@/components/panels/palette-panel';
 import { InspectorPanel } from '@/components/panels/inspector-panel';
@@ -33,8 +34,6 @@ export default function LoomStudioPage() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    // On initial mobile load, or when switching to mobile, ensure panels are closed by default
-    // but preserve desktop state if switching back from mobile.
     if (isMobile) {
       setPanelVisibility({
         palette: false,
@@ -44,7 +43,6 @@ export default function LoomStudioPage() {
         agentHub: false,
       });
     } else {
-      // Optional: Restore previous desktop visibility or set a default
       setPanelVisibility({
         palette: true,
         inspector: true,
@@ -63,19 +61,25 @@ export default function LoomStudioPage() {
   const togglePanel = (panel: keyof PanelVisibility) => {
     setPanelVisibility(prev => {
       const newState = { ...prev };
+      const currentlyOpening = !prev[panel];
+
       if (isMobile) {
-        // On mobile, opening one panel closes others of a similar type (e.g. side vs bottom)
-        // or simply ensures only one is open. For simplicity, this example closes all others.
-        const currentlyOpening = !prev[panel];
+        // On mobile, opening one panel closes others of a similar type or ensures focus
         if (currentlyOpening) {
-          newState.palette = false;
-          newState.inspector = false;
-          newState.timeline = false;
-          newState.console = false;
-          newState.agentHub = false;
+          // Close all other panels when opening a new one
+          newState.palette = panel === 'palette';
+          newState.inspector = panel === 'inspector';
+          newState.timeline = panel === 'timeline';
+          newState.console = panel === 'console';
+          newState.agentHub = panel === 'agentHub';
+        } else {
+          // If closing, just close that specific panel
+          newState[panel] = false;
         }
+      } else {
+        // Desktop behavior: toggle individually
+        newState[panel] = !prev[panel];
       }
-      newState[panel] = !prev[panel];
       return newState;
     });
   };
@@ -100,9 +104,9 @@ export default function LoomStudioPage() {
         onFlowGenerated={handleFlowGenerated}
         panelVisibility={panelVisibility}
         togglePanel={togglePanel}
-        isMobile={!!isMobile} // Pass boolean state of isMobile
+        isMobile={!!isMobile}
       />
-      <main className={`flex-1 relative flex overflow-hidden ${isMobile ? 'p-0' : 'p-4 gap-4'}`}>
+      <main className={`flex-1 relative flex overflow-hidden ${isMobile ? 'p-0' : 'p-4 gap-4'} ${isMobile ? 'pb-16' : ''}`}> {/* Added pb-16 for mobile */}
         <div className={`flex-1 h-full transition-opacity duration-300 ${anyMobilePanelOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
           <CanvasZone generatedFlow={generatedFlow} />
         </div>
@@ -140,17 +144,15 @@ export default function LoomStudioPage() {
               {panelVisibility.inspector && <InspectorPanel className="h-full p-1" onClose={() => togglePanel('inspector')} />}
             </div>
             
-            {/* AgentHub: shown if inspector is not active */}
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${(panelVisibility.agentHub && !panelVisibility.inspector) ? 'translate-x-0' : 'translate-x-full'}`}>
               {panelVisibility.agentHub && <AgentHubPanel className="h-full p-1" onClose={() => togglePanel('agentHub')} />}
             </div>
 
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'}`}>
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${isMobile ? (panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full') : ''} ${isMobile ? 'mb-14' : ''}`}>
               {panelVisibility.timeline && <TimelinePanel className="h-full p-1" onClose={() => togglePanel('timeline')} />}
             </div>
 
-            {/* Console: shown if timeline is not active */}
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${(panelVisibility.console && !panelVisibility.timeline) ? 'translate-y-0' : 'translate-y-full'}`}>
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${(isMobile && panelVisibility.console && !panelVisibility.timeline) ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
               {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} />}
             </div>
             
@@ -163,6 +165,7 @@ export default function LoomStudioPage() {
           </>
         )}
       </main>
+      {isMobile && <BottomBar panelVisibility={panelVisibility} togglePanel={togglePanel} />}
     </div>
   );
 }
