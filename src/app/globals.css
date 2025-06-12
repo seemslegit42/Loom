@@ -8,92 +8,91 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 7%; /* #121212 Dark Gray */
-    --foreground: 0 0% 98%; /* Light text for dark bg */
+    --background: 220 20% 7%; /* Dark cool gray */
+    --foreground: 220 10% 95%; /* Very light cool gray */
 
-    --card: 0 0% 12%; /* Slightly lighter than bg for cards/panels #1F1F1F */
-    --card-foreground: 0 0% 98%;
+    --card: 220 18% 11%; /* Slightly lighter dark cool gray for cards */
+    --card-foreground: 220 10% 95%;
 
-    --popover: 0 0% 10%; /* Similar to card or slightly darker #1A1A1A */
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 18% 9%; /* Slightly darker than card for popovers */
+    --popover-foreground: 220 10% 95%;
 
-    --primary: 271 94% 76%; /* #BB86FC Light Purple */
-    --primary-foreground: 0 0% 10%; /* Dark text on light purple */
+    --primary: 230 90% 70%; /* Vibrant, slightly softer blue/purple */
+    --primary-foreground: 230 20% 10%; /* Dark text on primary */
 
-    --secondary: 0 0% 15%; /* For less prominent elements #262626 */
-    --secondary-foreground: 0 0% 90%;
+    --secondary: 220 15% 15%; /* For less prominent elements */
+    --secondary-foreground: 220 10% 80%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 60%; /* Softer text */
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 55%; /* Softer text */
 
-    --accent: 337 77% 48%; /* #D81B60 Bright Pink */
-    --accent-foreground: 0 0% 98%; /* Light text on pink */
+    --accent: 330 85% 60%; /* Vibrant pink/magenta */
+    --accent-foreground: 0 0% 98%; /* Light text on accent */
 
-    --destructive: 0 84.2% 60.2%; /* Default red */
+    --destructive: 0 70% 55%; /* A slightly less harsh red */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 25%; /* #404040 for borders on dark bg */
-    --input: 0 0% 20%; /* Similar to border for input bg #333333 */
-    --ring: 271 94% 66%; /* A slightly darker/desaturated primary for focus rings */
+    --border: 220 15% 25%; /* Subtle border for dark theme */
+    --input: 220 15% 18%; /* Input background */
+    --ring: 230 80% 60%; /* For focus rings, related to primary */
 
     --radius: 0.5rem;
 
-    /* Chart colors - ensure no blue */
-    --chart-1: 271 80% 85%; /* Light purple */
-    --chart-2: 173 58% 39%; /* Green (keep) */
-    --chart-3: 197 37% 24%; /* Teal/Blue-ish (original) -> Change to Orange */
-    --chart-3: 30 80% 55%; /* Orange */
-    --chart-4: 43 74% 66%; /* Yellow (keep) */
-    --chart-5: 337 70% 60%; /* Pinkish, adjust from accent */
+    /* Chart colors - harmonized with new palette */
+    --chart-1: 230 70% 75%; /* Lighter version of new primary */
+    --chart-2: 150 60% 50%; /* A slightly cooler, more modern green */
+    --chart-3: 30 80% 60%;  /* Orange - adjusted lightness */
+    --chart-4: 50 85% 65%;  /* Yellow - adjusted lightness */
+    --chart-5: 330 70% 65%; /* Lighter version of new accent */
 
 
-    /* Sidebar variables themed for consistency, though sidebars are not a primary UI element */
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 271 94% 76%; /* Same as main primary */
-    --sidebar-primary-foreground: 0 0% 10%; /* Dark text on light purple */
-    --sidebar-accent: 337 77% 48%; /* Same as main accent */
+    /* Sidebar variables themed for consistency */
+    --sidebar-background: 220 18% 9%; /* Similar to popover */
+    --sidebar-foreground: 220 10% 95%;
+    --sidebar-primary: 230 90% 70%; /* Same as main primary */
+    --sidebar-primary-foreground: 230 20% 10%; 
+    --sidebar-accent: 330 85% 60%; /* Same as main accent */
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 271 94% 66%;
+    --sidebar-border: 220 15% 22%; /* Slightly different from main border if needed */
+    --sidebar-ring: 230 80% 60%;
   }
 
   .dark {
-    /* Dark theme is default, so .dark can mirror :root or be empty if no light mode toggle */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 271 94% 76%;
-    --primary-foreground: 0 0% 10%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 90%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 337 77% 48%;
+    /* Dark theme is default, so .dark can mirror :root */
+    --background: 220 20% 7%;
+    --foreground: 220 10% 95%;
+    --card: 220 18% 11%;
+    --card-foreground: 220 10% 95%;
+    --popover: 220 18% 9%;
+    --popover-foreground: 220 10% 95%;
+    --primary: 230 90% 70%;
+    --primary-foreground: 230 20% 10%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 220 10% 80%;
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 330 85% 60%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%; /* Darker red for dark mode */
+    --destructive: 0 65% 50%; /* Darker red for dark mode */
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 25%;
-    --input: 0 0% 20%;
-    --ring: 271 94% 66%;
+    --border: 220 15% 25%;
+    --input: 220 15% 18%;
+    --ring: 230 80% 60%;
     
-    --chart-1: 271 80% 85%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%; /* Purple (keep, distinct from primary) */
-    --chart-5: 340 75% 55%; /* Pink (keep) */
+    --chart-1: 230 70% 75%;
+    --chart-2: 150 60% 50%;
+    --chart-3: 30 80% 60%;
+    --chart-4: 50 85% 65%;
+    --chart-5: 330 70% 65%;
 
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 271 94% 76%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 337 77% 48%;
+    --sidebar-background: 220 18% 9%;
+    --sidebar-foreground: 220 10% 95%;
+    --sidebar-primary: 230 90% 70%;
+    --sidebar-primary-foreground: 230 20% 10%;
+    --sidebar-accent: 330 85% 60%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 271 94% 66%;
+    --sidebar-border: 220 15% 22%;
+    --sidebar-ring: 230 80% 60%;
   }
 }
 
@@ -108,7 +107,7 @@ body {
 
 .grid-background {
   background-image:
-    linear-gradient(to right, hsl(var(--border)/0.2) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(var(--border)/0.2) 1px, transparent 1px);
-  background-size: 2.5rem 2.5rem; /* Adjust grid size */
+    linear-gradient(to right, hsl(var(--border)/0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border)/0.1) 1px, transparent 1px);
+  background-size: 3rem 3rem; /* Adjust grid size if desired */
 }

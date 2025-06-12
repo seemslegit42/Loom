@@ -60,7 +60,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
           name="userInput"
           type="text"
           placeholder="e.g., Generate a new data cleanup flow"
-          className="bg-card/50 border-border focus:ring-primary"
+          className="bg-input/80 backdrop-blur-sm border-border/70 focus:ring-ring"
           defaultValue={state.userInput}
         />
       </div>

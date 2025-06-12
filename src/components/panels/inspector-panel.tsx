@@ -23,11 +23,11 @@ export function InspectorPanel({ className, onClose }: InspectorPanelProps) {
     >
       <div className="space-y-1">
         <Label htmlFor="nodeName" className="text-xs">Node Name</Label>
-        <Input id="nodeName" placeholder="Enter node name" defaultValue="Prompt Step 1" className="bg-card/50 backdrop-blur-sm border-input/70" />
+        <Input id="nodeName" placeholder="Enter node name" defaultValue="Prompt Step 1" className="bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring" />
       </div>
       <div className="space-y-1">
         <Label htmlFor="nodeDescription" className="text-xs">Description</Label>
-        <Textarea id="nodeDescription" placeholder="Optional description" rows={3} className="bg-card/50 backdrop-blur-sm border-input/70" />
+        <Textarea id="nodeDescription" placeholder="Optional description" rows={3} className="bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring" />
       </div>
       <div className="flex items-center justify-between">
         <Label htmlFor="sandboxed" className="text-xs flex items-center gap-2">
@@ -41,14 +41,14 @@ export function InspectorPanel({ className, onClose }: InspectorPanelProps) {
           <Tags className="h-4 w-4 text-primary"/>
           Tags
         </Label>
-        <Input placeholder="Add tags, comma separated" className="bg-card/50 backdrop-blur-sm border-input/70" />
+        <Input placeholder="Add tags, comma separated" className="bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring" />
       </div>
        <div className="space-y-1">
         <Label className="text-xs flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary"/>
           Metadata
         </Label>
-        <Textarea placeholder="JSON metadata" rows={3} className="font-code text-xs bg-card/50 backdrop-blur-sm border-input/70"/>
+        <Textarea placeholder="JSON metadata" rows={3} className="font-code text-xs bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring"/>
       </div>
     </BasePanel>
   );

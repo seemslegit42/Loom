@@ -13,8 +13,6 @@ export default {
         body: ['Comfortaa', 'sans-serif'],
         headline: ['Comfortaa', 'sans-serif'],
         code: ['monospace'],
-        // Lexend can be applied specifically where needed, e.g., for documentation text
-        // For example: Lexend: ['Lexend', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -49,7 +47,7 @@ export default {
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+        ring: 'hsl(var(--ring))', // Updated to use CSS variable
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -90,15 +88,15 @@ export default {
             height: '0',
           },
         },
-        'panel-glow': {
-          '0%, 100%': { boxShadow: '0 0 5px hsl(var(--accent)), 0 0 10px hsl(var(--accent))' },
-          '50%': { boxShadow: '0 0 15px hsl(var(--accent)), 0 0 25px hsl(var(--accent))' },
+        'panel-glow': { // This can be further refined or used for specific highlights
+          '0%, 100%': { boxShadow: '0 0 4px hsl(var(--accent)), 0 0 8px hsl(var(--accent))' },
+          '50%': { boxShadow: '0 0 10px hsl(var(--accent)), 0 0 18px hsl(var(--accent))' },
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'panel-glow': 'panel-glow 2s ease-in-out infinite',
+        'panel-glow': 'panel-glow 2.5s ease-in-out infinite',
       },
     },
   },
