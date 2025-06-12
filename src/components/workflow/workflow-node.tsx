@@ -38,7 +38,7 @@ export function WorkflowNode({
   className,
 }: WorkflowNodeProps) {
   return (
-    <Card className={`min-w-[250px] max-w-xs bg-card/90 backdrop-blur-sm shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] ${className}`}>
+    <Card className={`min-w-[250px] max-w-xs bg-card/80 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] ${className}`}>
       <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-md font-headline">{title}</CardTitle>
