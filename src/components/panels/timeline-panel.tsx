@@ -1,8 +1,11 @@
 // src/components/panels/timeline-panel.tsx
+'use client';
+
 import { BasePanel } from './base-panel';
 import { ListOrdered, BarChart3, Bug } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface TimelinePanelProps {
   className?: string;
@@ -18,6 +21,16 @@ const timelineEvents = [
 ];
 
 export function TimelinePanel({ className, onClose }: TimelinePanelProps) {
+  const { toast } = useToast();
+
+  const handleTokenUsage = () => {
+    toast({ title: "Timeline Action", description: "Token Usage clicked." });
+  };
+
+  const handleDebugPath = () => {
+    toast({ title: "Timeline Action", description: "Debug Path clicked." });
+  };
+
   return (
     <BasePanel
       title="Timeline"
@@ -27,8 +40,8 @@ export function TimelinePanel({ className, onClose }: TimelinePanelProps) {
       initialSize={{ width: 'auto', height: '250px' }}
     >
       <div className="flex gap-2 mb-2 border-b pb-2">
-        <Button variant="ghost" size="sm" className="text-xs"><BarChart3 className="mr-1 h-3 w-3"/>Token Usage</Button>
-        <Button variant="ghost" size="sm" className="text-xs"><Bug className="mr-1 h-3 w-3"/>Debug Path</Button>
+        <Button variant="ghost" size="sm" className="text-xs" onClick={handleTokenUsage}><BarChart3 className="mr-1 h-3 w-3"/>Token Usage</Button>
+        <Button variant="ghost" size="sm" className="text-xs" onClick={handleDebugPath}><Bug className="mr-1 h-3 w-3"/>Debug Path</Button>
       </div>
       <ScrollArea className="h-[calc(100%-40px)] pr-2">
         <ul className="space-y-2">

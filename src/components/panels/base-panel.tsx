@@ -1,8 +1,11 @@
 // src/components/panels/base-panel.tsx
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X, Minus, Maximize2 } from 'lucide-react';
 import type React from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface BasePanelProps {
   title: string;
@@ -25,8 +28,17 @@ export function BasePanel({
   initialSize = {},
   onClose,
 }: BasePanelProps) {
+  const { toast } = useToast();
   const sizeStyles: React.CSSProperties = {
     ...initialSize,
+  };
+
+  const handleMinimize = () => {
+    toast({ title: "Panel Action", description: `Panel "${title}" minimize clicked.` });
+  };
+
+  const handleMaximize = () => {
+    toast({ title: "Panel Action", description: `Panel "${title}" maximize clicked.` });
   };
 
   return (
@@ -40,10 +52,10 @@ export function BasePanel({
           <CardTitle className="text-sm font-medium font-headline">{title}</CardTitle>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/10" title="Minimize">
+          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/10" title="Minimize" onClick={handleMinimize}>
             <Minus className="h-3 w-3" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/10" title="Maximize">
+          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/10" title="Maximize" onClick={handleMaximize}>
             <Maximize2 className="h-3 w-3" />
           </Button>
           {onClose && (

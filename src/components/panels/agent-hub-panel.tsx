@@ -1,9 +1,12 @@
 // src/components/panels/agent-hub-panel.tsx
+'use client';
+
 import { BasePanel } from './base-panel';
 import { Bot, ShieldCheck, ListChecks, UserPlus, PlayCircle, PauseCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 
 interface AgentHubPanelProps {
   className?: string;
@@ -24,6 +27,20 @@ const statusColors: Record<string, string> = {
 };
 
 export function AgentHubPanel({ className, onClose }: AgentHubPanelProps) {
+  const { toast } = useToast();
+
+  const handleSpawnAgent = () => {
+    toast({ title: "Action", description: "Spawn New Agent clicked." });
+  };
+
+  const handleResumeAll = () => {
+    toast({ title: "Action", description: "Resume All clicked." });
+  };
+
+  const handlePauseAll = () => {
+    toast({ title: "Action", description: "Pause All (Safe Mode) clicked.", variant: "destructive" });
+  };
+
   return (
     <BasePanel
       title="Agent Hub"
@@ -35,17 +52,17 @@ export function AgentHubPanel({ className, onClose }: AgentHubPanelProps) {
     >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium">Connected Agents</h3>
-        <Button variant="outline" size="sm" className="text-xs">
+        <Button variant="outline" size="sm" className="text-xs" onClick={handleSpawnAgent}>
           <UserPlus className="h-3 w-3 mr-1.5" />
           Spawn New Agent
         </Button>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="secondary" size="sm" className="text-xs flex-1">
+        <Button variant="secondary" size="sm" className="text-xs flex-1" onClick={handleResumeAll}>
             <PlayCircle className="h-3 w-3 mr-1.5" />
             Resume All
         </Button>
-        <Button variant="destructive" size="sm" className="text-xs flex-1">
+        <Button variant="destructive" size="sm" className="text-xs flex-1" onClick={handlePauseAll}>
             <PauseCircle className="h-3 w-3 mr-1.5" />
             Pause All (Safe Mode)
         </Button>
