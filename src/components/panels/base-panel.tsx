@@ -10,7 +10,6 @@ interface BasePanelProps {
   children: React.ReactNode;
   className?: string;
   contentClassName?: string;
-  initialPosition?: { top?: string; right?: string; bottom?: string; left?: string };
   initialSize?: { width?: string; height?: string };
   onClose?: () => void;
   isDraggable?: boolean; // Future use
@@ -23,20 +22,17 @@ export function BasePanel({
   children,
   className,
   contentClassName,
-  initialPosition = {},
   initialSize = {},
   onClose,
 }: BasePanelProps) {
-  const positionStyles: React.CSSProperties = {
-    position: 'absolute',
-    ...initialPosition,
+  const sizeStyles: React.CSSProperties = {
     ...initialSize,
   };
 
   return (
     <Card
       className={`flex flex-col bg-card/80 backdrop-blur-lg border-border shadow-xl transition-all duration-300 ease-out ${className}`}
-      style={positionStyles}
+      style={sizeStyles}
     >
       <CardHeader className="flex flex-row items-center justify-between p-3 border-b border-border/50 cursor-grab select-none">
         <div className="flex items-center gap-2">
