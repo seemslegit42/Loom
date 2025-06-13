@@ -82,8 +82,10 @@ export default function LoomStudioPage() {
     if (!nodes || nodes.length === 0 || !generatedFlow?.workflowName) return;
 
     const workflowName = generatedFlow.workflowName;
-    setTimelineEvents([]); // Clear previous timeline
-    setNodeExecutionStatus({}); // Clear previous statuses
+    let currentStatuses: Record<string, NodeStatus> = {};
+    
+    setTimelineEvents([]); 
+    setNodeExecutionStatus({}); 
     let currentDelay = 0;
 
     addConsoleMessage('info', `Simulating execution for workflow: "${workflowName}".`);
@@ -96,53 +98,56 @@ export default function LoomStudioPage() {
       const nodeId = node.id;
       const nodeTitle = node.title;
 
-      currentDelay += 500; // Delay for queuing
+      currentDelay += 500; 
       setTimeout(() => {
         addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) queued.`);
         addTimelineEvent({ nodeId, nodeTitle, type: 'node_queued', message: `Node "${nodeTitle}" queued.` });
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'queued' }));
+        currentStatuses[nodeId] = 'queued';
       }, currentDelay);
 
-      currentDelay += 1000; // Delay for running
+      currentDelay += 1000; 
       setTimeout(() => {
         addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) running.`);
         addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" running.` });
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
+        currentStatuses[nodeId] = 'running';
       }, currentDelay);
 
-      currentDelay += 1500 + Math.random() * 1000; // Variable delay for completion
+      currentDelay += 1500 + Math.random() * 1000; 
       setTimeout(() => {
-        const success = Math.random() > 0.1; // 90% success rate for simulation
+        const success = Math.random() > 0.1; 
         if (success) {
           addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) completed.`);
           addTimelineEvent({ nodeId, nodeTitle, type: 'node_completed', message: `Node "${nodeTitle}" completed.` });
           setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'completed' }));
+          currentStatuses[nodeId] = 'completed';
         } else {
           addConsoleMessage('error', `Node "${nodeTitle}" (ID: ${nodeId}) failed.`);
           addTimelineEvent({ nodeId, nodeTitle, type: 'node_failed', message: `Node "${nodeTitle}" failed simulation.` });
           setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'failed' }));
+          currentStatuses[nodeId] = 'failed';
+        }
+
+        // Check if all nodes have finished to log workflow end
+        if (Object.keys(currentStatuses).length === nodes.length) {
+            const workflowFailed = Object.values(currentStatuses).some(s => s === 'failed');
+            if (workflowFailed) {
+                addConsoleMessage('error', `Workflow "${workflowName}" finished with errors.`);
+                addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" finished with errors.`});
+            } else {
+                addConsoleMessage('info', `Workflow "${workflowName}" completed successfully.`);
+                addTimelineEvent({ type: 'workflow_completed', message: `Workflow "${workflowName}" completed successfully.`});
+            }
         }
       }, currentDelay);
     });
-
-    // Add workflow completed/failed event
-    currentDelay += 500;
-    setTimeout(() => {
-        const workflowFailed = Object.values(nodeExecutionStatus).some(s => s === 'failed');
-        if (workflowFailed) {
-            addConsoleMessage('error', `Workflow "${workflowName}" finished with errors.`);
-            addTimelineEvent({ type: 'info', message: `Workflow "${workflowName}" finished with errors.`});
-        } else {
-            addConsoleMessage('info', `Workflow "${workflowName}" completed successfully.`);
-            addTimelineEvent({ type: 'info', message: `Workflow "${workflowName}" completed successfully.`});
-        }
-    }, currentDelay);
   };
 
 
   const handleFlowGenerated = (data: GenerateFlowFormState) => {
-    setGeneratedFlow(data); // data now contains workflowName and nodes[]
-    setSelectedNode(null); // Deselect any node
+    setGeneratedFlow(data); 
+    setSelectedNode(null); 
 
     if (data.error) {
       addConsoleMessage('error', `Failed to generate flow: ${data.message}`);
@@ -162,28 +167,25 @@ export default function LoomStudioPage() {
   const handleNodeDropped = (newNodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus }) => {
     const uniqueIndex = Date.now();
     const nodeTitleBase = newNodeData.title || 'Manual Node';
-    // Use the utility function for ID generation
     const nodeId = generateNodeId('manual', nodeTitleBase, uniqueIndex);
     
     const nodeWithIdAndStatus: WorkflowNodeData = {
       ...newNodeData,
       id: nodeId,
-      title: `${nodeTitleBase} ${uniqueIndex.toString().slice(-4)}`, // Ensure some uniqueness in title if generic
+      title: `${nodeTitleBase} ${uniqueIndex.toString().slice(-4)}`, 
       status: newNodeData.status || 'queued',
     };
     
     setGeneratedFlow(prevFlow => {
       const currentNodes = prevFlow?.nodes || [];
       const newWorkflowName = prevFlow?.workflowName || "My Custom Flow";
-       // If this is the first node being added manually, and no AI flow exists.
-      if (!prevFlow) {
+      if (!prevFlow || currentNodes.length === 0) { // Also check if currentNodes is empty for the very first node
         addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started.`);
         addTimelineEvent({ type: 'workflow_start', message: `Custom workflow "${newWorkflowName}" started by adding a node.`});
       }
 
       return {
-        ...(prevFlow || { message: "Node added to canvas.", userInput: "Custom flow", error: false }),
-        workflowName: newWorkflowName,
+        ...(prevFlow || { message: "Node added to canvas.", userInput: "Custom flow", error: false, workflowName: newWorkflowName }),
         nodes: [...currentNodes, nodeWithIdAndStatus],
       };
     });

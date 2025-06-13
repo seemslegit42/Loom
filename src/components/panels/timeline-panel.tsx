@@ -13,7 +13,7 @@ export interface TimelineEvent {
   id: string;
   nodeId?: string;
   nodeTitle?: string;
-  type: 'workflow_start' | 'node_queued' | 'node_running' | 'node_completed' | 'node_failed' | 'info';
+  type: 'workflow_start' | 'node_queued' | 'node_running' | 'node_completed' | 'node_failed' | 'info' | 'workflow_completed' | 'workflow_failed';
   message: string;
   timestamp: Date;
 }
@@ -28,6 +28,8 @@ interface TimelinePanelProps {
 const getIconForEventType = (type: TimelineEvent['type']) => {
   switch (type) {
     case 'workflow_start': return <Workflow className="h-3.5 w-3.5 text-primary mr-2 shrink-0" />;
+    case 'workflow_completed': return <CheckCircle className="h-3.5 w-3.5 text-green-500 mr-2 shrink-0" />;
+    case 'workflow_failed': return <AlertTriangle className="h-3.5 w-3.5 text-destructive mr-2 shrink-0" />;
     case 'node_queued': return <Clock className="h-3.5 w-3.5 text-blue-400 mr-2 shrink-0" />;
     case 'node_running': return <Workflow className="h-3.5 w-3.5 text-yellow-400 mr-2 shrink-0 animate-pulse" />;
     case 'node_completed': return <CheckCircle className="h-3.5 w-3.5 text-green-500 mr-2 shrink-0" />;
@@ -74,7 +76,7 @@ export function TimelinePanel({ className, onClose, events, isMobile }: Timeline
                     {getIconForEventType(item.type)}
                     <span className={cn(
                       "font-medium text-foreground/90",
-                      item.type === 'node_failed' && "text-destructive"
+                      (item.type === 'node_failed' || item.type === 'workflow_failed') && "text-destructive"
                     )}>
                       {item.nodeTitle ? `Node: ${item.nodeTitle}` : item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
@@ -90,4 +92,3 @@ export function TimelinePanel({ className, onClose, events, isMobile }: Timeline
     </BasePanel>
   );
 }
-
