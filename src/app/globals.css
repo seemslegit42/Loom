@@ -47,7 +47,7 @@
     --sidebar-background: 0 0% 10%; /* Using card color */
     --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 271 93% 75%;
-    --sidebar-primary-foreground: 270 50% 10%; 
+    --sidebar-primary-foreground: 270 50% 10%;
     --sidebar-accent: 337 77% 48%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 15%;
@@ -75,7 +75,7 @@
     --border: 0 0% 15%;
     --input: 0 0% 12%;
     --ring: 271 80% 65%;
-    
+
     --chart-1: 271 93% 75%;
     --chart-2: 337 77% 48%;
     --chart-3: 200 80% 60%;

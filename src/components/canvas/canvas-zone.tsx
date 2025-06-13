@@ -1,4 +1,3 @@
-
 // src/components/canvas/canvas-zone.tsx
 import { WorkflowNode, type WorkflowNodeData, type NodeType, type NodeStatus } from '@/components/workflow/workflow-node';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,7 +22,7 @@ export function CanvasZone({
   nodeExecutionStatus
 }: CanvasZoneProps) {
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault(); 
+    event.preventDefault();
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -38,20 +37,21 @@ export function CanvasZone({
           description: `User-added ${name} node. Consider providing a default description based on type.`,
           // status is set by parent to 'queued' initially
         };
-        onNodeDropped(newNodeData); 
+        onNodeDropped(newNodeData);
       } catch (error) {
         console.error("Failed to parse dropped node data:", error);
       }
     }
   };
-  
+
   const displayedNodes = nodes.map(node => ({
     ...node,
     status: nodeExecutionStatus[node.id] || node.status || 'queued', // Prioritize execution status map
   }));
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
+    // Ensure click is on the canvas itself, not on a child node
+    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('grid-background')) {
       onNodeSelected(null);
     }
   };
@@ -61,9 +61,9 @@ export function CanvasZone({
       className="h-full w-full rounded-lg border border-dashed border-border/50 grid-background"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onClick={handleCanvasClick}
+      onClick={handleCanvasClick} // Attach click handler to ScrollArea
     >
-      <div className="p-8 min-h-full">
+      <div className="p-8 min-h-full"> {/* This inner div could also have handleCanvasClick if ScrollArea doesn't work well */}
         {workflowName && (
           <div className="mb-8 p-4 bg-card/80 rounded-lg shadow backdrop-blur-md">
             <h2 className="text-xl font-headline mb-2 text-primary">
@@ -81,7 +81,10 @@ export function CanvasZone({
               <WorkflowNode
                 key={node.id}
                 node={node}
-                onClick={() => onNodeSelected(node)}
+                onClick={(e) => { // Prevent canvas click when node is clicked
+                  e.stopPropagation(); 
+                  onNodeSelected(node);
+                }}
                 isSelected={selectedNode?.id === node.id}
               />
             ))}
