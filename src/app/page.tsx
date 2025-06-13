@@ -129,7 +129,6 @@ export default function LoomStudioPage() {
           currentStatuses[nodeId] = 'failed';
         }
 
-        // Check if all nodes have finished to log workflow end
         if (Object.keys(currentStatuses).length === nodes.length) {
             const workflowFailed = Object.values(currentStatuses).some(s => s === 'failed');
             if (workflowFailed) {
@@ -179,7 +178,7 @@ export default function LoomStudioPage() {
     setGeneratedFlow(prevFlow => {
       const currentNodes = prevFlow?.nodes || [];
       const newWorkflowName = prevFlow?.workflowName || "My Custom Flow";
-      if (!prevFlow || currentNodes.length === 0) { // Also check if currentNodes is empty for the very first node
+      if (!prevFlow || currentNodes.length === 0) {
         addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started.`);
         addTimelineEvent({ type: 'workflow_start', message: `Custom workflow "${newWorkflowName}" started by adding a node.`});
       }
@@ -244,24 +243,26 @@ export default function LoomStudioPage() {
     setSelectedNode(updatedNode); 
   };
 
-
   const togglePanel = (panel: keyof PanelVisibility) => {
     setPanelVisibility(prev => {
       const newState = { ...prev };
-      const currentlyOpening = !prev[panel];
+      const currentlyOpening = !prev[panel]; // True if we intend to open this panel
 
       if (isMobile) {
+        // Reset all panels
+        newState.palette = false;
+        newState.inspector = false;
+        newState.timeline = false;
+        newState.console = false;
+        newState.agentHub = false;
+        
         if (currentlyOpening) {
-          newState.palette = panel === 'palette';
-          newState.inspector = panel === 'inspector';
-          newState.timeline = panel === 'timeline';
-          newState.console = panel === 'console';
-          newState.agentHub = panel === 'agentHub';
-        } else {
-          newState[panel] = false;
+          newState[panel] = true; // Open the target panel
         }
+        // If currentlyOpening is false, it means we clicked an already open panel,
+        // so it remains closed (due to the reset above).
       } else {
-        newState[panel] = !prev[panel];
+        newState[panel] = !prev[panel]; // Desktop toggle behavior
       }
       return newState;
     });
@@ -347,7 +348,7 @@ export default function LoomStudioPage() {
             </div>
             {panelVisibility.agentHub && (
               <AgentHubPanel
-                 className="absolute bottom-[calc(250px+2rem)] right-4 z-10 max-h-[calc(50vh-2.5rem-env(safe-area-inset-bottom)-250px-2rem)]"
+                 className="absolute bottom-[calc(250px+2rem)] right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_250px_-_theme(spacing.12))]"
                 onClose={() => togglePanel('agentHub')}
                 isMobile={isMobile}
               />
@@ -379,6 +380,8 @@ export default function LoomStudioPage() {
               <div
                 className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
                 onClick={closeAllMobilePanels}
+                aria-label="Close panel"
+                role="button"
               />
             )}
           </>

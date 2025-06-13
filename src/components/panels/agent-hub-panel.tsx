@@ -88,7 +88,7 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: '380px', height: 'auto' }}
+      initialSize={{ width: '380px', height: 'auto' }} // Let max-height in page.tsx control desktop height
       contentClassName="space-y-3"
     >
       <div className="flex items-center justify-between">
@@ -108,7 +108,7 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
             Pause All
         </Button>
       </div>
-      <ScrollArea className="h-[200px] pr-2">
+      <ScrollArea className="h-[200px] pr-2"> {/* Fixed height for scroll area content */}
         {agents.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">No agents currently connected. Spawn one to get started.</p>
         ) : (
