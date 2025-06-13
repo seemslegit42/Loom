@@ -45,6 +45,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   const panelKey = selectedNode ? selectedNode.id : 'no-node-selected';
 
   const formatDisplayValue = (value: string = '') => {
+    if (!value) return '';
     return value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
@@ -149,3 +150,4 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
     </BasePanel>
   );
 }
+

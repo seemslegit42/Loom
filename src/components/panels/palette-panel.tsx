@@ -50,3 +50,4 @@ export function PalettePanel({ className, onClose, isMobile }: PalettePanelProps
     </BasePanel>
   );
 }
+

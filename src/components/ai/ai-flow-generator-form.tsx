@@ -43,8 +43,11 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
           title: "Success",
           description: state.message,
         });
-        if (state.workflowName && state.promptSequence) {
+        if (state.workflowName && state.nodes && state.nodes.length > 0) {
           onFlowGenerated(state);
+        } else if (state.workflowName === '' && state.nodes?.length === 0 && !state.error) {
+          // Handle case where AI might return an empty flow successfully (e.g. if input is too vague)
+           onFlowGenerated(state);
         }
       }
     }
@@ -69,3 +72,4 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
     </form>
   );
 }
+
