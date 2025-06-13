@@ -246,21 +246,23 @@ export default function LoomStudioPage() {
   const togglePanel = (panel: keyof PanelVisibility) => {
     setPanelVisibility(prev => {
       const newState = { ...prev };
-      const currentlyOpening = !prev[panel]; // True if we intend to open this panel
+      const currentlyOpening = !prev[panel]; 
 
       if (isMobile) {
-        // Reset all panels first
-        newState.palette = false;
-        newState.inspector = false;
-        newState.timeline = false;
-        newState.console = false;
-        newState.agentHub = false;
-        
-        // If we are trying to open a panel (currentlyOpening is true), set it to true.
-        // If currentlyOpening is false, it means we clicked an already open panel's icon,
-        // so it remains closed (due to the reset above), effectively toggling it off.
-        if (currentlyOpening) {
-          newState[panel] = true; 
+        // If we are trying to open a panel, and it's already open, just close it.
+        if (prev[panel] && currentlyOpening === false) {
+          newState[panel] = false;
+        } else {
+          // Otherwise, close all panels first
+          newState.palette = false;
+          newState.inspector = false;
+          newState.timeline = false;
+          newState.console = false;
+          newState.agentHub = false;
+          // Then open the target panel
+          if (currentlyOpening) {
+            newState[panel] = true;
+          }
         }
       } else {
         newState[panel] = !prev[panel]; // Desktop toggle behavior

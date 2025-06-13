@@ -4,7 +4,7 @@ import type { GenerateFlowFormState } from '@/lib/actions/ai';
 import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, Check, FolderKanban, FileText } from 'lucide-react';
+import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot } from 'lucide-react';
 import type { PanelVisibility } from '@/app/page';
 import {
   DropdownMenu,
@@ -54,6 +54,38 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
                  <FileText className="mr-2 h-4 w-4" /> Docs
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={panelVisibility.palette}
+                onCheckedChange={() => togglePanel('palette')}
+                className="cursor-pointer"
+              >
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                <span>Palette</span>
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={panelVisibility.inspector}
+                onCheckedChange={() => togglePanel('inspector')}
+                className="cursor-pointer"
+              >
+                <Settings2 className="mr-2 h-4 w-4" />
+                <span>Inspector</span>
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={panelVisibility.agentHub}
+                onCheckedChange={() => togglePanel('agentHub')}
+                className="cursor-pointer"
+              >
+                <Bot className="mr-2 h-4 w-4" />
+                <span>Agent Hub</span>
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={panelVisibility.timeline}
+                onCheckedChange={() => togglePanel('timeline')}
+                className="cursor-pointer"
+              >
+                <ListOrdered className="mr-2 h-4 w-4" />
+                <span>Timeline</span>
+              </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={panelVisibility.console}
                 onCheckedChange={() => togglePanel('console')}
