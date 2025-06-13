@@ -38,24 +38,22 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
 
     addConsoleMessage('log', `Webpage Summarizer: Attempting to summarize URL: ${url}`);
     addTimelineEvent({
-      type: 'info', // Changed to 'info' as it's the start of a potentially long operation
+      type: 'info', 
       message: `Agent 'Webpage Summarizer' started for URL: ${url.substring(0, 50)}...`,
     });
 
     try {
       const output = await summarizeWebpage({ url });
-      setResult(output); // Store the entire output from the flow
+      setResult(output); 
 
       if (output.error) {
         setError(output.error);
         addConsoleMessage('error', `Webpage Summarizer: Failed - ${output.error}`);
         addTimelineEvent({
-          type: 'workflow_failed', // Use 'workflow_failed' for agent errors
+          type: 'workflow_failed', 
           message: `Agent 'Webpage Summarizer' failed: ${output.error.substring(0,100)}`,
         });
       } else if (!output.summary) {
-        // This case should be rare if the flow's error handling is robust,
-        // but it catches scenarios where the summary is empty without an error string.
         const fallbackError = 'No summary could be generated. The page might be empty, not summarizable, or the AI chose not to summarize.';
         setError(fallbackError);
         addConsoleMessage('warn', `Webpage Summarizer: No summary for ${url}. ${fallbackError}`);
@@ -64,17 +62,17 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
           message: `Agent 'Webpage Summarizer': No summary for ${url.substring(0,50)}...`,
         });
       } else {
-        setError(null); // Clear any previous error messages on successful summarization
+        setError(null); 
         addConsoleMessage('info', `Webpage Summarizer: Successfully summarized ${url}.`);
         addTimelineEvent({
           type: 'workflow_completed',
           message: `Agent 'Webpage Summarizer' completed for ${url.substring(0,50)}...`,
         });
       }
-    } catch (e: any) { // Catch technical exceptions from the summarizeWebpage call
+    } catch (e: any) { 
       const errorMessage = e.message || 'An unexpected error occurred while trying to summarize the webpage.';
       setError(errorMessage);
-      setResult(null); // Ensure result is cleared on exception
+      setResult(null); 
       addConsoleMessage('error', `Webpage Summarizer: Exception - ${errorMessage}`);
       addTimelineEvent({
         type: 'workflow_failed',
@@ -113,21 +111,18 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
         </Button>
       </form>
 
-      {/* Display error if 'error' state is set (from exception or flow's output.error) AND no successful summary in result */}
       {error && (!result || !result.summary) && (
         <Alert variant="destructive">
-          {/* AlertCircle is auto-added by destructive variant */}
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      {/* Display summary if result exists and summary is not empty */}
       {result && result.summary && (
         <div className="space-y-2 pt-2">
           <h4 className="text-sm font-medium flex items-center gap-1.5">
             <FileText className="h-4 w-4 text-primary/90" />
-            Summary for: <a href={result.originalUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[150px] sm:max-w-[200px] inline-block">{result.originalUrl}</a>
+            Summary for: <a href={result.originalUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[150px] sm:max-w-[200px] md:max-w-[220px] inline-block" title={result.originalUrl}>{result.originalUrl}</a>
           </h4>
           <Textarea
             value={result.summary}
@@ -138,19 +133,6 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
         </div>
       )}
       
-      {/* Handles cases where flow explicitly returned an error in the output object, and summary is empty.
-          This is largely covered by the first error block now, but kept for specific styling if needed,
-          or if 'error' state was cleared prematurely but result.error still indicates an issue.
-          Given the current handleSubmit logic, the first error block (checking `error` state) should be sufficient.
-      */}
-      {/* {result && !result.summary && result.error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Summarization Issue</AlertTitle>
-          <AlertDescription>{result.error}</AlertDescription>
-        </Alert>
-      )} */}
     </div>
   );
 }
-
