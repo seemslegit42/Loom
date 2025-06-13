@@ -249,17 +249,18 @@ export default function LoomStudioPage() {
       const currentlyOpening = !prev[panel]; 
 
       if (isMobile) {
-        // If we are trying to open a panel, and it's already open, just close it.
-        if (prev[panel] && currentlyOpening === false) {
+        // If we are trying to open a panel, and it's already open (meaning currentlyOpening is false), just close it.
+        if (prev[panel] && !currentlyOpening) {
           newState[panel] = false;
         } else {
-          // Otherwise, close all panels first
+          // Otherwise (trying to open a new panel, or toggle one that was closed)
+          // close all panels first
           newState.palette = false;
           newState.inspector = false;
           newState.timeline = false;
           newState.console = false;
           newState.agentHub = false;
-          // Then open the target panel
+          // Then open the target panel IF we intended to open it (currentlyOpening is true)
           if (currentlyOpening) {
             newState[panel] = true;
           }
@@ -359,6 +360,7 @@ export default function LoomStudioPage() {
           </>
         ) : (
           <>
+            {/* Mobile Side Panels */}
             <div className={`fixed inset-y-0 left-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.palette ? 'translate-x-0' : '-translate-x-full'}`}>
               {panelVisibility.palette && <PalettePanel className="h-full p-1" onClose={() => togglePanel('palette')} isMobile={isMobile} />}
             </div>
@@ -371,6 +373,7 @@ export default function LoomStudioPage() {
               {panelVisibility.agentHub && <AgentHubPanel className="h-full p-1" onClose={() => togglePanel('agentHub')} isMobile={isMobile} />}
             </div>
 
+            {/* Mobile Bottom Panels */}
             <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
               {panelVisibility.timeline && <TimelinePanel className="h-full p-1" onClose={() => togglePanel('timeline')} events={timelineEvents} isMobile={isMobile} />}
             </div>
@@ -379,6 +382,7 @@ export default function LoomStudioPage() {
               {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} messages={consoleMessages.filter(msg => consoleFilters[msg.type])} filters={consoleFilters} onToggleFilter={toggleConsoleFilter} isMobile={isMobile} />}
             </div>
             
+            {/* Mobile Backdrop Overlay */}
             {anyMobilePanelOpen && (
               <div
                 className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
