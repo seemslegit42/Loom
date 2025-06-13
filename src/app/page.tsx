@@ -156,7 +156,6 @@ export default function LoomStudioPage() {
     } else {
       addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled Flow'}" generated successfully with ${data.nodes?.length || 0} steps.`);
       if (data.nodes && data.nodes.length > 0 && data.workflowName) {
-        // Initialize nodeExecutionStatus from the generated nodes
         const initialStatuses: Record<string, NodeStatus> = {};
         data.nodes.forEach(node => {
           initialStatuses[node.id] = node.status || 'queued';
@@ -202,7 +201,7 @@ export default function LoomStudioPage() {
     addTimelineEvent({
       nodeId: nodeWithIdAndStatus.id,
       nodeTitle: nodeWithIdAndStatus.title,
-      type: 'node_queued', // Or map from nodeWithIdAndStatus.status
+      type: 'node_queued', 
       message: `Manual Node "${nodeWithIdAndStatus.title}" added and queued.`
     });
   };
@@ -235,7 +234,7 @@ export default function LoomStudioPage() {
     if (updatedNode.status && oldStatus !== updatedNode.status) {
       setNodeExecutionStatus(prev => ({...prev, [updatedNode.id]: updatedNode.status! }));
       
-      let eventType: TimelineEvent['type'] = 'info'; // Default
+      let eventType: TimelineEvent['type'] = 'info'; 
       switch(updatedNode.status) {
         case 'completed': eventType = 'node_completed'; break;
         case 'running': eventType = 'node_running'; break;
@@ -258,24 +257,20 @@ export default function LoomStudioPage() {
       const currentlyOpening = !prev[panel]; 
 
       if (isMobile) {
-        // If we are trying to open a panel, and it's already open (meaning currentlyOpening is false), just close it.
         if (prev[panel] && !currentlyOpening) {
           newState[panel] = false;
         } else {
-          // Otherwise (trying to open a new panel, or toggle one that was closed)
-          // close all panels first
           newState.palette = false;
           newState.inspector = false;
           newState.timeline = false;
           newState.console = false;
           newState.agentHub = false;
-          // Then open the target panel IF we intended to open it (currentlyOpening is true)
           if (currentlyOpening) {
             newState[panel] = true;
           }
         }
       } else {
-        newState[panel] = !prev[panel]; // Desktop toggle behavior
+        newState[panel] = !prev[panel]; 
       }
       return newState;
     });
@@ -301,7 +296,7 @@ export default function LoomStudioPage() {
   const anyMobilePanelOpen = isMobile && Object.values(panelVisibility).some(v => v);
 
   if (isMobile === undefined) {
-    return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center">Loading UI...</div>;
+    return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center text-lg">Loading UI...</div>;
   }
 
   return (
@@ -408,3 +403,4 @@ export default function LoomStudioPage() {
     </div>
   );
 }
+

@@ -103,7 +103,7 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
             <PlayCircle className="h-3 w-3 mr-1.5" />
             Resume All
         </Button>
-        <Button variant="destructive" size="sm" className="text-xs flex-1" onClick={handlePauseAll}>
+        <Button variant="secondary" size="sm" className="text-xs flex-1" onClick={handlePauseAll}>
             <PauseCircle className="h-3 w-3 mr-1.5" />
             Pause All
         </Button>
@@ -131,3 +131,4 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
     </BasePanel>
   );
 }
+
