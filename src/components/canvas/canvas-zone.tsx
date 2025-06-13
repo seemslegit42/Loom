@@ -2,7 +2,7 @@
 import { WorkflowNode } from '@/components/workflow/workflow-node';
 import type { GenerateFlowFormState } from '@/lib/actions/ai';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PackagePlus } from 'lucide-react';
+import { BrainCircuit } from 'lucide-react'; // Changed from PackagePlus
 
 interface CanvasZoneProps {
   generatedFlow: GenerateFlowFormState | null;
@@ -15,7 +15,7 @@ export function CanvasZone({ generatedFlow }: CanvasZoneProps) {
         {generatedFlow && generatedFlow.promptSequence && generatedFlow.promptSequence.length > 0 ? (
           <>
             {generatedFlow.workflowDescription && (
-              <div className="mb-8 p-4 bg-card/80 rounded-lg shadow">
+              <div className="mb-8 p-4 bg-card/80 rounded-lg shadow backdrop-blur-md">
                 <h2 className="text-xl font-headline mb-2 text-primary">Generated Workflow: {generatedFlow.userInput || "Custom Flow"}</h2>
                 <p className="text-muted-foreground">{generatedFlow.workflowDescription}</p>
               </div>
@@ -26,7 +26,7 @@ export function CanvasZone({ generatedFlow }: CanvasZoneProps) {
                   key={index}
                   title={`Step ${index + 1}`}
                   description={prompt}
-                  type="prompt"
+                  type="prompt" // Example type, could be dynamic
                   status={index === 0 ? 'running' : 'queued'}
                 />
               ))}
@@ -34,11 +34,11 @@ export function CanvasZone({ generatedFlow }: CanvasZoneProps) {
           </>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-20">
-            <PackagePlus className="h-16 w-16 mb-4 text-primary/50" />
-            <h2 className="text-2xl font-headline mb-2">Canvas Zone</h2>
+            <BrainCircuit className="h-16 w-16 mb-4 text-primary/50" />
+            <h2 className="text-2xl font-headline mb-2">Agent Orchestration Canvas</h2>
             <p className="max-w-md">
-              This is where your workflows will be visually assembled.
-              Use the input in the top bar to generate a flow using natural language, or drag elements from the Palette.
+              Visually build and manage your AI agents here.
+              Generate a flow using the input above, or drag components from the Palette to start.
             </p>
           </div>
         )}

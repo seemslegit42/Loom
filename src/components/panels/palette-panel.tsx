@@ -1,19 +1,22 @@
 // src/components/panels/palette-panel.tsx
 import { BasePanel } from './base-panel';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Zap, MessageSquare, GitBranch, Cog, ShieldQuestion } from 'lucide-react';
+import { LayoutGrid, Zap, MessageSquare, GitMerge, Cog, ShieldQuestion, Timer, Webhook, SlidersHorizontal } from 'lucide-react'; // Added GitMerge, Timer, Webhook, SlidersHorizontal
 
 interface PalettePanelProps {
   className?: string;
   onClose?: () => void;
 }
 
+// Corresponds to WorkflowNodeProps['type']
 const paletteItems = [
-  { name: 'Prompt', icon: <MessageSquare className="h-4 w-4" /> },
-  { name: 'Agent Call', icon: <Zap className="h-4 w-4" /> },
-  { name: 'Decision', icon: <GitBranch className="h-4 w-4" /> },
-  { name: 'Trigger', icon: <Cog className="h-4 w-4" /> },
-  { name: 'Custom Logic', icon: <ShieldQuestion className="h-4 w-4" /> },
+  { name: 'Prompt', type: 'prompt', icon: <MessageSquare className="h-4 w-4" /> },
+  { name: 'Agent Call', type: 'agent-call', icon: <Zap className="h-4 w-4" /> },
+  { name: 'Decision', type: 'decision', icon: <GitMerge className="h-4 w-4" /> },
+  { name: 'Trigger', type: 'trigger', icon: <Cog className="h-4 w-4" /> },
+  { name: 'Wait', type: 'wait', icon: <Timer className="h-4 w-4" /> },
+  { name: 'API Call', type: 'api-call', icon: <Webhook className="h-4 w-4" /> },
+  { name: 'Custom Logic', type: 'custom', icon: <SlidersHorizontal className="h-4 w-4" /> },
 ];
 
 export function PalettePanel({ className, onClose }: PalettePanelProps) {
@@ -33,7 +36,9 @@ export function PalettePanel({ className, onClose }: PalettePanelProps) {
           variant="outline"
           className="w-full justify-start gap-2 bg-card hover:bg-accent hover:text-accent-foreground transition-colors"
           draggable
-          onDragStart={(e) => e.dataTransfer.setData('text/plain', item.name)}
+          onDragStart={(e) => {
+            e.dataTransfer.setData('application/json', JSON.stringify({ name: item.name, type: item.type }));
+          }}
         >
           {item.icon}
           {item.name}
