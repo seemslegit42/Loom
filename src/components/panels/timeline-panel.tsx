@@ -26,11 +26,11 @@ export function TimelinePanel({ className, onClose, isMobile }: TimelinePanelPro
   const { toast } = useToast();
 
   const handleTokenUsage = () => {
-    toast({ title: "Timeline Action", description: "Token Usage clicked." });
+    toast({ title: "Timeline Action", description: "Token Usage: Feature coming soon!" });
   };
 
   const handleDebugPath = () => {
-    toast({ title: "Timeline Action", description: "Debug Path clicked." });
+    toast({ title: "Timeline Action", description: "Debug Path: Feature coming soon!" });
   };
 
   return (
@@ -65,3 +65,4 @@ export function TimelinePanel({ className, onClose, isMobile }: TimelinePanelPro
     </BasePanel>
   );
 }
+
