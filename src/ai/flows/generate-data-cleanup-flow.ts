@@ -20,13 +20,18 @@ const GenerateDataCleanupFlowInputSchema = z.object({
 });
 export type GenerateDataCleanupFlowInput = z.infer<typeof GenerateDataCleanupFlowInputSchema>;
 
+// Note: This output schema is kept simple for now. 
+// AI will generate a `workflowDescription` (which becomes workflowName)
+// and `promptSequence` (which are simple strings).
+// The CanvasZone will adapt these strings into more structured WorkflowNodeData for display if needed.
+// Manually dragged nodes will directly use WorkflowNodeData.
 const GenerateDataCleanupFlowOutputSchema = z.object({
-  workflowDescription: z
+  workflowDescription: z 
     .string()
-    .describe('A description of the generated data cleanup workflow.'),
+    .describe('A concise name or high-level description for the generated data cleanup workflow. e.g., "Customer Address Normalization"'),
   promptSequence: z
     .array(z.string())
-    .describe('A sequence of prompts to achieve the data cleanup goal.'),
+    .describe('A sequence of textual prompts or steps to achieve the data cleanup goal. Each string is one step. e.g., ["Identify missing street numbers", "Standardize city names to uppercase"]'),
 });
 export type GenerateDataCleanupFlowOutput = z.infer<typeof GenerateDataCleanupFlowOutputSchema>;
 
@@ -42,7 +47,9 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateDataCleanupFlowOutputSchema},
   prompt: `You are an AI workflow generator specializing in data cleanup.
 
-  Based on the user input, generate a data cleanup workflow by creating a sequence of prompts and a description of the workflow.
+  Based on the user input, generate a data cleanup workflow.
+  Provide a concise 'workflowDescription' which will serve as the name of the flow.
+  Provide a 'promptSequence' which is an array of strings, where each string represents a textual description of a step or prompt in the workflow.
 
   User Input: {{{userInput}}}
   `,

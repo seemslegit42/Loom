@@ -12,6 +12,7 @@ import { TimelinePanel } from '@/components/panels/timeline-panel';
 import { ConsolePanel } from '@/components/panels/console-panel';
 import { AgentHubPanel } from '@/components/panels/agent-hub-panel';
 import type { GenerateFlowFormState } from '@/lib/actions/ai';
+import type { WorkflowNodeData } from '@/components/workflow/workflow-node';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface PanelVisibility {
@@ -34,6 +35,7 @@ export default function LoomStudioPage() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    if (isMobile === undefined) return; // Wait for isMobile to be defined
     if (isMobile) {
       setPanelVisibility({
         palette: false,
@@ -43,6 +45,7 @@ export default function LoomStudioPage() {
         agentHub: false,
       });
     } else {
+      // Default desktop visibility
       setPanelVisibility({
         palette: true,
         inspector: true,
@@ -55,8 +58,33 @@ export default function LoomStudioPage() {
 
 
   const handleFlowGenerated = (data: GenerateFlowFormState) => {
-    setGeneratedFlow(data);
+    // When AI generates a flow, it provides workflowName and promptSequence.
+    // We clear manualNodes.
+    setGeneratedFlow({
+      ...data,
+      manualNodes: [], 
+    });
   };
+
+  const handleNodeDropped = (newNodeData: WorkflowNodeData) => {
+    setGeneratedFlow(prevFlow => {
+      if (prevFlow) {
+        return {
+          ...prevFlow,
+          manualNodes: [...(prevFlow.manualNodes || []), newNodeData],
+        };
+      }
+      // If no flow exists (e.g., user starts by dragging), create one.
+      return {
+        message: "Node added to canvas.",
+        workflowName: "My Custom Flow",
+        promptSequence: [],
+        manualNodes: [newNodeData],
+        error: false,
+      };
+    });
+  };
+
 
   const togglePanel = (panel: keyof PanelVisibility) => {
     setPanelVisibility(prev => {
@@ -97,6 +125,10 @@ export default function LoomStudioPage() {
 
   const anyMobilePanelOpen = isMobile && Object.values(panelVisibility).some(v => v);
 
+  if (isMobile === undefined) {
+    return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center">Loading UI...</div>; // Or a proper skeleton loader
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <TopBar
@@ -106,9 +138,9 @@ export default function LoomStudioPage() {
         isMobile={isMobile}
         anyMobilePanelOpen={anyMobilePanelOpen}
       />
-      <main className={`flex-1 relative flex overflow-hidden ${isMobile ? 'p-0' : 'p-4 gap-4'} ${isMobile ? 'pb-16' : ''}`}> {/* Added pb-16 for mobile */}
+      <main className={`flex-1 relative flex overflow-hidden ${isMobile ? 'p-0' : 'p-4 gap-4'} ${isMobile ? 'pb-16' : ''}`}>
         <div className={`flex-1 h-full transition-opacity duration-300 ${anyMobilePanelOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-          <CanvasZone generatedFlow={generatedFlow} />
+          <CanvasZone generatedFlow={generatedFlow} onNodeDropped={handleNodeDropped} />
         </div>
 
         {/* Panel Rendering Logic */}
@@ -130,7 +162,7 @@ export default function LoomStudioPage() {
               )}
             </div>
             {panelVisibility.agentHub && (
-              <AgentHubPanel className="absolute bottom-[calc(50vh+0.5rem)] right-4 z-10 max-h-[calc(50vh-2.5rem)]" onClose={() => togglePanel('agentHub')} />
+              <AgentHubPanel className="absolute bottom-[calc(50%-(-1rem))] right-4 z-10 max-h-[calc(50vh-2.5rem)]" onClose={() => togglePanel('agentHub')} />
             )}
           </>
         ) : (

@@ -1,6 +1,7 @@
 // src/lib/actions/ai.ts
 'use server';
 import { generateDataCleanupFlow, type GenerateDataCleanupFlowInput } from '@/ai/flows/generate-data-cleanup-flow';
+import type { WorkflowNodeData } from '@/components/workflow/workflow-node';
 import { z } from 'zod';
 
 const GenerateFlowSchema = z.object({
@@ -9,8 +10,9 @@ const GenerateFlowSchema = z.object({
 
 export interface GenerateFlowFormState {
   message: string | null;
-  workflowDescription?: string;
-  promptSequence?: string[];
+  workflowName?: string; // Renamed from workflowDescription
+  promptSequence?: string[]; // AI-generated simple prompts
+  manualNodes?: WorkflowNodeData[]; // User-dragged nodes
   error?: boolean;
   userInput?: string;
 }
@@ -29,16 +31,19 @@ export async function handleGenerateFlow(
       message: "Invalid input: " + validatedFields.error.flatten().fieldErrors.userInput?.join(", "),
       error: true,
       userInput: typeof userInput === 'string' ? userInput : '',
+      manualNodes: prevState.manualNodes, // Preserve manual nodes on validation error
     };
   }
 
   try {
     const input: GenerateDataCleanupFlowInput = { userInput: validatedFields.data.userInput };
-    const result = await generateDataCleanupFlow(input);
+    // The AI flow currently returns workflowDescription and promptSequence
+    const result = await generateDataCleanupFlow(input); 
     return {
       message: "Flow generated successfully!",
-      workflowDescription: result.workflowDescription,
+      workflowName: result.workflowDescription, // Adapt to new name
       promptSequence: result.promptSequence,
+      manualNodes: [], // Clear manual nodes when AI generates a new flow
       error: false,
       userInput: validatedFields.data.userInput,
     };
@@ -49,6 +54,7 @@ export async function handleGenerateFlow(
       message: `Failed to generate flow. Please try again. Error: ${error.message}`,
       error: true,
       userInput: validatedFields.data.userInput,
+      manualNodes: prevState.manualNodes, // Preserve manual nodes on API error
     };
   }
 }

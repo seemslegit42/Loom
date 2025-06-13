@@ -3,16 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog } from 'lucide-react';
 
-interface WorkflowNodeProps {
+export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown';
+export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom';
+
+export interface WorkflowNodeData {
+  id: string;
   title: string;
-  type?: 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom';
-  status?: 'queued' | 'running' | 'failed' | 'completed' | 'unknown';
-  description?: string;
+  type: NodeType;
+  description: string;
+  status?: NodeStatus;
   agentName?: string;
+}
+
+interface WorkflowNodeProps {
+  node: WorkflowNodeData;
   className?: string;
 }
 
-const statusIcons: Record<NonNullable<WorkflowNodeProps['status']>, React.ReactNode> = {
+const statusIcons: Record<NodeStatus, React.ReactNode> = {
   queued: <Clock className="h-4 w-4 text-blue-400" />,
   running: <Bot className="h-4 w-4 text-primary animate-pulse" />,
   failed: <AlertTriangle className="h-4 w-4 text-destructive" />,
@@ -20,7 +28,7 @@ const statusIcons: Record<NonNullable<WorkflowNodeProps['status']>, React.ReactN
   unknown: <HelpCircle className="h-4 w-4 text-muted-foreground" />,
 };
 
-const typeIcons: Record<NonNullable<WorkflowNodeProps['type']>, React.ReactNode> = {
+const typeIcons: Record<NodeType, React.ReactNode> = {
   prompt: <MessageSquare className="h-4 w-4 text-purple-400" />,
   decision: <GitMerge className="h-4 w-4 text-orange-400" />,
   'agent-call': <Zap className="h-4 w-4 text-yellow-400" />,
@@ -39,14 +47,8 @@ const statusColors: Record<string, string> = {
 };
 
 
-export function WorkflowNode({
-  title,
-  type = 'custom',
-  status = 'unknown',
-  description,
-  agentName,
-  className,
-}: WorkflowNodeProps) {
+export function WorkflowNode({ node, className }: WorkflowNodeProps) {
+  const { title, type, status = 'unknown', description, agentName } = node;
   const currentTypeIcon = typeIcons[type] || typeIcons.custom;
   const currentStatusIcon = statusIcons[status] || statusIcons.unknown;
 
