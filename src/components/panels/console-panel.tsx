@@ -72,3 +72,4 @@ export function ConsolePanel({ className, onClose, messages, isMobile }: Console
     </BasePanel>
   );
 }
+

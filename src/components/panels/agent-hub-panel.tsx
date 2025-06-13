@@ -28,6 +28,11 @@ const statusColors: Record<string, string> = {
   error: "bg-destructive/20 text-destructive border-destructive/50",
 };
 
+const formatStatusText = (status: string) => {
+  if (!status) return '';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
+
 export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelProps) {
   const { toast } = useToast();
 
@@ -40,7 +45,7 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
   };
 
   const handlePauseAll = () => {
-    toast({ title: "Agent Hub Action", description: "Activating Safe Mode: Pausing all agents.", variant: "default" }); // Using default, could be destructive if more severe
+    toast({ title: "Agent Hub Action", description: "Activating Safe Mode: Pausing all agents.", variant: "default" });
   };
 
   return (
@@ -76,7 +81,7 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
             <li key={agent.name} className="p-2.5 rounded-md bg-card/60 border border-border/40 hover:border-primary/50 transition-colors">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-foreground/90">{agent.name}</span>
-                <Badge className={`text-[0.65rem] px-1.5 py-0.5 ${statusColors[agent.status] || 'bg-muted'}`}>{agent.status}</Badge>
+                <Badge className={`text-[0.65rem] px-1.5 py-0.5 ${statusColors[agent.status] || 'bg-muted border-muted-foreground/30'}`}>{formatStatusText(agent.status)}</Badge>
               </div>
               <div className="text-xs text-muted-foreground space-y-0.5">
                 <p className="flex items-center gap-1"><ListChecks className="h-3 w-3 text-primary/70" /> Tasks: {agent.tasks} | Workload: {agent.workload}</p>
