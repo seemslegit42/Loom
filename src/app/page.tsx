@@ -86,10 +86,11 @@ export default function LoomStudioPage() {
   const simulateFlowExecution = (flow: GenerateFlowFormState) => {
     if (!flow.promptSequence || !flow.workflowName) return;
 
-    setTimelineEvents([]);
-    setNodeExecutionStatus({});
+    setTimelineEvents([]); // Clear previous timeline
+    setNodeExecutionStatus({}); // Clear previous statuses
     let currentDelay = 0;
 
+    addConsoleMessage('info', `Simulating execution for workflow: "${flow.workflowName}".`);
     addTimelineEvent({
       type: 'workflow_start',
       message: `Workflow "${flow.workflowName}" started.`,
@@ -101,18 +102,21 @@ export default function LoomStudioPage() {
 
       currentDelay += 500; // Delay for queuing
       setTimeout(() => {
+        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) queued.`);
         addTimelineEvent({ nodeId, nodeTitle, type: 'node_queued', message: `Node "${nodeTitle}" queued.` });
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'queued' }));
       }, currentDelay);
 
       currentDelay += 1000; // Delay for running
       setTimeout(() => {
+        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) running.`);
         addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" running.` });
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
       }, currentDelay);
 
       currentDelay += 1500 + Math.random() * 1000; // Variable delay for completion
       setTimeout(() => {
+        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) completed.`);
         addTimelineEvent({ nodeId, nodeTitle, type: 'node_completed', message: `Node "${nodeTitle}" completed.` });
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'completed' }));
       }, currentDelay);
@@ -121,43 +125,44 @@ export default function LoomStudioPage() {
 
 
   const handleFlowGenerated = (data: GenerateFlowFormState) => {
-    const newFlowData = {
+    const newFlowData = { // Create a new object for the flow data
       ...data,
-      manualNodes: [], 
+      manualNodes: [], // Reset manual nodes when a new AI flow is generated
     };
     setGeneratedFlow(newFlowData);
-    setSelectedNode(null); 
+    setSelectedNode(null); // Deselect any node
     if (data.error) {
       addConsoleMessage('error', `Failed to generate flow: ${data.message}`);
     } else {
       addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled'}" generated successfully.`);
       if (data.promptSequence && data.workflowName) {
-        simulateFlowExecution(newFlowData);
+        simulateFlowExecution(newFlowData); // Use the newFlowData which has manualNodes reset
       } else {
-         setTimelineEvents([]); 
-         setNodeExecutionStatus({}); 
+         setTimelineEvents([]); // Clear timeline if no actual sequence to simulate
+         setNodeExecutionStatus({}); // Clear statuses
       }
     }
   };
 
   const handleNodeDropped = (newNodeData: WorkflowNodeData) => {
-    const nodeId = generateNodeId('manual', newNodeData.title, (generatedFlow?.manualNodes?.length || 0));
-    const nodeWithId = { ...newNodeData, id: nodeId };
+    // Generate a unique ID for the manual node
+    const nodeId = generateNodeId('manual', newNodeData.title, (generatedFlow?.manualNodes?.length || 0) + Date.now());
+    const nodeWithId = { ...newNodeData, id: nodeId, status: newNodeData.status || 'queued' }; // Ensure status is set
     
     setGeneratedFlow(prevFlow => {
       const updatedFlow = {
-        ...(prevFlow || { message: "Node added to canvas.", workflowName: "My Custom Flow", promptSequence: [], error: false }),
+        ...(prevFlow || { message: "Node added to canvas.", workflowName: "My Custom Flow", promptSequence: [], error: false, userInput: "Custom flow" }),
         manualNodes: [...(prevFlow?.manualNodes || []), nodeWithId],
       };
       return updatedFlow;
     });
-    setSelectedNode(nodeWithId); 
-    addConsoleMessage('log', `Node "${nodeWithId.title}" added to canvas.`);
-    setNodeExecutionStatus(prev => ({...prev, [nodeWithId.id]: nodeWithId.status || 'queued'}));
+    setSelectedNode(nodeWithId); // Select the newly dropped node
+    addConsoleMessage('log', `Node "${nodeWithId.title}" (ID: ${nodeWithId.id}) added to canvas.`);
+    setNodeExecutionStatus(prev => ({...prev, [nodeWithId.id]: nodeWithId.status! }));
     addTimelineEvent({
       nodeId: nodeWithId.id,
       nodeTitle: nodeWithId.title,
-      type: 'node_queued',
+      type: 'node_queued', // Manual nodes are initially queued
       message: `Manual Node "${nodeWithId.title}" added and queued.`
     });
   };
@@ -165,7 +170,7 @@ export default function LoomStudioPage() {
   const handleNodeSelected = (node: WorkflowNodeData | null) => {
     setSelectedNode(node);
     if (node) {
-      addConsoleMessage('log', `Node "${node.title}" selected.`);
+      addConsoleMessage('log', `Node "${node.title}" (ID: ${node.id}) selected.`);
     } else {
       addConsoleMessage('log', `Canvas selected (no node).`);
     }
@@ -176,10 +181,7 @@ export default function LoomStudioPage() {
       if (!prevFlow) return null;
 
       let newManualNodes = prevFlow.manualNodes || [];
-      // AI-generated nodes (promptSequence) are not directly editable in their structure via inspector,
-      // only their display representation (title/description) if we were to fully map them to WorkflowNodeData.
-      // For now, we only handle manualNodes for structural updates.
-      // Status update for AI nodes is handled by `nodeExecutionStatus`.
+      let newPromptSequence = prevFlow.promptSequence || [];
 
       const manualNodeIndex = newManualNodes.findIndex(n => n.id === updatedNode.id);
       if (manualNodeIndex !== -1) {
@@ -188,19 +190,31 @@ export default function LoomStudioPage() {
           updatedNode,
           ...newManualNodes.slice(manualNodeIndex + 1),
         ];
+      } else {
+        // Check if it's an AI-generated node by trying to find its original prompt index
+        // This is a simplification; a more robust system might map AI nodes to full WorkflowNodeData objects earlier.
+        const aiNodePrefix = `ai-node-${(prevFlow.workflowName || '').replace(/\s+/g, '-').toLowerCase()}-`;
+        if (updatedNode.id.startsWith(aiNodePrefix)) {
+          const indexStr = updatedNode.id.substring(aiNodePrefix.length);
+          const index = parseInt(indexStr, 10);
+          if (!isNaN(index) && index >= 0 && index < newPromptSequence.length) {
+            newPromptSequence = [
+              ...newPromptSequence.slice(0, index),
+              updatedNode.description, // Only description is editable for AI nodes for now
+              ...newPromptSequence.slice(index + 1),
+            ];
+          }
+        }
       }
-      // If it's an AI node, its title/description are derived. Status is in nodeExecutionStatus.
-      // If we wanted to make AI node titles/descriptions editable, we'd need to change
-      // how promptSequence is stored or transformed.
-
+      
       toast({
         title: "Node Updated",
         description: `Node "${updatedNode.title}" has been saved.`,
       });
-      addConsoleMessage('info', `Node "${updatedNode.title}" updated.`);
+      addConsoleMessage('info', `Node "${updatedNode.title}" (ID: ${updatedNode.id}) updated.`);
       
-      // Update status if it changed via inspector for a manual node
-      if (nodeExecutionStatus[updatedNode.id] !== updatedNode.status && updatedNode.status) {
+      // If status was changed for a manual node (or potentially an AI node if made fully editable)
+      if (updatedNode.status && nodeExecutionStatus[updatedNode.id] !== updatedNode.status) {
         setNodeExecutionStatus(prev => ({...prev, [updatedNode.id]: updatedNode.status! }));
         addTimelineEvent({
           nodeId: updatedNode.id,
@@ -208,16 +222,15 @@ export default function LoomStudioPage() {
           type: updatedNode.status === 'completed' ? 'node_completed' : 
                 updatedNode.status === 'running' ? 'node_running' :
                 updatedNode.status === 'failed' ? 'node_failed' :
-                'node_queued',
+                'node_queued', // Default to queued if status is odd
           message: `Node "${updatedNode.title}" status updated to ${updatedNode.status}.`
         });
       }
 
-
       return {
         ...prevFlow,
         manualNodes: newManualNodes,
-        // promptSequence: newPromptSequence, // Only if AI nodes are made fully editable
+        promptSequence: newPromptSequence,
       };
     });
     setSelectedNode(updatedNode); 
@@ -366,4 +379,3 @@ export default function LoomStudioPage() {
     </div>
   );
 }
-

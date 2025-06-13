@@ -14,7 +14,7 @@ interface CanvasZoneProps {
   nodeExecutionStatus: Record<string, NodeStatus>;
 }
 
-const generateNodeId = (type: 'ai' | 'manual', workflowName: string, index: number | string): string => {
+const generateNodeIdFromFlow = (type: 'ai', workflowName: string, index: number | string): string => {
   const safeWorkflowName = workflowName.replace(/\s+/g, '-').toLowerCase();
   return `${type}-node-${safeWorkflowName}-${index}`;
 };
@@ -31,13 +31,14 @@ export function CanvasZone({ generatedFlow, onNodeDropped, selectedNode, onNodeS
       try {
         const { name, type } = JSON.parse(nodeInfo) as { name: string; type: NodeType };
         // ID will be generated in LoomStudioPage's handleNodeDropped
-        const newNodeData: Omit<WorkflowNodeData, 'id'> = {
+        // and status will be set there as well.
+        const newNodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus } = {
           title: name,
           type: type,
           description: `User-added ${name} node. Consider providing a default description based on type.`,
-          status: 'queued',
+          // status is set by parent to 'queued' initially
         };
-        onNodeDropped(newNodeData as WorkflowNodeData); // Cast as ID is added by parent
+        onNodeDropped(newNodeData as WorkflowNodeData); 
       } catch (error) {
         console.error("Failed to parse dropped node data:", error);
       }
@@ -45,24 +46,25 @@ export function CanvasZone({ generatedFlow, onNodeDropped, selectedNode, onNodeS
   };
 
   const aiNodes: WorkflowNodeData[] = generatedFlow?.promptSequence?.map((prompt, index) => {
-    const nodeId = generateNodeId('ai', generatedFlow.workflowName as string, index);
+    const nodeId = generateNodeIdFromFlow('ai', generatedFlow.workflowName as string, index);
     return {
       id: nodeId,
       title: `${generatedFlow.workflowName || 'AI Step'} ${index + 1}`,
       description: prompt,
-      type: 'prompt',
-      status: nodeExecutionStatus[nodeId] || 'queued',
+      type: 'prompt', // This should ideally be more dynamic if AI nodes can be of different types
+      status: nodeExecutionStatus[nodeId] || 'queued', // Get status from execution map
     };
   }) || [];
 
   const manualNodes: WorkflowNodeData[] = (generatedFlow?.manualNodes || []).map(node => ({
     ...node,
-    status: nodeExecutionStatus[node.id] || node.status || 'queued',
+    status: nodeExecutionStatus[node.id] || node.status || 'queued', // Prioritize execution status map
   }));
   
   const allNodes = [...aiNodes, ...manualNodes];
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // If the click target is the ScrollArea itself (not a child like a WorkflowNode)
     if (e.target === e.currentTarget) {
       onNodeSelected(null);
     }
@@ -73,7 +75,7 @@ export function CanvasZone({ generatedFlow, onNodeDropped, selectedNode, onNodeS
       className="h-full w-full rounded-lg border border-dashed border-border/50 grid-background"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onClick={handleCanvasClick}
+      onClick={handleCanvasClick} // Add click handler to the ScrollArea
     >
       <div className="p-8 min-h-full">
         {generatedFlow && generatedFlow.workflowName && (
@@ -81,6 +83,9 @@ export function CanvasZone({ generatedFlow, onNodeDropped, selectedNode, onNodeS
             <h2 className="text-xl font-headline mb-2 text-primary">
               Workflow: {generatedFlow.workflowName || generatedFlow.userInput || "Untitled Flow"}
             </h2>
+            {generatedFlow.userInput && generatedFlow.workflowName !== generatedFlow.userInput && (
+                <p className="text-xs text-muted-foreground">Original prompt: {generatedFlow.userInput}</p>
+            )}
           </div>
         )}
         {allNodes.length > 0 ? (
