@@ -15,6 +15,7 @@ import type { GenerateFlowFormState } from '@/lib/actions/ai';
 import type { WorkflowNodeData, NodeStatus } from '@/components/workflow/workflow-node';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
+import { generateNodeId } from '@/lib/utils';
 
 export interface PanelVisibility {
   palette: boolean;
@@ -23,14 +24,6 @@ export interface PanelVisibility {
   console: boolean;
   agentHub: boolean;
 }
-
-const generateNodeId = (type: 'ai' | 'manual', workflowName: string, index: number | string): string => {
-  const safeWorkflowName = workflowName.replace(/\s+/g, '-').toLowerCase();
-  // For manual nodes, workflowName might be the node title if no flow context exists yet.
-  // And index could be Date.now() for uniqueness.
-  return `${type}-node-${safeWorkflowName}-${index}`;
-};
-
 
 export default function LoomStudioPage() {
   const [generatedFlow, setGeneratedFlow] = useState<GenerateFlowFormState | null>(null);
@@ -169,6 +162,7 @@ export default function LoomStudioPage() {
   const handleNodeDropped = (newNodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus }) => {
     const uniqueIndex = Date.now();
     const nodeTitleBase = newNodeData.title || 'Manual Node';
+    // Use the utility function for ID generation
     const nodeId = generateNodeId('manual', nodeTitleBase, uniqueIndex);
     
     const nodeWithIdAndStatus: WorkflowNodeData = {

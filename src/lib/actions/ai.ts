@@ -3,17 +3,12 @@
 'use server';
 import { generateDataCleanupFlow, type GenerateDataCleanupFlowInput } from '@/ai/flows/generate-data-cleanup-flow';
 import type { WorkflowNodeData } from '@/components/workflow/workflow-node';
+import { generateNodeId } from '@/lib/utils';
 import { z } from 'zod';
 
 const GenerateFlowSchema = z.object({
   userInput: z.string().min(5, "Please provide a more detailed description for the flow."),
 });
-
-// Helper to generate safe IDs
-const generateNodeId = (type: 'ai' | 'manual', workflowName: string, index: number | string): string => {
-  const safeWorkflowName = workflowName.replace(/\s+/g, '-').toLowerCase();
-  return `${type}-node-${safeWorkflowName}-${index}`;
-};
 
 export interface GenerateFlowFormState {
   message: string | null;
