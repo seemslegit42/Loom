@@ -32,15 +32,15 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
   const { toast } = useToast();
 
   const handleSpawnAgent = () => {
-    toast({ title: "Action", description: "Spawn New Agent clicked." });
+    toast({ title: "Agent Hub Action", description: "Attempting to spawn a new agent..." });
   };
 
   const handleResumeAll = () => {
-    toast({ title: "Action", description: "Resume All clicked." });
+    toast({ title: "Agent Hub Action", description: "Sending command to resume all agents." });
   };
 
   const handlePauseAll = () => {
-    toast({ title: "Action", description: "Pause All (Safe Mode) clicked.", variant: "destructive" });
+    toast({ title: "Agent Hub Action", description: "Activating Safe Mode: Pausing all agents.", variant: "default" }); // Using default, could be destructive if more severe
   };
 
   return (
