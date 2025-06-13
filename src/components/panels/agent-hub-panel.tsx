@@ -98,9 +98,9 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
       onClose={onClose}
       isMobile={isMobile}
       initialSize={{ width: '380px', height: 'auto' }} 
-      contentClassName="space-y-3 flex flex-col"
+      contentClassName="space-y-3 flex flex-col" // Added flex flex-col
     >
-      <div className="space-y-3"> {/* Removed flex-grow from here */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">Connected Agents ({agents.length})</h3>
           <Button variant="outline" size="sm" className="text-xs" onClick={handleSpawnAgent}>
@@ -118,7 +118,7 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
               Pause All
           </Button>
         </div>
-        <ScrollArea className="pr-2">  {/* Removed h-[160px] */}
+        <ScrollArea className="pr-2">
           {agents.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-4">No agents currently connected. Spawn one to get started.</p>
           ) : (

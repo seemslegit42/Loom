@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow'; // Added import
+import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
 
 export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown';
-export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer'; // Added 'web-summarizer'
+export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer';
 
 export interface WorkflowNodeData {
   id: string;
@@ -16,17 +16,16 @@ export interface WorkflowNodeData {
   description: string;
   status?: NodeStatus;
   agentName?: string;
-  config?: { // Added config object
-    url?: string; // For web-summarizer
-    output?: SummarizeWebpageOutput; // To store the result for web-summarizer
-    // We can add other config fields for other node types later
+  config?: {
+    url?: string; 
+    output?: SummarizeWebpageOutput;
   };
 }
 
 interface WorkflowNodeProps {
   node: WorkflowNodeData;
   className?: string;
-  onClick?: (node: WorkflowNodeData) => void;
+  onClick?: (e: React.MouseEvent<HTMLDivElement>, node: WorkflowNodeData) => void; // Pass event
   isSelected?: boolean;
 }
 
@@ -46,7 +45,7 @@ const typeIcons: Record<NodeType, React.ReactNode> = {
   'api-call': <Webhook className="h-4 w-4 text-indigo-400" />,
   trigger: <Cog className="h-4 w-4 text-pink-400" />,
   custom: <SlidersHorizontal className="h-4 w-4 text-teal-400" />,
-  'web-summarizer': <Globe className="h-4 w-4 text-sky-400" />, // Added icon for web-summarizer
+  'web-summarizer': <Globe className="h-4 w-4 text-sky-400" />,
 };
 
 const badgeStyles: Record<NodeStatus, string> = {
@@ -75,9 +74,9 @@ export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowN
   const currentTypeIcon = typeIcons[type] || typeIcons.custom;
   const currentStatusIcon = statusIcons[status] || statusIcons.unknown;
 
-  const handleNodeClick = () => {
+  const handleNodeClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (onClick) {
-      onClick(node);
+      onClick(e, node); // Pass event and node
     }
   };
 
@@ -85,9 +84,9 @@ export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowN
     <Card
       className={cn(
         'min-w-[250px] max-w-xs bg-card/80 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] cursor-pointer',
-        'border-2',
+        'border-2', // Keep base border style
         cardDynamicStyles[status] || cardDynamicStyles.unknown,
-        isSelected && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30',
+        isSelected && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30', // Enhanced selection style
         className
       )}
       onClick={handleNodeClick}

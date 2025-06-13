@@ -1,3 +1,4 @@
+
 // src/components/canvas/canvas-zone.tsx
 import { WorkflowNode, type WorkflowNodeData, type NodeType, type NodeStatus } from '@/components/workflow/workflow-node';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -5,12 +6,12 @@ import { BrainCircuit } from 'lucide-react';
 import type React from 'react';
 
 interface CanvasZoneProps {
-  workflowName?: string; // Optional workflow name to display
-  nodes: WorkflowNodeData[]; // Unified list of nodes
+  workflowName?: string; 
+  nodes: WorkflowNodeData[]; 
   onNodeDropped: (nodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus }) => void;
   selectedNode: WorkflowNodeData | null;
   onNodeSelected: (node: WorkflowNodeData | null) => void;
-  nodeExecutionStatus: Record<string, NodeStatus>; // To ensure nodes reflect current status
+  nodeExecutionStatus: Record<string, NodeStatus>;
 }
 
 export function CanvasZone({
@@ -35,7 +36,6 @@ export function CanvasZone({
           title: name,
           type: type,
           description: `User-added ${name} node. Consider providing a default description based on type.`,
-          // status is set by parent to 'queued' initially
         };
         onNodeDropped(newNodeData);
       } catch (error) {
@@ -46,33 +46,34 @@ export function CanvasZone({
 
   const displayedNodes = nodes.map(node => ({
     ...node,
-    status: nodeExecutionStatus[node.id] || node.status || 'queued', // Prioritize execution status map
+    status: nodeExecutionStatus[node.id] || node.status || 'queued',
   }));
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Ensure click is on the canvas itself, not on a child node
-    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('grid-background')) {
+    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('grid-background') || (e.target as HTMLElement).closest('.grid-background')) {
       onNodeSelected(null);
     }
   };
+
+  const handleNodeClick = (event: React.MouseEvent<HTMLDivElement>, node: WorkflowNodeData) => {
+    event.stopPropagation(); // Prevent canvas click when a node is clicked
+    onNodeSelected(node);
+  };
+
 
   return (
     <ScrollArea
       className="h-full w-full rounded-lg border border-dashed border-border/50 grid-background"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onClick={handleCanvasClick} // Attach click handler to ScrollArea
+      onClick={handleCanvasClick} 
     >
-      <div className="p-8 min-h-full"> {/* This inner div could also have handleCanvasClick if ScrollArea doesn't work well */}
+      <div className="p-8 min-h-full"> 
         {workflowName && (
           <div className="mb-8 p-4 bg-card/80 rounded-lg shadow backdrop-blur-md">
             <h2 className="text-xl font-headline mb-2 text-primary">
               Workflow: {workflowName || "Untitled Flow"}
             </h2>
-            {/* Optional: Display original user input if available and different from name */}
-            {/* {generatedFlow.userInput && generatedFlow.workflowName !== generatedFlow.userInput && (
-                <p className="text-xs text-muted-foreground">Original prompt: {generatedFlow.userInput}</p>
-            )} */}
           </div>
         )}
         {displayedNodes.length > 0 ? (
@@ -81,10 +82,7 @@ export function CanvasZone({
               <WorkflowNode
                 key={node.id}
                 node={node}
-                onClick={(e) => { // Prevent canvas click when node is clicked
-                  e.stopPropagation(); 
-                  onNodeSelected(node);
-                }}
+                onClick={handleNodeClick}
                 isSelected={selectedNode?.id === node.id}
               />
             ))}
