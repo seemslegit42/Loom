@@ -1,5 +1,4 @@
 
-
 // src/app/page.tsx
 'use client';
 
@@ -51,6 +50,11 @@ export default function LoomStudioPage() {
 
   const addConsoleMessage = (type: ConsoleMessage['type'], text: string) => {
     setConsoleMessages(prev => [{ type, text, timestamp: new Date() }, ...prev.slice(0, 49)]);
+  };
+
+  const handleClearConsole = () => {
+    setConsoleMessages([]);
+    // Optionally, add a message like: addConsoleMessage('info', 'Console cleared.');
   };
 
   const addTimelineEvent = (event: Omit<TimelineEvent, 'id' | 'timestamp'>) => {
@@ -240,6 +244,7 @@ export default function LoomStudioPage() {
         case 'running': eventType = 'node_running'; break;
         case 'failed': eventType = 'node_failed'; break;
         case 'queued': eventType = 'node_queued'; break;
+        default: eventType = 'info'; break;
       }
 
       addTimelineEvent({
@@ -257,15 +262,15 @@ export default function LoomStudioPage() {
       const currentlyOpening = !prev[panel]; 
 
       if (isMobile) {
-        if (prev[panel] && !currentlyOpening) {
+        if (prev[panel] && !currentlyOpening) { // If current panel is open and we are trying to close it
           newState[panel] = false;
-        } else {
+        } else { // If trying to open a new panel, or switch panels
           newState.palette = false;
           newState.inspector = false;
           newState.timeline = false;
           newState.console = false;
           newState.agentHub = false;
-          if (currentlyOpening) {
+          if (currentlyOpening) { // Only set to true if we intend to open it
             newState[panel] = true;
           }
         }
@@ -351,6 +356,7 @@ export default function LoomStudioPage() {
                   messages={consoleMessages.filter(msg => consoleFilters[msg.type])}
                   filters={consoleFilters}
                   onToggleFilter={toggleConsoleFilter}
+                  onClearConsole={handleClearConsole}
                   isMobile={isMobile} 
                 />
               )}
@@ -384,7 +390,7 @@ export default function LoomStudioPage() {
             </div>
 
             <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
-              {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} messages={consoleMessages.filter(msg => consoleFilters[msg.type])} filters={consoleFilters} onToggleFilter={toggleConsoleFilter} isMobile={isMobile} />}
+              {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} messages={consoleMessages.filter(msg => consoleFilters[msg.type])} filters={consoleFilters} onToggleFilter={toggleConsoleFilter} onClearConsole={handleClearConsole} isMobile={isMobile} />}
             </div>
             
             {/* Mobile Backdrop Overlay */}
@@ -403,4 +409,3 @@ export default function LoomStudioPage() {
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 
 // src/components/panels/console-panel.tsx
 import { BasePanel } from './base-panel';
-import { Terminal, AlertCircle, Info, Filter } from 'lucide-react';
+import { Terminal, AlertCircle, Info, Filter, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ interface ConsolePanelProps {
   messages: ConsoleMessage[];
   filters: Record<ConsoleMessage['type'], boolean>;
   onToggleFilter: (type: ConsoleMessage['type']) => void;
+  onClearConsole?: () => void; // New prop
   isMobile?: boolean;
 }
 
@@ -43,7 +44,7 @@ const getTextColorForType = (type: ConsoleMessage['type']) => {
 
 const filterableMessageTypes: ConsoleMessage['type'][] = ['info', 'log', 'warn', 'error'];
 
-export function ConsolePanel({ className, onClose, messages, filters, onToggleFilter, isMobile }: ConsolePanelProps) {
+export function ConsolePanel({ className, onClose, messages, filters, onToggleFilter, onClearConsole, isMobile }: ConsolePanelProps) {
   const allFiltersEnabled = Object.values(filters).every(Boolean);
   
   return (
@@ -56,24 +57,38 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
       initialSize={{ width: 'auto', height: '250px' }}
       contentClassName="font-code text-xs p-0 flex flex-col"
     >
-      <div className="p-2 border-b border-border/30 flex items-center gap-1">
-        <Filter className="h-3.5 w-3.5 text-muted-foreground mr-1" />
-        {filterableMessageTypes.map((type) => (
+      <div className="p-2 border-b border-border/30 flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1">
+          <Filter className="h-3.5 w-3.5 text-muted-foreground mr-1" />
+          {filterableMessageTypes.map((type) => (
+            <Button
+              key={type}
+              variant={filters[type] ? "secondary" : "ghost"}
+              size="sm"
+              className={cn(
+                "text-xs h-6 px-1.5 py-0.5 flex items-center", 
+                filters[type] && "border border-primary/50"
+              )}
+              onClick={() => onToggleFilter(type)}
+              title={`${filters[type] ? 'Hide' : 'Show'} ${type} messages`}
+            >
+              {getIconForType(type)}
+              <span className="ml-0.5">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+            </Button>
+          ))}
+        </div>
+        {onClearConsole && (
           <Button
-            key={type}
-            variant={filters[type] ? "secondary" : "ghost"}
+            variant="ghost"
             size="sm"
-            className={cn(
-              "text-xs h-6 px-1.5 py-0.5 flex items-center", // Ensure flex for icon alignment
-              filters[type] && "border border-primary/50"
-            )}
-            onClick={() => onToggleFilter(type)}
-            title={`${filters[type] ? 'Hide' : 'Show'} ${type} messages`}
+            className="text-xs h-6 px-1.5 py-0.5 flex items-center text-muted-foreground hover:text-destructive"
+            onClick={onClearConsole}
+            title="Clear console"
           >
-            {getIconForType(type)}
-            <span className="ml-0.5">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            Clear
           </Button>
-        ))}
+        )}
       </div>
       <ScrollArea className="h-full w-full flex-grow">
         <div className="p-2 space-y-1">

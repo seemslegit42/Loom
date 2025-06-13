@@ -1,7 +1,7 @@
 
 // src/components/panels/inspector-panel.tsx
 import { BasePanel } from './base-panel';
-import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info } from 'lucide-react';
+import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -85,6 +85,17 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
               value={editableTitle}
               onChange={(e) => setEditableTitle(e.target.value)}
               className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring" 
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="nodeId" className="text-xs flex items-center gap-1.5">
+              <Fingerprint className="h-3.5 w-3.5 text-primary/80"/> Node ID
+            </Label>
+            <Input 
+              id="nodeId" 
+              value={selectedNode.id} 
+              className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" 
+              readOnly 
             />
           </div>
           <div className="space-y-1">
