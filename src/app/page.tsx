@@ -16,7 +16,7 @@ import type { WorkflowNodeData, NodeStatus } from '@/components/workflow/workflo
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
-import { AlertCircle, Globe } from 'lucide-react';
+import { AlertCircle, Globe } from 'lucide-react'; // Globe is imported but not directly used here, it's used in sub-components
 import { summarizeWebpage, type SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
 
 
@@ -102,7 +102,7 @@ export default function LoomStudioPage() {
     let currentDelay = 0;
     let maxDelay = 0;
 
-    addConsoleMessage('info', `Simulating execution for AI-generated workflow: "${workflowName}".`);
+    addConsoleMessage('info', `Simulating AI-generated workflow: "${workflowName}".`);
     addTimelineEvent({
       type: 'workflow_start',
       message: `Workflow "${workflowName}" AI simulation started.`,
@@ -192,7 +192,7 @@ export default function LoomStudioPage() {
     const nodeWithIdAndStatus: WorkflowNodeData = {
       ...newNodeData,
       id: nodeId,
-      title: nodeTitleBase,
+      title: nodeTitleBase, // Use the base title without index for display
       description: newNodeData.description || `Manually added ${nodeTitleBase} node. Configure in Inspector.`,
       status: newNodeData.status || 'queued',
       config: newNodeData.config || {}, // Initialize config for new nodes
@@ -203,8 +203,8 @@ export default function LoomStudioPage() {
       const isFirstNode = currentNodes.length === 0 && !prevFlow?.workflowName;
       const newWorkflowName = prevFlow?.workflowName || "My Custom Flow";
 
-      if (isFirstNode && !prevFlow?.workflowName) {
-        addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started by user adding a node.`);
+      if (isFirstNode) { // Check if it's genuinely the first node for a new flow
+        addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started by user adding a node: "${nodeWithIdAndStatus.title}".`);
         addTimelineEvent({ type: 'workflow_start', message: `Custom workflow "${newWorkflowName}" started.`});
       }
 
@@ -242,7 +242,7 @@ export default function LoomStudioPage() {
       return { ...prevFlow, nodes: newNodes };
     });
 
-    setSelectedNode(updatedNode);
+    setSelectedNode(updatedNode); // Keep the updated node selected
 
     toast({
       title: "Node Updated",
@@ -472,14 +472,14 @@ export default function LoomStudioPage() {
         ) : (
           <>
             <div className={`fixed inset-y-0 left-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.palette ? 'translate-x-0' : '-translate-x-full'}`}>
-              {panelVisibility.palette && <PalettePanel className="h-full p-1" onClose={() => togglePanel('palette')} isMobile={isMobile} />}
+              {panelVisibility.palette && <PalettePanel className="h-full" onClose={() => togglePanel('palette')} isMobile={isMobile} />}
             </div>
 
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.inspector ? 'translate-x-0' : 'translate-x-full'}`}>
               {panelVisibility.inspector &&
                 <InspectorPanel
                   key={selectedNode ? `inspector-mobile-${selectedNode.id}` : 'inspector-mobile-no-node'}
-                  className="h-full p-1 overflow-y-auto"
+                  className="h-full overflow-y-auto" 
                   onClose={() => togglePanel('inspector')}
                   selectedNode={selectedNode}
                   onNodeUpdate={handleNodeUpdate}
@@ -490,15 +490,15 @@ export default function LoomStudioPage() {
             </div>
 
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
-              {panelVisibility.agentHub && <AgentHubPanel className="h-full p-1" onClose={() => togglePanel('agentHub')} isMobile={isMobile} addConsoleMessage={addConsoleMessage} addTimelineEvent={addTimelineEvent} />}
+              {panelVisibility.agentHub && <AgentHubPanel className="h-full" onClose={() => togglePanel('agentHub')} isMobile={isMobile} addConsoleMessage={addConsoleMessage} addTimelineEvent={addTimelineEvent} />}
             </div>
 
             <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
-              {panelVisibility.timeline && <TimelinePanel className="h-full p-1" onClose={() => togglePanel('timeline')} events={timelineEvents} isMobile={isMobile} />}
+              {panelVisibility.timeline && <TimelinePanel className="h-full" onClose={() => togglePanel('timeline')} events={timelineEvents} isMobile={isMobile} />}
             </div>
 
             <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
-              {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} messages={consoleMessages.filter(msg => consoleFilters[msg.type])} filters={consoleFilters} onToggleFilter={toggleConsoleFilter} onClearConsole={handleClearConsole} isMobile={isMobile} />}
+              {panelVisibility.console && <ConsolePanel className="h-full" onClose={() => togglePanel('console')} messages={consoleMessages.filter(msg => consoleFilters[msg.type])} filters={consoleFilters} onToggleFilter={toggleConsoleFilter} onClearConsole={handleClearConsole} isMobile={isMobile} />}
             </div>
 
             {anyMobilePanelOpen && (
