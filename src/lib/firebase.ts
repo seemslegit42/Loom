@@ -2,6 +2,7 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseOptions, type FirebaseApp } from 'firebase/app';
 import { getAnalytics, type Analytics } from "firebase/analytics";
+import { getFirestore, type Firestore } from "firebase/firestore"; // Added Firestore import
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -27,12 +28,11 @@ if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
   analytics = getAnalytics(firebaseApp);
 }
 
-export { firebaseApp, analytics };
+// Initialize Firestore
+const db: Firestore = getFirestore(firebaseApp);
+
+export { firebaseApp, analytics, db }; // Export db
 
 // Example for later use (e.g., Authentication)
 // import { getAuth } from "firebase/auth";
 // export const auth = getAuth(firebaseApp);
-
-// Example for later use (e.g., Firestore)
-// import { getFirestore } from "firebase/firestore";
-// export const db = getFirestore(firebaseApp);
