@@ -16,7 +16,7 @@ import type { WorkflowNodeData, NodeStatus } from '@/components/workflow/workflo
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
-import { AlertCircle, Globe } from 'lucide-react'; 
+import { AlertCircle, Globe } from 'lucide-react';
 import { summarizeWebpage, type SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
 
 
@@ -90,17 +90,17 @@ export default function LoomStudioPage() {
     if (!nodes || nodes.length === 0 || !generatedFlow?.workflowName) return;
 
     const workflowName = generatedFlow.workflowName;
-    let currentStatuses: Record<string, NodeStatus> = {}; 
-    
-    const initialExecutionStatus = { ...nodeExecutionStatus }; 
+    let currentStatuses: Record<string, NodeStatus> = {};
+
+    const initialExecutionStatus = { ...nodeExecutionStatus };
     nodes.forEach(node => {
-      initialExecutionStatus[node.id] = 'queued'; 
+      initialExecutionStatus[node.id] = node.status || 'queued';
     });
     setNodeExecutionStatus(initialExecutionStatus);
 
-    setTimelineEvents([]); 
+    setTimelineEvents([]);
     let currentDelay = 0;
-    let maxDelay = 0; 
+    let maxDelay = 0;
 
     addConsoleMessage('info', `Simulating execution for AI-generated workflow: "${workflowName}".`);
     addTimelineEvent({
@@ -112,33 +112,33 @@ export default function LoomStudioPage() {
       const nodeId = node.id;
       const nodeTitle = node.title;
 
-      currentDelay += 500; 
+      currentDelay += 500;
       setTimeout(() => {
-        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) queued.`);
-        addTimelineEvent({ nodeId, nodeTitle, type: 'node_queued', message: `Node "${nodeTitle}" queued.` });
+        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) AI simulation queued.`);
+        addTimelineEvent({ nodeId, nodeTitle, type: 'node_queued', message: `Node "${nodeTitle}" AI simulation queued.` });
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'queued' }));
         currentStatuses[nodeId] = 'queued';
       }, currentDelay);
 
-      currentDelay += 1000; 
+      currentDelay += 1000;
       setTimeout(() => {
-        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) running.`);
-        addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" running.` });
+        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) AI simulation running.`);
+        addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" AI simulation running.` });
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
         currentStatuses[nodeId] = 'running';
       }, currentDelay);
 
-      currentDelay += 1500 + Math.random() * 1000; 
+      currentDelay += 1500 + Math.random() * 1000;
       setTimeout(() => {
-        const success = Math.random() > 0.1; 
+        const success = Math.random() > 0.1;
         if (success) {
-          addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) completed.`);
-          addTimelineEvent({ nodeId, nodeTitle, type: 'node_completed', message: `Node "${nodeTitle}" completed.` });
+          addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) AI simulation completed.`);
+          addTimelineEvent({ nodeId, nodeTitle, type: 'node_completed', message: `Node "${nodeTitle}" AI simulation completed.` });
           setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'completed' }));
           currentStatuses[nodeId] = 'completed';
         } else {
-          addConsoleMessage('error', `Node "${nodeTitle}" (ID: ${nodeId}) failed.`);
-          addTimelineEvent({ nodeId, nodeTitle, type: 'node_failed', message: `Node "${nodeTitle}" failed simulation.` });
+          addConsoleMessage('error', `Node "${nodeTitle}" (ID: ${nodeId}) AI simulation failed.`);
+          addTimelineEvent({ nodeId, nodeTitle, type: 'node_failed', message: `Node "${nodeTitle}" AI simulation failed.` });
           setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'failed' }));
           currentStatuses[nodeId] = 'failed';
         }
@@ -155,13 +155,13 @@ export default function LoomStudioPage() {
           addConsoleMessage('info', `Workflow "${workflowName}" AI simulation completed successfully.`);
           addTimelineEvent({ type: 'workflow_completed', message: `Workflow "${workflowName}" AI simulation completed successfully.`});
       }
-    }, maxDelay + 500); 
+    }, maxDelay + 500);
   };
 
 
   const handleFlowGenerated = (data: GenerateFlowFormState) => {
-    setGeneratedFlow(data); 
-    setSelectedNode(null); 
+    setGeneratedFlow(data);
+    setSelectedNode(null);
 
     if (data.error) {
       addConsoleMessage('error', `Failed to generate flow: ${data.message}`);
@@ -172,13 +172,13 @@ export default function LoomStudioPage() {
         addConsoleMessage('info', `Flow "${data.workflowName}" generated by AI with ${data.nodes.length} steps. Starting simulation...`);
         const initialStatuses: Record<string, NodeStatus> = {};
         data.nodes.forEach(node => {
-          initialStatuses[node.id] = node.status || 'queued'; 
+          initialStatuses[node.id] = node.status || 'queued';
         });
-        setNodeExecutionStatus(initialStatuses); 
+        setNodeExecutionStatus(initialStatuses);
         simulateFlowExecution(data.nodes);
       } else {
          addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled Flow'}" generated by AI but contained no actionable steps.`);
-         setTimelineEvents([]); 
+         setTimelineEvents([]);
          setNodeExecutionStatus({});
       }
     }
@@ -188,22 +188,22 @@ export default function LoomStudioPage() {
     const uniqueIndex = Date.now();
     const nodeTitleBase = newNodeData.title || 'Manual Node';
     const nodeId = generateNodeId('manual', nodeTitleBase, uniqueIndex);
-    
+
     const nodeWithIdAndStatus: WorkflowNodeData = {
       ...newNodeData,
       id: nodeId,
-      title: nodeTitleBase, 
+      title: nodeTitleBase,
       description: newNodeData.description || `Manually added ${nodeTitleBase} node. Configure in Inspector.`,
       status: newNodeData.status || 'queued',
       config: newNodeData.config || {}, // Initialize config for new nodes
     };
-    
+
     setGeneratedFlow(prevFlow => {
       const currentNodes = prevFlow?.nodes || [];
       const isFirstNode = currentNodes.length === 0 && !prevFlow?.workflowName;
       const newWorkflowName = prevFlow?.workflowName || "My Custom Flow";
 
-      if (isFirstNode) { 
+      if (isFirstNode && !prevFlow?.workflowName) {
         addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started by user adding a node.`);
         addTimelineEvent({ type: 'workflow_start', message: `Custom workflow "${newWorkflowName}" started.`});
       }
@@ -221,7 +221,7 @@ export default function LoomStudioPage() {
     addTimelineEvent({
       nodeId: nodeWithIdAndStatus.id,
       nodeTitle: nodeWithIdAndStatus.title,
-      type: 'node_queued', 
+      type: 'node_queued',
       message: `Manual Node "${nodeWithIdAndStatus.title}" added and queued.`
     });
   };
@@ -241,26 +241,26 @@ export default function LoomStudioPage() {
       const newNodes = prevFlow.nodes.map(n => (n.id === updatedNode.id ? updatedNode : n));
       return { ...prevFlow, nodes: newNodes };
     });
-    
-    setSelectedNode(updatedNode); 
-    
+
+    setSelectedNode(updatedNode);
+
     toast({
       title: "Node Updated",
       description: `Node "${updatedNode.title}" has been saved.`,
     });
     addConsoleMessage('info', `Node "${updatedNode.title}" (ID: ${updatedNode.id}) updated.`);
-    
+
     const oldStatus = nodeExecutionStatus[updatedNode.id];
     if (updatedNode.status && oldStatus !== updatedNode.status) {
       setNodeExecutionStatus(prev => ({...prev, [updatedNode.id]: updatedNode.status! }));
-      
-      let eventType: TimelineEvent['type'] = 'info'; 
+
+      let eventType: TimelineEvent['type'] = 'info';
       switch(updatedNode.status) {
         case 'completed': eventType = 'node_completed'; break;
         case 'running': eventType = 'node_running'; break;
         case 'failed': eventType = 'node_failed'; break;
         case 'queued': eventType = 'node_queued'; break;
-        default: eventType = 'info'; break; 
+        default: eventType = 'info'; break;
       }
 
       addTimelineEvent({
@@ -296,7 +296,7 @@ export default function LoomStudioPage() {
 
       try {
         const result = await summarizeWebpage({ url });
-        
+
         const updatedNodeData: WorkflowNodeData = {
           ...nodeToRun,
           config: { ...nodeToRun.config, output: result },
@@ -332,7 +332,7 @@ export default function LoomStudioPage() {
         }));
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'failed' }));
         if (selectedNode?.id === nodeId) setSelectedNode(updatedNodeData);
-        
+
         addConsoleMessage('error', `Node "${nodeToRun.title}" (Web Summarizer) crashed: ${errorMessage}`);
         addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_failed', message: `Execution crashed: ${errorMessage.substring(0,100)}...` });
         toast({ title: "Node Execution Crashed", description: errorMessage, variant: "destructive" });
@@ -351,27 +351,30 @@ export default function LoomStudioPage() {
   const togglePanel = (panel: keyof PanelVisibility) => {
     setPanelVisibility(prev => {
       const newState = { ...prev };
-      const currentlyOpening = !prev[panel]; 
+      const currentlyOpening = !prev[panel];
 
       if (isMobile) {
-        if (prev[panel] && !currentlyOpening) { 
+        // If currently trying to open this panel
+        if (currentlyOpening) {
+          // Close all other panels
+          (Object.keys(newState) as Array<keyof PanelVisibility>).forEach(key => {
+            if (key !== panel) {
+              newState[key] = false;
+            }
+          });
+          newState[panel] = true; // Open the target panel
+        } else {
+          // If trying to close the currently open panel
           newState[panel] = false;
-        } else { 
-          newState.palette = false;
-          newState.inspector = false;
-          newState.timeline = false;
-          newState.console = false;
-          newState.agentHub = false;
-          if (currentlyOpening) { 
-            newState[panel] = true;
-          }
         }
       } else {
-        newState[panel] = !prev[panel]; 
+        // Desktop behavior: just toggle
+        newState[panel] = !prev[panel];
       }
       return newState;
     });
   };
+
 
   const closeAllMobilePanels = () => {
     if (isMobile) {
@@ -437,22 +440,22 @@ export default function LoomStudioPage() {
             )}
             <div className="absolute bottom-4 left-4 right-4 flex gap-4 z-10">
               {panelVisibility.timeline && (
-                <TimelinePanel 
-                  className="flex-1 min-w-[300px]" 
-                  onClose={() => togglePanel('timeline')} 
+                <TimelinePanel
+                  className="flex-1 min-w-[300px]"
+                  onClose={() => togglePanel('timeline')}
                   events={timelineEvents}
-                  isMobile={isMobile} 
+                  isMobile={isMobile}
                 />
               )}
               {panelVisibility.console && (
-                <ConsolePanel 
-                  className="flex-1 min-w-[300px]" 
+                <ConsolePanel
+                  className="flex-1 min-w-[300px]"
                   onClose={() => togglePanel('console')}
                   messages={consoleMessages.filter(msg => consoleFilters[msg.type])}
                   filters={consoleFilters}
                   onToggleFilter={toggleConsoleFilter}
                   onClearConsole={handleClearConsole}
-                  isMobile={isMobile} 
+                  isMobile={isMobile}
                 />
               )}
             </div>
@@ -473,19 +476,19 @@ export default function LoomStudioPage() {
             </div>
 
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.inspector ? 'translate-x-0' : 'translate-x-full'}`}>
-              {panelVisibility.inspector && 
-                <InspectorPanel 
-                  key={selectedNode ? `inspector-mobile-${selectedNode.id}` : 'inspector-mobile-no-node'} 
-                  className="h-full p-1 overflow-y-auto" 
-                  onClose={() => togglePanel('inspector')} 
-                  selectedNode={selectedNode} 
-                  onNodeUpdate={handleNodeUpdate} 
-                  isMobile={isMobile} 
+              {panelVisibility.inspector &&
+                <InspectorPanel
+                  key={selectedNode ? `inspector-mobile-${selectedNode.id}` : 'inspector-mobile-no-node'}
+                  className="h-full p-1 overflow-y-auto"
+                  onClose={() => togglePanel('inspector')}
+                  selectedNode={selectedNode}
+                  onNodeUpdate={handleNodeUpdate}
+                  isMobile={isMobile}
                   onRunNode={handleRunNode}
                   isNodeRunning={isNodeRunning}
                 />}
             </div>
-            
+
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
               {panelVisibility.agentHub && <AgentHubPanel className="h-full p-1" onClose={() => togglePanel('agentHub')} isMobile={isMobile} addConsoleMessage={addConsoleMessage} addTimelineEvent={addTimelineEvent} />}
             </div>
@@ -497,7 +500,7 @@ export default function LoomStudioPage() {
             <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
               {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} messages={consoleMessages.filter(msg => consoleFilters[msg.type])} filters={consoleFilters} onToggleFilter={toggleConsoleFilter} onClearConsole={handleClearConsole} isMobile={isMobile} />}
             </div>
-            
+
             {anyMobilePanelOpen && (
               <div
                 className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"

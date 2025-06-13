@@ -21,11 +21,11 @@ interface TopBarProps {
   panelVisibility: PanelVisibility;
   togglePanel: (panel: keyof PanelVisibility) => void;
   isMobile: boolean;
-  anyMobilePanelOpen: boolean;
+  anyMobilePanelOpen: boolean; // New prop
 }
 
 export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen }: TopBarProps) {
-  const showAiForm = !isMobile || !anyMobilePanelOpen;
+  const showAiForm = !isMobile || !anyMobilePanelOpen; // Condition to show AI form
   const { toast } = useToast();
 
   const handleComingSoon = (featureName: string) => {
