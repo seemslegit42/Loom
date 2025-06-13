@@ -59,7 +59,7 @@ const formatDisplayValue = (value: string = '') => {
 
 export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowNodeProps) {
   const { title, type, status = 'unknown', description, agentName } = node;
-  const currentTypeIcon = typeIcons[type] || typeIcons.custom; // Default to custom if type somehow unknown
+  const currentTypeIcon = typeIcons[type] || typeIcons.custom; 
   const currentStatusIcon = statusIcons[status] || statusIcons.unknown;
 
   const handleNodeClick = () => {
