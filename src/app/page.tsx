@@ -16,6 +16,7 @@ import type { WorkflowNodeData, NodeStatus } from '@/components/workflow/workflo
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
+import { AlertCircle } from 'lucide-react'; // For WebpageSummarizerForm
 
 export interface PanelVisibility {
   palette: boolean;
@@ -90,7 +91,7 @@ export default function LoomStudioPage() {
     let currentStatuses: Record<string, NodeStatus> = {};
     
     setTimelineEvents([]); 
-    setNodeExecutionStatus({}); 
+    // setNodeExecutionStatus({}); // Don't clear here, preserve manual/AI statuses
     let currentDelay = 0;
 
     addConsoleMessage('info', `Simulating execution for workflow: "${workflowName}".`);
@@ -181,7 +182,7 @@ export default function LoomStudioPage() {
     const nodeWithIdAndStatus: WorkflowNodeData = {
       ...newNodeData,
       id: nodeId,
-      title: nodeTitleBase, // Use the base title directly, ID ensures uniqueness
+      title: nodeTitleBase, 
       status: newNodeData.status || 'queued',
     };
     
@@ -190,15 +191,15 @@ export default function LoomStudioPage() {
       const isFirstNode = currentNodes.length === 0;
       const newWorkflowName = prevFlow?.workflowName || "My Custom Flow";
 
-      if (isFirstNode) {
+      if (isFirstNode && !prevFlow?.workflowName) { // only log workflow start if it's a truly new flow
         addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started by user adding a node.`);
         addTimelineEvent({ type: 'workflow_start', message: `Custom workflow "${newWorkflowName}" started.`});
       }
 
       return {
-        ...(prevFlow || { message: "Node added to canvas.", userInput: "Custom flow", error: false, workflowName: newWorkflowName }),
+        ...(prevFlow || { message: "Node added to canvas.", userInput: "Custom flow", error: false }),
         nodes: [...currentNodes, nodeWithIdAndStatus],
-        workflowName: newWorkflowName, // Ensure workflowName is set for the new flow
+        workflowName: newWorkflowName,
       };
     });
 
@@ -223,13 +224,13 @@ export default function LoomStudioPage() {
   };
 
   const handleNodeUpdate = (updatedNode: WorkflowNodeData) => {
-    setGeneratedFlow(prevFlow => {
+     setGeneratedFlow(prevFlow => {
       if (!prevFlow || !prevFlow.nodes) return prevFlow;
       const newNodes = prevFlow.nodes.map(n => (n.id === updatedNode.id ? updatedNode : n));
       return { ...prevFlow, nodes: newNodes };
     });
     
-    setSelectedNode(updatedNode); 
+    setSelectedNode(updatedNode); // Ensure inspector panel uses the updated node
     
     toast({
       title: "Node Updated",
@@ -367,9 +368,11 @@ export default function LoomStudioPage() {
             </div>
             {panelVisibility.agentHub && (
               <AgentHubPanel
-                 className="absolute bottom-[calc(250px+2rem)] right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_250px_-_theme(spacing.12))]"
+                className="absolute bottom-[calc(250px+2rem)] right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_250px_-_theme(spacing.12))]"
                 onClose={() => togglePanel('agentHub')}
                 isMobile={isMobile}
+                addConsoleMessage={addConsoleMessage}
+                addTimelineEvent={addTimelineEvent}
               />
             )}
           </>
@@ -385,7 +388,7 @@ export default function LoomStudioPage() {
             </div>
             
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
-              {panelVisibility.agentHub && <AgentHubPanel className="h-full p-1" onClose={() => togglePanel('agentHub')} isMobile={isMobile} />}
+              {panelVisibility.agentHub && <AgentHubPanel className="h-full p-1" onClose={() => togglePanel('agentHub')} isMobile={isMobile} addConsoleMessage={addConsoleMessage} addTimelineEvent={addTimelineEvent} />}
             </div>
 
             {/* Mobile Bottom Panels */}
