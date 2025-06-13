@@ -146,3 +146,4 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
     </header>
   );
 }
+
