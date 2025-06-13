@@ -35,7 +35,7 @@ const summarizePrompt = ai.definePrompt({
   tools: [fetchUrlContentTool],
   prompt: `You are a helpful AI assistant that summarizes webpages.
   1. Use the 'fetchUrlContentTool' to get the text content of the webpage at the given URL: {{{url}}}.
-  2. If the tool returns an error or empty content, set the 'error' field in your output and provide a brief explanation. Do not attempt to summarize.
+  2. If the tool returns an error or empty content, set the 'error' field in your output and provide a brief explanation. Do not attempt to summarize and ensure the 'summary' field is an empty string.
   3. If you receive content, provide a concise summary of the text.
   4. Ensure your output includes the original URL and the summary.
   `,
@@ -69,7 +69,7 @@ const summarizeWebpageFlow = ai.defineFlow(
         if (firstCandidate.finishReason !== 'STOP' && firstCandidate.finishMessage) {
             errorMessage = `LLM generation incomplete: ${firstCandidate.finishMessage} (Reason: ${firstCandidate.finishReason})`;
         } else if (firstCandidate.blocked && firstCandidate.blockedMessage) {
-             errorMessage = `LLM response blocked: ${firstCandidate.blockedMessage}`;
+             errorMessage = `LLM response blocked by safety settings or other policy: ${firstCandidate.blockedMessage}`;
         }
       }
       return {
@@ -82,7 +82,7 @@ const summarizeWebpageFlow = ai.defineFlow(
     // If the tool call itself returned an error that the LLM decided to put in the 'error' field based on prompt instructions
     if (output.error) {
         return {
-            summary: '',
+            summary: '', // Ensure summary is empty as per prompt instruction
             originalUrl: input.url,
             error: output.error,
         };
@@ -98,6 +98,7 @@ const summarizeWebpageFlow = ai.defineFlow(
         };
     }
     
-    return output;
+    return output; // Contains summary and originalUrl, error will be undefined if all went well.
   }
 );
+
