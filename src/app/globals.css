@@ -4,91 +4,92 @@
 
 @layer base {
   :root {
-    --background: 220 20% 7%; /* Dark cool gray */
-    --foreground: 220 10% 95%; /* Very light cool gray */
+    /* PRD Theme Colors */
+    --background: 0 0% 7%; /* #121212 Dark Gray */
+    --foreground: 0 0% 95%; /* Light Gray for text */
 
-    --card: 220 18% 11%; /* Slightly lighter dark cool gray for cards */
-    --card-foreground: 220 10% 95%;
+    --primary: 271 93% 75%; /* #BB86FC Light Purple */
+    --primary-foreground: 270 50% 10%; /* Dark text on primary for contrast */
 
-    --popover: 220 18% 9%; /* Slightly darker than card for popovers */
-    --popover-foreground: 220 10% 95%;
-
-    --primary: 230 90% 70%; /* Vibrant, slightly softer blue/purple */
-    --primary-foreground: 230 20% 10%; /* Dark text on primary */
-
-    --secondary: 220 15% 15%; /* For less prominent elements */
-    --secondary-foreground: 220 10% 80%;
-
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 55%; /* Softer text */
-
-    --accent: 330 85% 60%; /* Vibrant pink/magenta */
+    --accent: 337 77% 48%; /* #D81B60 Bright Pink */
     --accent-foreground: 0 0% 98%; /* Light text on accent */
 
-    --destructive: 0 70% 55%; /* A slightly less harsh red */
+    /* Derived Colors */
+    --card: 0 0% 10%; /* Slightly lighter than background */
+    --card-foreground: 0 0% 95%; /* Same as global foreground */
+
+    --popover: 0 0% 9%; /* Slightly darker than card or same as card for popovers */
+    --popover-foreground: 0 0% 95%; /* Same as global foreground */
+
+    --secondary: 271 30% 35%; /* A muted, darker purple for secondary elements */
+    --secondary-foreground: 271 80% 90%; /* Light text on secondary */
+
+    --muted: 0 0% 18%; /* Darker gray for muted elements */
+    --muted-foreground: 0 0% 65%; /* Softer text for muted */
+
+    --destructive: 0 70% 55%; /* Red for destructive actions */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 15% 25%; /* Subtle border for dark theme */
-    --input: 220 15% 18%; /* Input background */
-    --ring: 230 80% 60%; /* For focus rings, related to primary */
+    --border: 0 0% 15%; /* Subtle border */
+    --input: 0 0% 12%; /* Input background, distinct from card */
+    --ring: 271 80% 65%; /* Focus ring, related to primary */
 
     --radius: 0.5rem;
 
     /* Chart colors - harmonized with new palette */
-    --chart-1: 230 70% 75%; /* Lighter version of new primary */
-    --chart-2: 150 60% 50%; /* A slightly cooler, more modern green */
-    --chart-3: 30 80% 60%;  /* Orange - adjusted lightness */
-    --chart-4: 50 85% 65%;  /* Yellow - adjusted lightness */
-    --chart-5: 330 70% 65%; /* Lighter version of new accent */
-
+    --chart-1: 271 93% 75%; /* Primary */
+    --chart-2: 337 77% 48%; /* Accent */
+    --chart-3: 200 80% 60%;  /* Contrasting Blue */
+    --chart-4: 150 70% 50%;  /* Contrasting Green/Teal */
+    --chart-5: 50 85% 65%;   /* Contrasting Yellow/Gold */
 
     /* Sidebar variables themed for consistency */
-    --sidebar-background: 220 18% 9%; /* Similar to popover */
-    --sidebar-foreground: 220 10% 95%;
-    --sidebar-primary: 230 90% 70%; /* Same as main primary */
-    --sidebar-primary-foreground: 230 20% 10%; 
-    --sidebar-accent: 330 85% 60%; /* Same as main accent */
+    --sidebar-background: 0 0% 10%; /* Using card color */
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 271 93% 75%;
+    --sidebar-primary-foreground: 270 50% 10%; 
+    --sidebar-accent: 337 77% 48%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 15% 22%; /* Slightly different from main border if needed */
-    --sidebar-ring: 230 80% 60%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 271 80% 65%;
   }
 
   .dark {
     /* Dark theme is default, so .dark can mirror :root */
-    --background: 220 20% 7%;
-    --foreground: 220 10% 95%;
-    --card: 220 18% 11%;
-    --card-foreground: 220 10% 95%;
-    --popover: 220 18% 9%;
-    --popover-foreground: 220 10% 95%;
-    --primary: 230 90% 70%;
-    --primary-foreground: 230 20% 10%;
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 220 10% 80%;
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 55%;
-    --accent: 330 85% 60%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 271 93% 75%;
+    --primary-foreground: 270 50% 10%;
+    --secondary: 271 30% 35%;
+    --secondary-foreground: 271 80% 90%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 337 77% 48%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 65% 50%; /* Darker red for dark mode */
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 15% 25%;
-    --input: 220 15% 18%;
-    --ring: 230 80% 60%;
+    --border: 0 0% 15%;
+    --input: 0 0% 12%;
+    --ring: 271 80% 65%;
     
-    --chart-1: 230 70% 75%;
-    --chart-2: 150 60% 50%;
-    --chart-3: 30 80% 60%;
-    --chart-4: 50 85% 65%;
-    --chart-5: 330 70% 65%;
+    --chart-1: 271 93% 75%;
+    --chart-2: 337 77% 48%;
+    --chart-3: 200 80% 60%;
+    --chart-4: 150 70% 50%;
+    --chart-5: 337 70% 65%; /* Corrected one from above */
 
-    --sidebar-background: 220 18% 9%;
-    --sidebar-foreground: 220 10% 95%;
-    --sidebar-primary: 230 90% 70%;
-    --sidebar-primary-foreground: 230 20% 10%;
-    --sidebar-accent: 330 85% 60%;
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 271 93% 75%;
+    --sidebar-primary-foreground: 270 50% 10%;
+    --sidebar-accent: 337 77% 48%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 15% 22%;
-    --sidebar-ring: 230 80% 60%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 271 80% 65%;
   }
 }
 
@@ -98,6 +99,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Removed explicit font-family here to let tailwind.config.ts + font-body class rule */
   }
 }
 
