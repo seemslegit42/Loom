@@ -1,7 +1,7 @@
 
 // src/lib/firebase.ts
-import { initializeApp, getApps, getApp, type FirebaseOptions } from 'firebase/app';
-// import { getAnalytics } from "firebase/analytics"; // Optional: if you want to use Analytics
+import { initializeApp, getApps, getApp, type FirebaseOptions, type FirebaseApp } from 'firebase/app';
+import { getAnalytics, type Analytics } from "firebase/analytics";
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,25 +10,24 @@ const firebaseConfig: FirebaseOptions = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
-let firebaseApp;
+let firebaseApp: FirebaseApp;
 if (!getApps().length) {
   firebaseApp = initializeApp(firebaseConfig);
 } else {
   firebaseApp = getApp(); // if already initialized, use that one
 }
 
-// Optional: Initialize Analytics if measurementId is provided
-// let analytics;
-// if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
-//   analytics = getAnalytics(firebaseApp);
-// }
+// Initialize Analytics if measurementId is provided and in a browser environment
+let analytics: Analytics | undefined;
+if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
+  analytics = getAnalytics(firebaseApp);
+}
 
-export { firebaseApp };
-// export { firebaseApp, analytics }; // Uncomment if using analytics
+export { firebaseApp, analytics };
 
 // Example for later use (e.g., Authentication)
 // import { getAuth } from "firebase/auth";
