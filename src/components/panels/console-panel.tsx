@@ -1,20 +1,20 @@
+
 // src/components/panels/console-panel.tsx
 import { BasePanel } from './base-panel';
 import { Terminal, AlertCircle, Info } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+export interface ConsoleMessage {
+  type: 'info' | 'log' | 'warn' | 'error';
+  text: string;
+  timestamp: Date;
+}
+
 interface ConsolePanelProps {
   className?: string;
   onClose?: () => void;
+  messages: ConsoleMessage[];
 }
-
-const consoleMessages = [
-  { type: "info", message: "Loom Studio initialized. Version 1.0.0" },
-  { type: "log", message: "Agent 'DataCleaner' connected." },
-  { type: "log", message: "Executing workflow 'Customer Data Cleanup'..." },
-  { type: "warn", message: "API rate limit approaching for 'geocode_service'." },
-  { type: "error", message: "Failed to process record ID: 12345. Reason: Invalid email format." },
-];
 
 const getIconForType = (type: string) => {
   switch (type) {
@@ -34,7 +34,7 @@ const getTextColorForType = (type: string) => {
   }
 };
 
-export function ConsolePanel({ className, onClose }: ConsolePanelProps) {
+export function ConsolePanel({ className, onClose, messages }: ConsolePanelProps) {
   return (
     <BasePanel
       title="Console"
@@ -46,19 +46,29 @@ export function ConsolePanel({ className, onClose }: ConsolePanelProps) {
     >
       <ScrollArea className="h-full w-full">
         <div className="p-2 space-y-1">
-        {consoleMessages.map((msg, index) => (
+        {messages.length === 0 && (
+            <div className="flex items-start text-muted-foreground">
+                <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />
+                <span>Loom Studio initialized. Waiting for events...</span>
+            </div>
+        )}
+        {messages.map((msg, index) => (
           <div key={index} className={`flex items-start ${getTextColorForType(msg.type)}`}>
             {getIconForType(msg.type)}
-            <span className="whitespace-pre-wrap break-all">{`[${new Date().toLocaleTimeString()}] ${msg.message}`}</span>
+            <span className="whitespace-pre-wrap break-all">{`[${msg.timestamp.toLocaleTimeString()}] ${msg.text}`}</span>
           </div>
         ))}
-        <div className="flex items-start text-muted-foreground">
-          <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />
-          <span>&gt; Waiting for commands or output...</span>
-          <span className="animate-ping ml-1">_</span>
-        </div>
+        {messages.length > 0 && (
+          <div className="flex items-start text-muted-foreground pt-1 mt-1 border-t border-border/20">
+            <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />
+            <span>&gt; Listening for new events...</span>
+            <span className="animate-ping ml-1">_</span>
+          </div>
+        )}
         </div>
       </ScrollArea>
     </BasePanel>
   );
 }
+
+    

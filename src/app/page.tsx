@@ -9,7 +9,7 @@ import { CanvasZone } from '@/components/canvas/canvas-zone';
 import { PalettePanel } from '@/components/panels/palette-panel';
 import { InspectorPanel } from '@/components/panels/inspector-panel';
 import { TimelinePanel } from '@/components/panels/timeline-panel';
-import { ConsolePanel } from '@/components/panels/console-panel';
+import { ConsolePanel, type ConsoleMessage } from '@/components/panels/console-panel';
 import { AgentHubPanel } from '@/components/panels/agent-hub-panel';
 import type { GenerateFlowFormState } from '@/lib/actions/ai';
 import type { WorkflowNodeData } from '@/components/workflow/workflow-node';
@@ -34,8 +34,13 @@ export default function LoomStudioPage() {
     console: true,
     agentHub: true,
   });
+  const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
   const isMobile = useIsMobile();
   const { toast } = useToast();
+
+  const addConsoleMessage = (type: ConsoleMessage['type'], text: string) => {
+    setConsoleMessages(prev => [{ type, text, timestamp: new Date() }, ...prev.slice(0, 49)]);
+  };
 
   useEffect(() => {
     if (isMobile === undefined) return; // Wait for isMobile to be defined
@@ -63,9 +68,14 @@ export default function LoomStudioPage() {
   const handleFlowGenerated = (data: GenerateFlowFormState) => {
     setGeneratedFlow({
       ...data,
-      manualNodes: [], // Clear manual nodes when AI generates a new flow
+      manualNodes: [], 
     });
-    setSelectedNode(null); // Clear selected node when a new flow is generated
+    setSelectedNode(null); 
+    if (data.error) {
+      addConsoleMessage('error', `Failed to generate flow: ${data.message}`);
+    } else {
+      addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled'}" generated successfully.`);
+    }
   };
 
   const handleNodeDropped = (newNodeData: WorkflowNodeData) => {
@@ -76,11 +86,17 @@ export default function LoomStudioPage() {
       };
       return updatedFlow;
     });
-    setSelectedNode(newNodeData); // Select the newly dropped node
+    setSelectedNode(newNodeData); 
+    addConsoleMessage('log', `Node "${newNodeData.title}" added to canvas.`);
   };
 
   const handleNodeSelected = (node: WorkflowNodeData | null) => {
     setSelectedNode(node);
+    if (node) {
+      addConsoleMessage('log', `Node "${node.title}" selected.`);
+    } else {
+      addConsoleMessage('log', `Canvas selected (no node).`);
+    }
   };
 
   const handleNodeUpdate = (updatedNode: WorkflowNodeData) => {
@@ -90,7 +106,6 @@ export default function LoomStudioPage() {
       let newManualNodes = prevFlow.manualNodes || [];
       let newPromptSequence = prevFlow.promptSequence || [];
 
-      // Check if it's a manual node
       const manualNodeIndex = newManualNodes.findIndex(n => n.id === updatedNode.id);
       if (manualNodeIndex !== -1) {
         newManualNodes = [
@@ -99,21 +114,15 @@ export default function LoomStudioPage() {
           ...newManualNodes.slice(manualNodeIndex + 1),
         ];
       } else {
-        // Check if it's an AI-generated node (derived from promptSequence)
-        // AI Node IDs are like: `ai-node-${index}-${workflowName}`
         const aiNodeIdParts = updatedNode.id.split('-');
         if (aiNodeIdParts[0] === 'ai' && aiNodeIdParts[1] === 'node') {
           const index = parseInt(aiNodeIdParts[2], 10);
           if (!isNaN(index) && index < newPromptSequence.length) {
-            // For AI nodes, we primarily update the description from the prompt sequence
             newPromptSequence = [
               ...newPromptSequence.slice(0, index),
-              updatedNode.description, // Update the prompt string
+              updatedNode.description, 
               ...newPromptSequence.slice(index + 1),
             ];
-            // The title of AI nodes might still be derived in CanvasZone,
-            // but if we want to persist title changes too, we'd need a more complex state for AI nodes.
-            // For now, updating description is the main goal for AI nodes.
           }
         }
       }
@@ -122,6 +131,7 @@ export default function LoomStudioPage() {
         title: "Node Updated",
         description: `Node "${updatedNode.title}" has been saved.`,
       });
+      addConsoleMessage('info', `Node "${updatedNode.title}" updated.`);
 
       return {
         ...prevFlow,
@@ -129,7 +139,7 @@ export default function LoomStudioPage() {
         promptSequence: newPromptSequence,
       };
     });
-    setSelectedNode(updatedNode); // Keep the updated node selected
+    setSelectedNode(updatedNode); 
   };
 
 
@@ -139,7 +149,6 @@ export default function LoomStudioPage() {
       const currentlyOpening = !prev[panel];
 
       if (isMobile) {
-        // On mobile, opening one panel closes others
         if (currentlyOpening) {
           newState.palette = panel === 'palette';
           newState.inspector = panel === 'inspector';
@@ -147,11 +156,9 @@ export default function LoomStudioPage() {
           newState.console = panel === 'console';
           newState.agentHub = panel === 'agentHub';
         } else {
-          // If closing, just close that specific panel
           newState[panel] = false;
         }
       } else {
-        // Desktop behavior: toggle individually
         newState[panel] = !prev[panel];
       }
       return newState;
@@ -213,12 +220,16 @@ export default function LoomStudioPage() {
                 <TimelinePanel className="flex-1 min-w-[300px]" onClose={() => togglePanel('timeline')} />
               )}
               {panelVisibility.console && (
-                <ConsolePanel className="flex-1 min-w-[300px]" onClose={() => togglePanel('console')} />
+                <ConsolePanel 
+                  className="flex-1 min-w-[300px]" 
+                  onClose={() => togglePanel('console')}
+                  messages={consoleMessages} 
+                />
               )}
             </div>
             {panelVisibility.agentHub && (
               <AgentHubPanel
-                 className="absolute bottom-4 right-4 z-10 max-h-[calc(50vh-2.5rem-env(safe-area-inset-bottom))]"
+                 className="absolute bottom-[calc(250px+2rem)] right-4 z-10 max-h-[calc(50vh-2.5rem-env(safe-area-inset-bottom)-250px-2rem)]" // Adjusted to stack above console/timeline
                 onClose={() => togglePanel('agentHub')}
               />
             )}
@@ -241,8 +252,8 @@ export default function LoomStudioPage() {
               {panelVisibility.timeline && <TimelinePanel className="h-full p-1" onClose={() => togglePanel('timeline')} />}
             </div>
 
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${ panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
-              {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} />}
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
+              {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} messages={consoleMessages} />}
             </div>
             
             {anyMobilePanelOpen && (
@@ -258,3 +269,5 @@ export default function LoomStudioPage() {
     </div>
   );
 }
+
+    
