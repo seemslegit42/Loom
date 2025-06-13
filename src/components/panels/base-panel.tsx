@@ -43,16 +43,24 @@ export function BasePanel({
   const handleMinimize = () => {
     if (!isMobile) {
       setIsMinimized(!isMinimized);
-      toast({ title: "Panel Action", description: `Panel "${title}" ${!isMinimized ? 'minimized' : 'restored'}.` });
+      toast({ 
+        title: "Panel Action", 
+        description: `Panel "${title}" ${!isMinimized ? 'minimized' : 'restored'}.` 
+      });
     } else {
-      // Minimize action not typically used in slide-over mobile panels
-      toast({ title: "Panel Action", description: `Minimize action is for desktop view.` });
+      toast({ 
+        title: "Panel Action", 
+        description: `Minimize action is for desktop view.` 
+      });
     }
   };
 
   const handleMaximize = () => {
     // Maximize could also be desktop-specific
-    toast({ title: "Panel Action", description: `Maximize action for panel "${title}" not yet implemented.` });
+    toast({ 
+      title: "Panel Action", 
+      description: `Maximize action for panel "${title}" not yet implemented.` 
+    });
   };
 
   return (
