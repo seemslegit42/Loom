@@ -1,4 +1,5 @@
 
+
 // src/app/page.tsx
 'use client';
 
@@ -155,6 +156,12 @@ export default function LoomStudioPage() {
     } else {
       addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled Flow'}" generated successfully with ${data.nodes?.length || 0} steps.`);
       if (data.nodes && data.nodes.length > 0 && data.workflowName) {
+        // Initialize nodeExecutionStatus from the generated nodes
+        const initialStatuses: Record<string, NodeStatus> = {};
+        data.nodes.forEach(node => {
+          initialStatuses[node.id] = node.status || 'queued';
+        });
+        setNodeExecutionStatus(initialStatuses);
         simulateFlowExecution(data.nodes);
       } else {
          setTimelineEvents([]); 
@@ -195,7 +202,7 @@ export default function LoomStudioPage() {
     addTimelineEvent({
       nodeId: nodeWithIdAndStatus.id,
       nodeTitle: nodeWithIdAndStatus.title,
-      type: 'node_queued',
+      type: 'node_queued', // Or map from nodeWithIdAndStatus.status
       message: `Manual Node "${nodeWithIdAndStatus.title}" added and queued.`
     });
   };
@@ -212,35 +219,37 @@ export default function LoomStudioPage() {
   const handleNodeUpdate = (updatedNode: WorkflowNodeData) => {
     setGeneratedFlow(prevFlow => {
       if (!prevFlow || !prevFlow.nodes) return prevFlow;
-
       const newNodes = prevFlow.nodes.map(n => (n.id === updatedNode.id ? updatedNode : n));
+      return { ...prevFlow, nodes: newNodes };
+    });
+    
+    setSelectedNode(updatedNode); 
+    
+    toast({
+      title: "Node Updated",
+      description: `Node "${updatedNode.title}" has been saved.`,
+    });
+    addConsoleMessage('info', `Node "${updatedNode.title}" (ID: ${updatedNode.id}) updated.`);
+    
+    const oldStatus = nodeExecutionStatus[updatedNode.id];
+    if (updatedNode.status && oldStatus !== updatedNode.status) {
+      setNodeExecutionStatus(prev => ({...prev, [updatedNode.id]: updatedNode.status! }));
       
-      toast({
-        title: "Node Updated",
-        description: `Node "${updatedNode.title}" has been saved.`,
-      });
-      addConsoleMessage('info', `Node "${updatedNode.title}" (ID: ${updatedNode.id}) updated.`);
-      
-      const oldStatus = nodeExecutionStatus[updatedNode.id];
-      if (updatedNode.status && oldStatus !== updatedNode.status) {
-        setNodeExecutionStatus(prev => ({...prev, [updatedNode.id]: updatedNode.status! }));
-        addTimelineEvent({
-          nodeId: updatedNode.id,
-          nodeTitle: updatedNode.title,
-          type: updatedNode.status === 'completed' ? 'node_completed' : 
-                updatedNode.status === 'running' ? 'node_running' :
-                updatedNode.status === 'failed' ? 'node_failed' :
-                'node_queued',
-          message: `Node "${updatedNode.title}" status updated to ${updatedNode.status}.`
-        });
+      let eventType: TimelineEvent['type'] = 'info'; // Default
+      switch(updatedNode.status) {
+        case 'completed': eventType = 'node_completed'; break;
+        case 'running': eventType = 'node_running'; break;
+        case 'failed': eventType = 'node_failed'; break;
+        case 'queued': eventType = 'node_queued'; break;
       }
 
-      return {
-        ...prevFlow,
-        nodes: newNodes,
-      };
-    });
-    setSelectedNode(updatedNode); 
+      addTimelineEvent({
+        nodeId: updatedNode.id,
+        nodeTitle: updatedNode.title,
+        type: eventType,
+        message: `Node "${updatedNode.title}" status updated to ${updatedNode.status}.`
+      });
+    }
   };
 
   const togglePanel = (panel: keyof PanelVisibility) => {

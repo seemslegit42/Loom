@@ -7,8 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import type { WorkflowNodeData } from '@/components/workflow/workflow-node';
+import type { WorkflowNodeData, NodeStatus } from '@/components/workflow/workflow-node';
 import { useState, useEffect } from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface InspectorPanelProps {
   className?: string;
@@ -18,26 +25,32 @@ interface InspectorPanelProps {
   isMobile?: boolean;
 }
 
+const allNodeStatuses: NodeStatus[] = ['queued', 'running', 'completed', 'failed', 'unknown'];
+
 export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate, isMobile }: InspectorPanelProps) {
   const [editableTitle, setEditableTitle] = useState('');
   const [editableDescription, setEditableDescription] = useState('');
+  const [editableStatus, setEditableStatus] = useState<NodeStatus | undefined>(undefined);
 
   useEffect(() => {
     if (selectedNode) {
       setEditableTitle(selectedNode.title);
       setEditableDescription(selectedNode.description);
+      setEditableStatus(selectedNode.status || 'unknown');
     } else {
       setEditableTitle('');
       setEditableDescription('');
+      setEditableStatus(undefined);
     }
   }, [selectedNode]);
 
   const handleSaveChanges = () => {
-    if (selectedNode && onNodeUpdate) {
+    if (selectedNode && onNodeUpdate && editableStatus) {
       onNodeUpdate({
         ...selectedNode,
         title: editableTitle,
         description: editableDescription,
+        status: editableStatus,
       });
     }
   };
@@ -89,12 +102,21 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             <Label htmlFor="nodeStatus" className="text-xs flex items-center gap-1.5">
                 <Workflow className="h-3.5 w-3.5 text-primary/80"/> Status
             </Label>
-            <Input 
-              id="nodeStatus" 
-              value={formatDisplayValue(selectedNode.status)} 
-              className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" 
-              readOnly 
-            />
+            <Select
+              value={editableStatus}
+              onValueChange={(value: NodeStatus) => setEditableStatus(value)}
+            >
+              <SelectTrigger id="nodeStatus" className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {allNodeStatuses.map(status => (
+                  <SelectItem key={status} value={status}>
+                    {formatDisplayValue(status)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1">
             <Label htmlFor="nodeDescription" className="text-xs flex items-center gap-1.5">
