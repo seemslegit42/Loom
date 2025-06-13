@@ -88,11 +88,18 @@ export default function LoomStudioPage() {
     if (!nodes || nodes.length === 0 || !generatedFlow?.workflowName) return;
 
     const workflowName = generatedFlow.workflowName;
-    let currentStatuses: Record<string, NodeStatus> = {};
+    let currentStatuses: Record<string, NodeStatus> = {}; // Tracks statuses within this simulation run
     
+    // Preserve existing manual statuses, only update for nodes in this specific simulation
+    const initialExecutionStatus = { ...nodeExecutionStatus }; 
+    nodes.forEach(node => {
+      initialExecutionStatus[node.id] = 'queued'; // Set initial status for simulated nodes
+    });
+    setNodeExecutionStatus(initialExecutionStatus);
+
     setTimelineEvents([]); 
-    // setNodeExecutionStatus({}); // Don't clear here, preserve manual/AI statuses
     let currentDelay = 0;
+    let maxDelay = 0; // To schedule the final workflow status update
 
     addConsoleMessage('info', `Simulating execution for workflow: "${workflowName}".`);
     addTimelineEvent({
@@ -134,19 +141,21 @@ export default function LoomStudioPage() {
           setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'failed' }));
           currentStatuses[nodeId] = 'failed';
         }
-
-        if (Object.keys(currentStatuses).length === nodes.length) {
-            const workflowFailed = Object.values(currentStatuses).some(s => s === 'failed');
-            if (workflowFailed) {
-                addConsoleMessage('error', `Workflow "${workflowName}" finished with errors.`);
-                addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" finished with errors.`});
-            } else {
-                addConsoleMessage('info', `Workflow "${workflowName}" completed successfully.`);
-                addTimelineEvent({ type: 'workflow_completed', message: `Workflow "${workflowName}" completed successfully.`});
-            }
-        }
       }, currentDelay);
+      if (currentDelay > maxDelay) maxDelay = currentDelay;
     });
+
+    // Schedule the final workflow status update
+    setTimeout(() => {
+      const workflowFailed = Object.values(currentStatuses).some(s => s === 'failed');
+      if (workflowFailed) {
+          addConsoleMessage('error', `Workflow "${workflowName}" simulation finished with errors.`);
+          addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" simulation finished with errors.`});
+      } else {
+          addConsoleMessage('info', `Workflow "${workflowName}" simulation completed successfully.`);
+          addTimelineEvent({ type: 'workflow_completed', message: `Workflow "${workflowName}" simulation completed successfully.`});
+      }
+    }, maxDelay + 500); // Add a slight buffer after the last node
   };
 
 
@@ -157,17 +166,18 @@ export default function LoomStudioPage() {
     if (data.error) {
       addConsoleMessage('error', `Failed to generate flow: ${data.message}`);
       setTimelineEvents([]);
-      setNodeExecutionStatus({});
+      setNodeExecutionStatus({}); // Clear status on error
     } else {
-      addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled Flow'}" generated successfully with ${data.nodes?.length || 0} steps.`);
       if (data.nodes && data.nodes.length > 0 && data.workflowName) {
+        addConsoleMessage('info', `Flow "${data.workflowName}" generated successfully with ${data.nodes.length} steps. Starting simulation...`);
         const initialStatuses: Record<string, NodeStatus> = {};
         data.nodes.forEach(node => {
-          initialStatuses[node.id] = node.status || 'queued';
+          initialStatuses[node.id] = node.status || 'queued'; // AI nodes default to queued
         });
         setNodeExecutionStatus(initialStatuses); 
         simulateFlowExecution(data.nodes);
       } else {
+         addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled Flow'}" generated but contained no actionable steps.`);
          setTimelineEvents([]); 
          setNodeExecutionStatus({});
       }
@@ -188,10 +198,10 @@ export default function LoomStudioPage() {
     
     setGeneratedFlow(prevFlow => {
       const currentNodes = prevFlow?.nodes || [];
-      const isFirstNode = currentNodes.length === 0;
+      const isFirstNode = currentNodes.length === 0 && !prevFlow?.workflowName;
       const newWorkflowName = prevFlow?.workflowName || "My Custom Flow";
 
-      if (isFirstNode && !prevFlow?.workflowName) { // only log workflow start if it's a truly new flow
+      if (isFirstNode) { 
         addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started by user adding a node.`);
         addTimelineEvent({ type: 'workflow_start', message: `Custom workflow "${newWorkflowName}" started.`});
       }
@@ -230,7 +240,7 @@ export default function LoomStudioPage() {
       return { ...prevFlow, nodes: newNodes };
     });
     
-    setSelectedNode(updatedNode); // Ensure inspector panel uses the updated node
+    setSelectedNode(updatedNode); 
     
     toast({
       title: "Node Updated",
