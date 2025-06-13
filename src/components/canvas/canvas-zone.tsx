@@ -1,25 +1,27 @@
 
 // src/components/canvas/canvas-zone.tsx
 import { WorkflowNode, type WorkflowNodeData, type NodeType, type NodeStatus } from '@/components/workflow/workflow-node';
-import type { GenerateFlowFormState } from '@/lib/actions/ai';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BrainCircuit } from 'lucide-react';
 import type React from 'react';
 
 interface CanvasZoneProps {
-  generatedFlow: GenerateFlowFormState | null;
-  onNodeDropped: (nodeData: WorkflowNodeData) => void;
+  workflowName?: string; // Optional workflow name to display
+  nodes: WorkflowNodeData[]; // Unified list of nodes
+  onNodeDropped: (nodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus }) => void;
   selectedNode: WorkflowNodeData | null;
   onNodeSelected: (node: WorkflowNodeData | null) => void;
-  nodeExecutionStatus: Record<string, NodeStatus>;
+  nodeExecutionStatus: Record<string, NodeStatus>; // To ensure nodes reflect current status
 }
 
-const generateNodeIdFromFlow = (type: 'ai', workflowName: string, index: number | string): string => {
-  const safeWorkflowName = workflowName.replace(/\s+/g, '-').toLowerCase();
-  return `${type}-node-${safeWorkflowName}-${index}`;
-};
-
-export function CanvasZone({ generatedFlow, onNodeDropped, selectedNode, onNodeSelected, nodeExecutionStatus }: CanvasZoneProps) {
+export function CanvasZone({
+  workflowName,
+  nodes,
+  onNodeDropped,
+  selectedNode,
+  onNodeSelected,
+  nodeExecutionStatus
+}: CanvasZoneProps) {
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault(); 
   };
@@ -30,41 +32,25 @@ export function CanvasZone({ generatedFlow, onNodeDropped, selectedNode, onNodeS
     if (nodeInfo) {
       try {
         const { name, type } = JSON.parse(nodeInfo) as { name: string; type: NodeType };
-        // ID will be generated in LoomStudioPage's handleNodeDropped
-        // and status will be set there as well.
         const newNodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus } = {
           title: name,
           type: type,
           description: `User-added ${name} node. Consider providing a default description based on type.`,
           // status is set by parent to 'queued' initially
         };
-        onNodeDropped(newNodeData as WorkflowNodeData); 
+        onNodeDropped(newNodeData); 
       } catch (error) {
         console.error("Failed to parse dropped node data:", error);
       }
     }
   };
-
-  const aiNodes: WorkflowNodeData[] = generatedFlow?.promptSequence?.map((prompt, index) => {
-    const nodeId = generateNodeIdFromFlow('ai', generatedFlow.workflowName as string, index);
-    return {
-      id: nodeId,
-      title: `${generatedFlow.workflowName || 'AI Step'} ${index + 1}`,
-      description: prompt,
-      type: 'prompt', // This should ideally be more dynamic if AI nodes can be of different types
-      status: nodeExecutionStatus[nodeId] || 'queued', // Get status from execution map
-    };
-  }) || [];
-
-  const manualNodes: WorkflowNodeData[] = (generatedFlow?.manualNodes || []).map(node => ({
+  
+  const allNodes = nodes.map(node => ({
     ...node,
     status: nodeExecutionStatus[node.id] || node.status || 'queued', // Prioritize execution status map
   }));
-  
-  const allNodes = [...aiNodes, ...manualNodes];
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // If the click target is the ScrollArea itself (not a child like a WorkflowNode)
     if (e.target === e.currentTarget) {
       onNodeSelected(null);
     }
@@ -75,17 +61,18 @@ export function CanvasZone({ generatedFlow, onNodeDropped, selectedNode, onNodeS
       className="h-full w-full rounded-lg border border-dashed border-border/50 grid-background"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onClick={handleCanvasClick} // Add click handler to the ScrollArea
+      onClick={handleCanvasClick}
     >
       <div className="p-8 min-h-full">
-        {generatedFlow && generatedFlow.workflowName && (
+        {workflowName && (
           <div className="mb-8 p-4 bg-card/80 rounded-lg shadow backdrop-blur-md">
             <h2 className="text-xl font-headline mb-2 text-primary">
-              Workflow: {generatedFlow.workflowName || generatedFlow.userInput || "Untitled Flow"}
+              Workflow: {workflowName || "Untitled Flow"}
             </h2>
-            {generatedFlow.userInput && generatedFlow.workflowName !== generatedFlow.userInput && (
+            {/* Optional: Display original user input if available and different from name */}
+            {/* {generatedFlow.userInput && generatedFlow.workflowName !== generatedFlow.userInput && (
                 <p className="text-xs text-muted-foreground">Original prompt: {generatedFlow.userInput}</p>
-            )}
+            )} */}
           </div>
         )}
         {allNodes.length > 0 ? (
