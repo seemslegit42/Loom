@@ -3,26 +3,40 @@
 'use client';
 
 import { BasePanel } from './base-panel';
-import { ListOrdered, BarChart3, Bug } from 'lucide-react';
+import { ListOrdered, BarChart3, Bug, Workflow, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+
+export interface TimelineEvent {
+  id: string;
+  nodeId?: string;
+  nodeTitle?: string;
+  type: 'workflow_start' | 'node_queued' | 'node_running' | 'node_completed' | 'node_failed' | 'info';
+  message: string;
+  timestamp: Date;
+}
 
 interface TimelinePanelProps {
   className?: string;
   onClose?: () => void;
+  events: TimelineEvent[];
   isMobile?: boolean;
 }
 
-const timelineEvents = [
-  { time: "0.0s", event: "Workflow Started", details: "Trigger: Manual" },
-  { time: "0.1s", event: "Prompt Node 1 Queued", details: "Agent: Alpha" },
-  { time: "0.3s", event: "Prompt Node 1 Running", details: "Tokens: 150" },
-  { time: "1.2s", event: "Prompt Node 1 Completed", details: "Output: Short summary" },
-  { time: "1.3s", event: "Decision Node Queued", details: "Condition: Output length > 10" },
-];
+const getIconForEventType = (type: TimelineEvent['type']) => {
+  switch (type) {
+    case 'workflow_start': return <Workflow className="h-3.5 w-3.5 text-primary mr-2 shrink-0" />;
+    case 'node_queued': return <Clock className="h-3.5 w-3.5 text-blue-400 mr-2 shrink-0" />;
+    case 'node_running': return <Workflow className="h-3.5 w-3.5 text-yellow-400 mr-2 shrink-0 animate-pulse" />;
+    case 'node_completed': return <CheckCircle className="h-3.5 w-3.5 text-green-500 mr-2 shrink-0" />;
+    case 'node_failed': return <AlertTriangle className="h-3.5 w-3.5 text-destructive mr-2 shrink-0" />;
+    default: return <ListOrdered className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />;
+  }
+};
 
-export function TimelinePanel({ className, onClose, isMobile }: TimelinePanelProps) {
+export function TimelinePanel({ className, onClose, events, isMobile }: TimelinePanelProps) {
   const { toast } = useToast();
 
   const handleTokenUsage = () => {
@@ -47,22 +61,32 @@ export function TimelinePanel({ className, onClose, isMobile }: TimelinePanelPro
         <Button variant="ghost" size="sm" className="text-xs" onClick={handleDebugPath}><Bug className="mr-1 h-3 w-3"/>Debug Path</Button>
       </div>
       <ScrollArea className="h-[calc(100%-40px)] pr-2">
-        <ul className="space-y-2">
-          {timelineEvents.map((item, index) => (
-            <li key={index} className="text-xs p-2 rounded-md bg-card/50 border border-border/30">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-foreground/90">{item.event}</span>
-                <span className="text-muted-foreground">{item.time}</span>
-              </div>
-              <p className="text-muted-foreground/80 text-[0.7rem]">{item.details}</p>
-            </li>
-          ))}
-           <li className="text-xs p-2 rounded-md border border-dashed border-border/30 text-center text-muted-foreground">
-              Waiting for more events...
-            </li>
-        </ul>
+        {events.length === 0 ? (
+          <div className="text-xs p-2 rounded-md border border-dashed border-border/30 text-center text-muted-foreground">
+            No workflow events yet. Generate or interact with a flow.
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {events.map((item) => (
+              <li key={item.id} className="text-xs p-2 rounded-md bg-card/50 border border-border/30">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    {getIconForEventType(item.type)}
+                    <span className={cn(
+                      "font-medium text-foreground/90",
+                      item.type === 'node_failed' && "text-destructive"
+                    )}>
+                      {item.nodeTitle ? `Node: ${item.nodeTitle}` : item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                  </div>
+                  <span className="text-muted-foreground">{item.timestamp.toLocaleTimeString()}</span>
+                </div>
+                <p className="text-muted-foreground/80 text-[0.7rem] ml-[22px]">{item.message}</p>
+              </li>
+            ))}
+          </ul>
+        )}
       </ScrollArea>
     </BasePanel>
   );
 }
-
