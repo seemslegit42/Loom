@@ -27,7 +27,7 @@ interface WorkflowNodeProps {
 
 const statusIcons: Record<NodeStatus, React.ReactNode> = {
   queued: <Clock className="h-4 w-4 text-blue-400" />,
-  running: <Bot className="h-4 w-4 text-primary animate-pulse" />,
+  running: <Bot className="h-4 w-4 text-primary animate-pulse" />, // Icon can still pulse for header
   failed: <AlertTriangle className="h-4 w-4 text-destructive" />,
   completed: <CheckCircle className="h-4 w-4 text-green-500" />,
   unknown: <HelpCircle className="h-4 w-4 text-muted-foreground" />,
@@ -43,13 +43,24 @@ const typeIcons: Record<NodeType, React.ReactNode> = {
   custom: <SlidersHorizontal className="h-4 w-4 text-teal-400" />,
 };
 
-const statusColors: Record<string, string> = {
+// Styles for the Badge component
+const badgeStyles: Record<NodeStatus, string> = {
     queued: "bg-blue-500/20 text-blue-300 border-blue-500/50",
-    running: "bg-primary/20 text-primary border-primary/50 animate-pulse",
+    running: "bg-primary/20 text-primary border-primary/50", // Pulse removed from badge if card pulses
     failed: "bg-destructive/20 text-destructive border-destructive/50",
     completed: "bg-green-500/20 text-green-400 border-green-500/50",
     unknown: "bg-muted/20 text-muted-foreground border-muted/50",
 };
+
+// Styles for the Card component's border and overall animation
+const cardDynamicStyles: Record<NodeStatus, string> = {
+  queued: 'border-blue-500/60',
+  running: 'border-primary/60 animate-pulse', // Card itself pulses
+  failed: 'border-destructive/70', 
+  completed: 'border-green-500/60',
+  unknown: 'border-border', // Default card border from globals.css
+};
+
 
 const formatDisplayValue = (value: string = '') => {
   if (!value) return '';
@@ -72,7 +83,9 @@ export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowN
     <Card
       className={cn(
         'min-w-[250px] max-w-xs bg-card/80 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] cursor-pointer',
-        isSelected && 'ring-2 ring-primary shadow-primary/30',
+        'border-2', // Base border width for consistent appearance
+        cardDynamicStyles[status] || cardDynamicStyles.unknown,
+        isSelected && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30',
         className
       )}
       onClick={handleNodeClick}
@@ -95,10 +108,11 @@ export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowN
             <span>{agentName}</span>
           </div>
         )}
-        <Badge variant="outline" className={`mt-2 text-xs ${statusColors[status] || statusColors.unknown}`}>
+        <Badge variant="outline" className={`mt-2 text-xs ${badgeStyles[status] || badgeStyles.unknown}`}>
           {formatDisplayValue(status)}
         </Badge>
       </CardContent>
     </Card>
   );
 }
+
