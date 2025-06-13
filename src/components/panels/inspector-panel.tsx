@@ -27,7 +27,7 @@ interface InspectorPanelProps {
   onClose?: () => void;
   selectedNode: WorkflowNodeData | null;
   onNodeUpdate?: (updatedNode: WorkflowNodeData) => void;
-  onNodeDelete?: (nodeId: string) => void; // New prop for deleting a node
+  onNodeDelete?: (nodeId: string) => void;
   isMobile?: boolean;
   onRunNode?: (nodeId: string) => void;
   isNodeRunning?: (nodeId: string) => boolean;
@@ -48,6 +48,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
       setEditableStatus(selectedNode.status || 'unknown');
       setEditableConfig(selectedNode.config || {});
     } else {
+      // Reset fields when no node is selected
       setEditableTitle('');
       setEditableDescription('');
       setEditableStatus(undefined);
@@ -76,8 +77,8 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   const handleConfigChange = (field: keyof NonNullable<WorkflowNodeData['config']>, value: string) => {
     setEditableConfig(prev => ({ ...prev, [field]: value }));
   };
-  
-  const panelKey = selectedNode ? selectedNode.id : 'no-node-selected';
+
+  const panelKey = selectedNode ? `inspector-${selectedNode.id}` : 'inspector-no-node-selected';
 
   const formatDisplayValue = (value: string = '') => {
     if (!value) return '';
@@ -85,64 +86,65 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   };
 
   const nodeIsCurrentlyRunning = selectedNode && isNodeRunning ? isNodeRunning(selectedNode.id) : false;
-  const nodeCanRun = selectedNode && onRunNode && (selectedNode.type === 'web-summarizer' || selectedNode.type === 'prompt' || selectedNode.type !== 'decision'); // Assume most can be run for now
+  const nodeCanRun = selectedNode && onRunNode && (selectedNode.type === 'web-summarizer' || selectedNode.type === 'prompt');
+
 
   return (
     <BasePanel
-      key={panelKey} 
+      key={panelKey}
       title="Inspector"
       icon={<Settings2 className="h-4 w-4" />}
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: '320px', height: 'auto' }}
+      initialSize={{ width: '320px', height: 'auto' }} // Max height is handled by parent in desktop view
       contentClassName="space-y-3"
     >
       {selectedNode ? (
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label htmlFor="nodeName" className="text-xs flex items-center gap-1.5">
+            <Label htmlFor={`${panelKey}-nodeName`} className="text-xs flex items-center gap-1.5">
               <Brain className="h-3.5 w-3.5 text-primary/80"/> Node Name
             </Label>
-            <Input 
-              id="nodeName" 
-              placeholder="Node name" 
+            <Input
+              id={`${panelKey}-nodeName`}
+              placeholder="Node name"
               value={editableTitle}
               onChange={(e) => setEditableTitle(e.target.value)}
-              className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring" 
+              className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="nodeId" className="text-xs flex items-center gap-1.5">
+            <Label htmlFor={`${panelKey}-nodeId`} className="text-xs flex items-center gap-1.5">
               <Fingerprint className="h-3.5 w-3.5 text-primary/80"/> Node ID
             </Label>
-            <Input 
-              id="nodeId" 
-              value={selectedNode.id} 
-              className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" 
-              readOnly 
+            <Input
+              id={`${panelKey}-nodeId`}
+              value={selectedNode.id}
+              className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground"
+              readOnly
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="nodeType" className="text-xs flex items-center gap-1.5">
+            <Label htmlFor={`${panelKey}-nodeType`} className="text-xs flex items-center gap-1.5">
               <Type className="h-3.5 w-3.5 text-primary/80"/> Node Type
             </Label>
-            <Input 
-              id="nodeType" 
-              value={formatDisplayValue(selectedNode.type)} 
-              className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" 
-              readOnly 
+            <Input
+              id={`${panelKey}-nodeType`}
+              value={formatDisplayValue(selectedNode.type)}
+              className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground"
+              readOnly
             />
           </div>
            <div className="space-y-1">
-            <Label htmlFor="nodeStatus" className="text-xs flex items-center gap-1.5">
+            <Label htmlFor={`${panelKey}-nodeStatus`} className="text-xs flex items-center gap-1.5">
                 <Workflow className="h-3.5 w-3.5 text-primary/80"/> Status
             </Label>
             <Select
               value={editableStatus}
               onValueChange={(value: NodeStatus) => setEditableStatus(value)}
             >
-              <SelectTrigger id="nodeStatus" className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring">
+              <SelectTrigger id={`${panelKey}-nodeStatus`} className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
@@ -155,16 +157,16 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             </Select>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="nodeDescription" className="text-xs flex items-center gap-1.5">
+            <Label htmlFor={`${panelKey}-nodeDescription`} className="text-xs flex items-center gap-1.5">
                 <Info className="h-3.5 w-3.5 text-primary/80"/> Description
             </Label>
-            <Textarea 
-              id="nodeDescription" 
-              placeholder="Node description" 
+            <Textarea
+              id={`${panelKey}-nodeDescription`}
+              placeholder="Node description"
               value={editableDescription}
               onChange={(e) => setEditableDescription(e.target.value)}
-              rows={3} 
-              className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring" 
+              rows={3}
+              className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
             />
           </div>
 
@@ -174,9 +176,9 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 <Globe className="h-4 w-4" /> Web Summarizer Config
               </h4>
               <div className="space-y-1">
-                <Label htmlFor="summarizerUrl" className="text-xs">URL to Summarize</Label>
+                <Label htmlFor={`${panelKey}-summarizerUrl`} className="text-xs">URL to Summarize</Label>
                 <Input
-                  id="summarizerUrl"
+                  id={`${panelKey}-summarizerUrl`}
                   placeholder="https://example.com"
                   value={editableConfig?.url || ''}
                   onChange={(e) => handleConfigChange('url', e.target.value)}
@@ -205,9 +207,9 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 <MessageSquare className="h-4 w-4" /> Prompt Node Config
               </h4>
               <div className="space-y-1">
-                <Label htmlFor="promptText" className="text-xs">Prompt Text</Label>
+                <Label htmlFor={`${panelKey}-promptText`} className="text-xs">Prompt Text</Label>
                 <Textarea
-                  id="promptText"
+                  id={`${panelKey}-promptText`}
                   placeholder="Enter your prompt here..."
                   value={editableConfig?.promptText || ''}
                   onChange={(e) => handleConfigChange('promptText', e.target.value)}
@@ -216,9 +218,9 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="modelName" className="text-xs">Model Name (Optional)</Label>
+                <Label htmlFor={`${panelKey}-modelName`} className="text-xs">Model Name (Optional)</Label>
                 <Input
-                  id="modelName"
+                  id={`${panelKey}-modelName`}
                   placeholder="e.g., googleai/gemini-pro"
                   value={editableConfig?.modelName || ''}
                   onChange={(e) => handleConfigChange('modelName', e.target.value)}
@@ -241,14 +243,14 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
               )}
             </div>
           )}
-          
+
           {nodeCanRun && (
-            <Button 
-              onClick={() => onRunNode!(selectedNode.id)} 
-              className="w-full mt-1" 
+            <Button
+              onClick={() => onRunNode!(selectedNode.id)}
+              className="w-full mt-1"
               size="sm"
               disabled={
-                nodeIsCurrentlyRunning || 
+                nodeIsCurrentlyRunning ||
                 (selectedNode.type === 'web-summarizer' && !editableConfig?.url) ||
                 (selectedNode.type === 'prompt' && !editableConfig?.promptText)
               }
@@ -259,11 +261,11 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
           )}
 
           <div className="flex items-center justify-between pt-2">
-            <Label htmlFor="sandboxed" className="text-xs flex items-center gap-1.5">
+            <Label htmlFor={`${panelKey}-sandboxed`} className="text-xs flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-primary/80" />
               Sandboxed Execution
             </Label>
-            <Switch id="sandboxed" defaultChecked disabled />
+            <Switch id={`${panelKey}-sandboxed`} defaultChecked disabled />
           </div>
           <div className="space-y-1">
             <Label className="text-xs flex items-center gap-1.5">
@@ -272,7 +274,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             </Label>
             <Input placeholder="e.g., data-processing, validation" className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" readOnly />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-2 mt-2">
             {onNodeUpdate && (
               <Button onClick={handleSaveChanges} className="w-full" size="sm" disabled={nodeIsCurrentlyRunning}>
@@ -300,3 +302,5 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
     </BasePanel>
   );
 }
+
+    

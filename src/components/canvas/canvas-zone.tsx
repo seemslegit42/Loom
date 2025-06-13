@@ -1,3 +1,4 @@
+
 // src/components/canvas/canvas-zone.tsx
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { WorkflowNode, type WorkflowNodeData, type NodeType, type NodeStatus } from '@/components/workflow/workflow-node';
@@ -21,8 +22,8 @@ interface CanvasZoneProps {
   selectedNode: WorkflowNodeData | null;
   onNodeSelected: (node: WorkflowNodeData | null) => void;
   nodeExecutionStatus: Record<string, NodeStatus>;
-  onInputPortClick: (nodeId: string, e: React.MouseEvent<HTMLDivElement>) => void;
-  onOutputPortClick: (nodeId: string, e: React.MouseEvent<HTMLDivElement>) => void;
+  onInputPortClick: (nodeId: string) => void; // Updated signature
+  onOutputPortClick: (nodeId: string, portElement: HTMLDivElement) => void; // Updated signature
   connectingState: ConnectingState | null;
 }
 
@@ -52,6 +53,7 @@ export function CanvasZone({
   // Initialize or clear nodeRefs when nodes change
   useEffect(() => {
     nodeRefs.current = nodes.reduce((acc, node) => {
+      // Use the id directly for the DOM element lookup
       acc[node.id] = document.getElementById(`node-${node.id}`) as HTMLDivElement | null;
       return acc;
     }, {} as Record<string, HTMLDivElement | null>);
@@ -59,23 +61,27 @@ export function CanvasZone({
 
 
   const getPortPosition = useCallback((nodeId: string, portType: 'input' | 'output'): PortPosition | null => {
-    const nodeEl = nodeRefs.current[nodeId];
+    const nodeEl = nodeRefs.current[nodeId]; // Use the ref directly
     const canvasEl = canvasRef.current;
     if (!nodeEl || !canvasEl) return null;
 
     const nodeRect = nodeEl.getBoundingClientRect();
     const canvasRect = canvasEl.getBoundingClientRect();
-    
-    // Find the specific port element, assuming it has a data attribute or specific class
-    // For simplicity, we'll use the node's edges.
-    // Input port: left middle. Output port: right middle.
-    const x = portType === 'input' 
-      ? nodeRect.left - canvasRect.left + canvasEl.scrollLeft -8 // Adjust for port width/offset
-      : nodeRect.right - canvasRect.left + canvasEl.scrollLeft +8; // Adjust for port width/offset
+
+    // The port elements themselves are now what we target.
+    // The WorkflowNode component will ensure these ports exist with identifiable classes or attributes.
+    // For now, we'll approximate based on node edges as before, but this would be more robust
+    // if we queried for child elements with specific data-port-type attributes.
+    // Example: nodeEl.querySelector(`[data-port-type="${portType}"]`)
+    // For simplicity in this step, stick to edge approximation.
+
+    const x = portType === 'input'
+      ? nodeRect.left - canvasRect.left + canvasEl.scrollLeft - 8 // Adjust for port width/offset from node edge
+      : nodeRect.right - canvasRect.left + canvasEl.scrollLeft + 8;
     const y = nodeRect.top + nodeRect.height / 2 - canvasRect.top + canvasEl.scrollTop;
-    
+
     return { x, y };
-  }, [nodeRefs, canvasRef]);
+  }, []); // Removed nodeRefs dependency as it's managed by direct DOM access
 
 
   useEffect(() => {
@@ -85,8 +91,15 @@ export function CanvasZone({
       const toPos = getPortPosition(conn.to, 'input');
 
       if (fromPos && toPos) {
-        // Simple straight line, can be changed to Bezier curves later
-        paths.push(`M ${fromPos.x} ${fromPos.y} L ${toPos.x} ${toPos.y}`);
+        // Simple straight line for now, can be upgraded to Bezier later
+        // paths.push(`M ${fromPos.x} ${fromPos.y} L ${toPos.x} ${toPos.y}`);
+
+        // Basic Bezier curve (horizontal)
+        const c1x = fromPos.x + Math.abs(toPos.x - fromPos.x) * 0.5;
+        const c1y = fromPos.y;
+        const c2x = toPos.x - Math.abs(toPos.x - fromPos.x) * 0.5;
+        const c2y = toPos.y;
+        paths.push(`M ${fromPos.x} ${fromPos.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${toPos.x} ${toPos.y}`);
       }
     });
     setLinePathData(paths);
@@ -96,7 +109,12 @@ export function CanvasZone({
     if (connectingState && connectingState.fromNodeId && mousePosition) {
         const fromPos = getPortPosition(connectingState.fromNodeId, 'output');
         if (fromPos) {
-            setTempLinePath(`M ${fromPos.x} ${fromPos.y} L ${mousePosition.x} ${mousePosition.y}`);
+            // Basic Bezier for temp line as well
+            const c1x = fromPos.x + Math.abs(mousePosition.x - fromPos.x) * 0.3;
+            const c1y = fromPos.y;
+            const c2x = mousePosition.x - Math.abs(mousePosition.x - fromPos.x) * 0.3;
+            const c2y = mousePosition.y;
+            setTempLinePath(`M ${fromPos.x} ${fromPos.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${mousePosition.x} ${mousePosition.y}`);
         }
     } else {
         setTempLinePath(null);
@@ -105,7 +123,7 @@ export function CanvasZone({
 
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault(); // Necessary to allow dropping
+    event.preventDefault();
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -114,8 +132,14 @@ export function CanvasZone({
     if (nodeInfo) {
       try {
         const { name, type } = JSON.parse(nodeInfo) as { name: string; type: NodeType };
-        // For now, drop at a fixed offset or center of view. Later, use event.clientX/Y
-        const position = { x: Math.random() * 300, y: Math.random() * 200 };
+        const canvasEl = canvasRef.current;
+        if (!canvasEl) return;
+        const canvasRect = canvasEl.getBoundingClientRect();
+        const position = {
+          x: event.clientX - canvasRect.left + canvasEl.scrollLeft - 125, // Adjust for node width/2
+          y: event.clientY - canvasRect.top + canvasEl.scrollTop - 50, // Adjust for node height/2
+        };
+
         const newNodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus } = {
           title: name,
           type: type,
@@ -130,13 +154,19 @@ export function CanvasZone({
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('grid-background') || (e.target as HTMLElement).closest('.scroll-area-viewport-content')) {
-      if (!connectingState) { // Don't deselect if in middle of connecting
+    // Ensure click is directly on canvas or its scroll area content, not a node or port.
+    const target = e.target as HTMLElement;
+    if (target === e.currentTarget || target.classList.contains('scroll-area-viewport-content') || target.classList.contains('grid-background')) {
+       if (!connectingState) { // Don't deselect if in middle of connecting
         onNodeSelected(null);
+      } else {
+        // If clicking canvas while connecting, cancel connection
+        // setConnectingState(null); // This is handled in onNodeSelected(null) if page.tsx calls it.
+        // addConsoleMessage('log', 'Connection cancelled by clicking canvas.');
       }
     }
   };
-  
+
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     if (connectingState && canvasRef.current) {
         const canvasRect = canvasRef.current.getBoundingClientRect();
@@ -154,17 +184,16 @@ export function CanvasZone({
 
   return (
     <ScrollArea
-      className="h-full w-full rounded-lg border border-dashed border-border/50 grid-background relative" // Added relative
+      className="h-full w-full rounded-lg border border-dashed border-border/50 grid-background relative"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onClick={handleCanvasClick}
-      onMouseMove={handleMouseMove}
+      onMouseMove={handleMouseMove} // Add mouse move listener to the ScrollArea
       ref={canvasRef}
     >
-      {/* This inner div is important for correct clientX/clientY calculations relative to scroll */}
-      <div className="p-8 min-h-full relative scroll-area-viewport-content"> 
+      <div className="p-8 min-h-full relative scroll-area-viewport-content">
         {workflowName && (
-          <div className="mb-8 p-4 bg-card/80 rounded-lg shadow backdrop-blur-md">
+          <div className="mb-8 p-4 bg-card/80 rounded-lg shadow backdrop-blur-md sticky top-4 z-20">
             <h2 className="text-xl font-headline mb-2 text-primary">
               Workflow: {workflowName || "Untitled Flow"}
             </h2>
@@ -174,23 +203,23 @@ export function CanvasZone({
             </p>
           </div>
         )}
-        {displayedNodes.length > 0 ? (
-          <div className="flex flex-wrap gap-6"> {/* Using flex-wrap for basic layout, consider absolute positioning for draggable nodes later */}
+        {/* Nodes are absolutely positioned relative to this div */}
+        <div className="relative min-h-[800px] min-w-[1200px]"> {/* Ensure enough space for absolute positioning and scrolling */}
             {displayedNodes.map((node) => (
               <WorkflowNode
                 key={node.id}
-                ref={el => { nodeRefs.current[node.id] = el; }} // Assign ref
+                ref={el => { nodeRefs.current[node.id] = el; }} // Assign ref for DOM element access
                 node={node}
                 onClick={(e, n) => { e.stopPropagation(); onNodeSelected(n);}}
                 isSelected={selectedNode?.id === node.id}
-                onInputPortClick={onInputPortClick}
-                onOutputPortClick={onOutputPortClick}
+                onInputPortClick={(nodeId, _e) => onInputPortClick(nodeId)} // _e from node is not needed in page.tsx
+                onOutputPortClick={onOutputPortClick} // Pass handler directly
                 isConnectingFrom={connectingState?.fromNodeId === node.id}
               />
             ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-20 pointer-events-none">
+        </div>
+        {!workflowName && displayedNodes.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-muted-foreground py-20 pointer-events-none">
             <BrainCircuit className="h-16 w-16 mb-4 text-primary/50" />
             <h2 className="text-2xl font-headline mb-2">Agent Orchestration Canvas</h2>
             <p className="max-w-md">
@@ -199,25 +228,29 @@ export function CanvasZone({
             </p>
           </div>
         )}
-        
-        {/* SVG Overlay for Connections */}
-        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible">
+
+        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible z-0">
           <defs>
-            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
               <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--primary))" />
+            </marker>
+             <marker id="arrowhead-temp" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+              <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--accent))" />
             </marker>
           </defs>
           {linePathData.map((d, i) => (
-            <path key={`conn-${i}`} d={d} stroke="hsl(var(--primary))" strokeWidth="2" fill="none" markerEnd="url(#arrowhead)" />
+            <path key={`conn-${i}`} d={d} stroke="hsl(var(--primary))" strokeWidth="2.5" fill="none" markerEnd="url(#arrowhead)" />
           ))}
           {tempLinePath && (
-            <path d={tempLinePath} stroke="hsl(var(--accent))" strokeWidth="2" strokeDasharray="5,5" fill="none" markerEnd="url(#arrowhead)" />
+            <path d={tempLinePath} stroke="hsl(var(--accent))" strokeWidth="2.5" strokeDasharray="5,5" fill="none" markerEnd="url(#arrowhead-temp)" />
           )}
         </svg>
         {connectingState && mousePosition && (
-            <MousePointer2 className="h-5 w-5 text-accent absolute pointer-events-none" style={{ transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)` }}/>
+            <MousePointer2 className="h-5 w-5 text-accent absolute pointer-events-none z-30" style={{ transform: `translate(${mousePosition.x -2}px, ${mousePosition.y -2}px)` }}/>
         )}
       </div>
     </ScrollArea>
   );
 }
+
+    

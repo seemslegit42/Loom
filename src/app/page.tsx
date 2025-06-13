@@ -78,7 +78,9 @@ export default function LoomStudioPage() {
         setConsoleMessages(prev => [...fetchedMessages.reverse(), ...prev.filter(pm => !fetchedMessages.find(fm => fm.text === pm.text && fm.timestamp.getTime() === pm.timestamp.getTime()))]);
       } catch (error) {
         console.error("Error fetching console messages from Firestore:", error);
-        setConsoleMessages(prev => [{type: 'error', text: 'Failed to load console history from Firestore.', timestamp: new Date()}, ...prev]);
+        // Add error to UI console
+        const errorMsg: ConsoleMessage = {type: 'error', text: 'Failed to load console history from Firestore.', timestamp: new Date()};
+        setConsoleMessages(prev => [errorMsg, ...prev.filter(pm => pm.text !== errorMsg.text)]); // Avoid duplicate error messages on quick re-renders
       }
     };
     fetchConsoleMessages();
@@ -91,13 +93,16 @@ export default function LoomStudioPage() {
       await addDoc(collection(db, 'console_logs'), {
         type: newMessage.type,
         text: newMessage.text,
-        timestamp: Timestamp.fromDate(newMessage.timestamp), 
+        timestamp: Timestamp.fromDate(newMessage.timestamp),
       });
     } catch (error) {
       console.error("Error adding console message to Firestore:", error);
-      setConsoleMessages(prev => [{type: 'error', text: 'Failed to save message to cloud console.', timestamp: new Date()}, ...prev]);
+      // Add error to UI console if Firestore save fails
+      const errorMsg: ConsoleMessage = {type: 'error', text: 'Failed to save message to cloud console.', timestamp: new Date()};
+      setConsoleMessages(prev => [errorMsg, ...prev.filter(pm => pm.text !== errorMsg.text)]);
     }
   }, []);
+
 
   const addTimelineEvent = useCallback((event: Omit<TimelineEvent, 'id' | 'timestamp'>) => {
     setTimelineEvents(prev => [{ ...event, id: crypto.randomUUID(), timestamp: new Date() }, ...prev.slice(0, 49)]);
@@ -122,53 +127,59 @@ export default function LoomStudioPage() {
     const statuses: Record<string, NodeStatus> = {};
     flowNodes.forEach(node => statuses[node.id] = 'pending');
     setNodeExecutionStatus(statuses);
-    
+
     // Build dependency graph
     const adj: Record<string, string[]> = {};
     const inDegree: Record<string, number> = {};
+    const nodeLookup: Record<string, WorkflowNodeData> = {};
 
     flowNodes.forEach(node => {
         adj[node.id] = [];
         inDegree[node.id] = 0;
+        nodeLookup[node.id] = node;
     });
 
     currentConnections.forEach(conn => {
-        if (adj[conn.from] && flowNodes.find(n => n.id === conn.to)) { // Ensure 'to' node exists in current flowNodes
+        if (adj[conn.from] && nodeLookup[conn.to]) { // Ensure 'to' node exists in current flowNodes
             adj[conn.from].push(conn.to);
             inDegree[conn.to]++;
         }
     });
-    
+
     const queue: string[] = flowNodes.filter(node => inDegree[node.id] === 0).map(node => node.id);
     let executionOrderIndex = 0;
     let activeSimulations = 0;
     const completedNodes = new Set<string>();
+    const failedNodes = new Set<string>();
 
     const processNode = async (nodeId: string) => {
+      if (failedNodes.has(nodeId) || completedNodes.has(nodeId)) return; // Already processed or failed
+
       activeSimulations++;
-      const node = flowNodes.find(n => n.id === nodeId);
+      const node = nodeLookup[nodeId];
       if (!node) {
+        addConsoleMessage('error', `Node ID ${nodeId} not found during execution.`);
         activeSimulations--;
+        failedNodes.add(nodeId);
         return;
       }
 
       const nodeTitle = node.title;
-      
-      await new Promise(resolve => setTimeout(resolve, 500 * executionOrderIndex++)); // Stagger start slightly
-      
+
+      await new Promise(resolve => setTimeout(resolve, 300 * executionOrderIndex++));
+
       setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'queued' }));
       addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) queued.`);
       addTimelineEvent({ nodeId, nodeTitle, type: 'node_queued', message: `Node "${nodeTitle}" queued.` });
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 700));
       setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
       addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) running.`);
       addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" running.` });
-      
+
       // Actual node execution logic would go here for a real run
-      // For simulation, we just use a timeout and random success
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
-      const success = Math.random() > 0.1;
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 800));
+      const success = Math.random() > 0.1; // Simulate success/failure
 
       if (success) {
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'completed' }));
@@ -177,104 +188,113 @@ export default function LoomStudioPage() {
         completedNodes.add(nodeId);
 
         adj[nodeId]?.forEach(neighborId => {
-          inDegree[neighborId]--;
-          if (inDegree[neighborId] === 0) {
-            queue.push(neighborId);
+          if (nodeLookup[neighborId]) { // Ensure neighbor exists
+            inDegree[neighborId]--;
+            if (inDegree[neighborId] === 0 && !failedNodes.has(neighborId)) { // Only queue if not already failed
+              queue.push(neighborId);
+            }
           }
         });
       } else {
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'failed' }));
         addConsoleMessage('error', `Node "${nodeTitle}" (ID: ${nodeId}) failed.`);
         addTimelineEvent({ nodeId, nodeTitle, type: 'node_failed', message: `Node "${nodeTitle}" failed.` });
+        failedNodes.add(nodeId);
+        // Potentially mark downstream nodes as 'blocked' or 'skipped' if a critical node fails
       }
       activeSimulations--;
-      
+
       // Process next in queue if available
       if (queue.length > 0) {
           const nextNodeId = queue.shift();
           if (nextNodeId) processNode(nextNodeId);
-      } else if (activeSimulations === 0) { // All nodes processed
-          const allSucceeded = flowNodes.every(n => completedNodes.has(n.id));
-          if (allSucceeded) {
+      } else if (activeSimulations === 0) { // All nodes processed or remaining nodes are blocked
+          const allReachableSucceeded = flowNodes.every(n => completedNodes.has(n.id) || failedNodes.has(n.id) || inDegree[n.id] > 0); // check all processed or blocked
+          if (failedNodes.size > 0) {
+              addConsoleMessage('error', `Workflow "${workflowName}" finished with errors.`);
+              addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" finished with errors.` });
+          } else if (completedNodes.size === flowNodes.length) {
               addConsoleMessage('info', `Workflow "${workflowName}" completed successfully.`);
               addTimelineEvent({ type: 'workflow_completed', message: `Workflow "${workflowName}" completed successfully.` });
           } else {
-              addConsoleMessage('error', `Workflow "${workflowName}" finished with errors.`);
-              addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" finished with errors.` });
+              addConsoleMessage('warn', `Workflow "${workflowName}" completed with some nodes not executed (possibly due to disconnections or prior failures).`);
+              addTimelineEvent({ type: 'info', message: `Workflow "${workflowName}" completed with some nodes not executed.` });
           }
       }
     };
 
-    // Start processing initial queue
-    while(queue.length > 0 && activeSimulations < 3) { // Limit concurrent "simulations"
+    if (queue.length === 0 && flowNodes.length > 0) {
+        addConsoleMessage('error', `Workflow "${workflowName}" has no starting nodes (check for circular dependencies or ensure at least one node has no inputs).`);
+        addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" has errors (e.g., circular dependency or no start nodes).` });
+        flowNodes.forEach(node => setNodeExecutionStatus(prev => ({...prev, [node.id]: 'failed'})));
+        return;
+    }
+
+    // Start processing initial queue (limit concurrent "simulations" for visual clarity)
+    while(queue.length > 0 && activeSimulations < 3) {
         const nodeIdToProcess = queue.shift();
         if (nodeIdToProcess) processNode(nodeIdToProcess);
     }
-    if (queue.length === 0 && activeSimulations === 0 && flowNodes.length > 0 && !flowNodes.some(n => inDegree[n.id] === 0)) {
-        addConsoleMessage('error', `Workflow "${workflowName}" has circular dependencies or no start nodes.`);
-        addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" has errors (e.g. circular dependency).` });
-    }
-
-
   }, [generatedFlow?.workflowName, addConsoleMessage, addTimelineEvent]);
 
 
   const handleFlowGenerated = useCallback((data: GenerateFlowFormState) => {
-    if (!data.nodes) { // Ensure nodes array exists
+    if (!data.nodes) {
         data.nodes = [];
     }
     setGeneratedFlow(data as GenerateFlowFormState & { nodes: WorkflowNodeData[] });
     setSelectedNode(null);
-    setConnections([]); // Clear existing connections for a new AI flow
+    // Connections are now managed explicitly, so we'll auto-connect AI flows.
+    setConnections([]);
 
     if (data.error) {
       addConsoleMessage('error', `Failed to generate flow: ${data.message}`);
-      setTimelineEvents([]); 
-      setNodeExecutionStatus({}); 
+      setTimelineEvents([]);
+      setNodeExecutionStatus({});
     } else {
       if (data.nodes && data.nodes.length > 0 && data.workflowName) {
         addConsoleMessage('info', `Flow "${data.workflowName}" generated by AI with ${data.nodes.length} steps.`);
-        
+
         // Auto-create linear connections for AI-generated flow
         const newConnections: Connection[] = [];
         for (let i = 0; i < data.nodes.length - 1; i++) {
           newConnections.push({
-            id: `conn-${data.nodes[i].id}-to-${data.nodes[i+1].id}`,
+            id: `conn-${data.nodes[i].id}-to-${data.nodes[i+1].id}-${Date.now()}`,
             from: data.nodes[i].id,
             to: data.nodes[i+1].id,
           });
         }
         setConnections(newConnections);
         addConsoleMessage('info', `Auto-created ${newConnections.length} connections for the AI flow.`);
-        
+
         const initialStatuses: Record<string, NodeStatus> = {};
         data.nodes.forEach(node => {
-          initialStatuses[node.id] = 'pending'; 
+          initialStatuses[node.id] = 'pending';
         });
         setNodeExecutionStatus(initialStatuses);
-        simulateFlowExecution(data.nodes, newConnections);
+        simulateFlowExecution(data.nodes, newConnections); // Pass connections here
       } else {
          addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled Flow'}" generated by AI but contained no actionable steps.`);
-         setTimelineEvents([]); 
-         setNodeExecutionStatus({}); 
+         setTimelineEvents([]);
+         setNodeExecutionStatus({});
       }
     }
   }, [addConsoleMessage, simulateFlowExecution, addTimelineEvent]);
 
   const handleNodeDropped = (newNodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus }) => {
-    const uniqueIndex = Date.now(); 
-    const nodeTitleBase = newNodeData.title || 'Manual Node'; 
+    const uniqueIndex = Date.now();
+    const nodeTitleBase = newNodeData.title || 'Manual Node';
     const nodeId = generateNodeId('manual', nodeTitleBase, uniqueIndex);
 
     const nodeWithIdAndStatus: WorkflowNodeData = {
       ...newNodeData,
       id: nodeId,
-      title: nodeTitleBase, 
+      title: nodeTitleBase,
       description: newNodeData.description || `Manually added ${nodeTitleBase} node. Configure in Inspector.`,
-      status: newNodeData.status || 'queued', 
-      config: newNodeData.config || {}, 
+      status: newNodeData.status || 'queued',
+      config: newNodeData.config || {},
     };
-    
+
     setGeneratedFlow(prevFlow => {
       const currentNodes = prevFlow?.nodes || [];
       const isFirstNodeForNewWorkflow = !prevFlow || currentNodes.length === 0;
@@ -284,55 +304,58 @@ export default function LoomStudioPage() {
         addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started by user adding node: "${nodeWithIdAndStatus.title}".`);
         addTimelineEvent({ type: 'workflow_start', message: `Custom workflow "${newWorkflowName}" started.`});
       }
-      
+
       const updatedNodes = [...currentNodes, nodeWithIdAndStatus];
       return {
-        ...(prevFlow || { message: "Node added to canvas.", userInput: "Custom flow", error: false }), 
+        ...(prevFlow || { message: "Node added to canvas.", userInput: "Custom flow", error: false }),
         nodes: updatedNodes,
-        workflowName: newWorkflowName, 
+        workflowName: newWorkflowName,
       };
     });
 
-    setSelectedNode(nodeWithIdAndStatus); 
+    setSelectedNode(nodeWithIdAndStatus);
     addConsoleMessage('log', `Node "${nodeWithIdAndStatus.title}" (ID: ${nodeWithIdAndStatus.id}) added to canvas.`);
     setNodeExecutionStatus(prev => ({...prev, [nodeWithIdAndStatus.id]: nodeWithIdAndStatus.status! }));
-    addTimelineEvent({ 
+    addTimelineEvent({
       nodeId: nodeWithIdAndStatus.id,
       nodeTitle: nodeWithIdAndStatus.title,
-      type: 'node_queued', 
+      type: 'node_queued',
       message: `Manual Node "${nodeWithIdAndStatus.title}" added and queued.`
     });
   };
 
   const handleNodeSelected = (node: WorkflowNodeData | null) => {
     setSelectedNode(node);
-    setConnectingState(null); // Cancel any pending connection on node selection
-    if (node) {
+    if (node) { // Only clear connecting state if a node is selected, not when deselecting to canvas.
+      setConnectingState(null);
       addConsoleMessage('log', `Node "${node.title}" (ID: ${node.id}) selected.`);
     } else {
-      addConsoleMessage('log', `Canvas selected (no node).`);
+      // If clicking on canvas and not in connecting state, then clear.
+      if (!connectingState) {
+        addConsoleMessage('log', `Canvas selected (no node).`);
+      }
     }
   };
 
   const handleNodeUpdate = (updatedNode: WorkflowNodeData) => {
      setGeneratedFlow(prevFlow => {
-      if (!prevFlow || !prevFlow.nodes) return prevFlow; 
+      if (!prevFlow || !prevFlow.nodes) return prevFlow;
       const newNodes = prevFlow.nodes.map(n => (n.id === updatedNode.id ? updatedNode : n));
       return { ...prevFlow, nodes: newNodes };
     });
-    setSelectedNode(updatedNode); 
+    setSelectedNode(updatedNode);
     toast({ title: "Node Updated", description: `Node "${updatedNode.title}" has been saved.` });
     addConsoleMessage('info', `Node "${updatedNode.title}" (ID: ${updatedNode.id}) updated.`);
     const oldStatus = nodeExecutionStatus[updatedNode.id];
     if (updatedNode.status && oldStatus !== updatedNode.status) {
       setNodeExecutionStatus(prev => ({...prev, [updatedNode.id]: updatedNode.status! }));
-      let eventType: TimelineEvent['type'] = 'info'; 
+      let eventType: TimelineEvent['type'] = 'info';
       switch(updatedNode.status) {
         case 'completed': eventType = 'node_completed'; break;
         case 'running': eventType = 'node_running'; break;
         case 'failed': eventType = 'node_failed'; break;
         case 'queued': eventType = 'node_queued'; break;
-        default: eventType = 'info'; break; 
+        default: eventType = 'info'; break;
       }
       addTimelineEvent({
         nodeId: updatedNode.id,
@@ -354,7 +377,7 @@ export default function LoomStudioPage() {
     });
 
     setConnections(prevConns => prevConns.filter(c => c.from !== nodeId && c.to !== nodeId));
-    
+
     if (selectedNode?.id === nodeId) {
       setSelectedNode(null);
     }
@@ -405,7 +428,6 @@ export default function LoomStudioPage() {
       } else {
         nodeError = `Node type "${nodeToRun.type}" is not runnable yet. Simulating...`;
         await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate work
-        // Simulate output for non-runnable types for demo
         nodeOutput = { simulatedOutput: "Output from simulated node." } as any;
       }
       finalStatus = nodeError ? 'failed' : 'completed';
@@ -419,11 +441,11 @@ export default function LoomStudioPage() {
       status: finalStatus,
     };
     setGeneratedFlow(prevFlow => ({
-      ...(prevFlow!), 
+      ...(prevFlow!),
       nodes: prevFlow!.nodes.map(n => n.id === nodeId ? updatedNodeData : n),
     }));
     setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: updatedNodeData.status! }));
-    if (selectedNode?.id === nodeId) setSelectedNode(updatedNodeData); 
+    if (selectedNode?.id === nodeId) setSelectedNode(updatedNodeData);
     if (nodeError) {
       addConsoleMessage('error', `Node "${updatedNodeData.title}" (${updatedNodeData.type}) failed: ${nodeError}`);
       addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Failed: ${nodeError.substring(0,100)}...` });
@@ -439,13 +461,13 @@ export default function LoomStudioPage() {
   const togglePanel = (panel: keyof PanelVisibility) => {
     setPanelVisibility(prev => {
       const newState = { ...prev };
-      const currentlyOpening = !prev[panel]; 
+      const currentlyOpening = !prev[panel];
       if (isMobile) {
         if (currentlyOpening) {
           (Object.keys(newState) as Array<keyof PanelVisibility>).forEach(key => {
             if (key !== panel) newState[key] = false;
           });
-          newState[panel] = true; 
+          newState[panel] = true;
         } else {
           newState[panel] = false;
         }
@@ -467,9 +489,9 @@ export default function LoomStudioPage() {
     setConsoleFilters(prev => ({ ...prev, [type]: newFilterState }));
     addConsoleMessage('log', `Console filter for "${type.toUpperCase()}" messages ${newFilterState ? 'enabled' : 'disabled'}.`);
   };
-  
+
   const handleClearConsole = () => {
-    setConsoleMessages([]);
+    setConsoleMessages(prevMessages => prevMessages.filter(msg => msg.text === 'Local console view cleared. Firestore logs are not affected by this action.')); // Keep the clear message if it exists
     addConsoleMessage('info', 'Local console view cleared. Firestore logs are not affected by this action.');
     toast({ title: "Console Cleared", description: "Local console messages have been cleared." });
   };
@@ -488,7 +510,6 @@ export default function LoomStudioPage() {
         setConnectingState(null);
         return;
       }
-      // Check if connection already exists
       if (connections.some(c => c.from === connectingState.fromNodeId && c.to === nodeId)) {
         addConsoleMessage('warn', `Connection from ${connectingState.fromNodeId} to ${nodeId} already exists.`);
         toast({title: "Connection Error", description: "This connection already exists.", variant: "secondary"});
@@ -502,14 +523,16 @@ export default function LoomStudioPage() {
         to: nodeId,
       };
       setConnections(prev => [...prev, newConnection]);
-      addConsoleMessage('info', `Connected node ${connectingState.fromNodeId} to ${nodeId}.`);
-      toast({title: "Connection Created", description: `Connected ${generatedFlow?.nodes.find(n=>n.id===connectingState.fromNodeId)?.title} to ${generatedFlow?.nodes.find(n=>n.id===nodeId)?.title}.`});
+      const fromNode = generatedFlow?.nodes.find(n=>n.id===connectingState.fromNodeId)?.title || 'source node';
+      const toNode = generatedFlow?.nodes.find(n=>n.id===nodeId)?.title || 'target node';
+      addConsoleMessage('info', `Connected node ${fromNode} to ${toNode}.`);
+      toast({title: "Connection Created", description: `Connected ${fromNode} to ${toNode}.`});
       setConnectingState(null);
     }
   };
 
   const anyMobilePanelOpen = isMobile && Object.values(panelVisibility).some(v => v);
-  if (isMobile === undefined) { 
+  if (isMobile === undefined) {
     return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center text-lg">Loading UI...</div>;
   }
 
@@ -545,8 +568,8 @@ export default function LoomStudioPage() {
             )}
             {panelVisibility.inspector && (
               <InspectorPanel
-                key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'} 
-                className="absolute top-4 right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_theme(spacing.8))]" 
+                key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'}
+                className="absolute top-4 right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_theme(spacing.8))]"
                 onClose={() => togglePanel('inspector')}
                 selectedNode={selectedNode}
                 onNodeUpdate={handleNodeUpdate}
@@ -579,7 +602,7 @@ export default function LoomStudioPage() {
             </div>
             {panelVisibility.agentHub && (
               <AgentHubPanel
-                className="absolute bottom-[calc(250px+2rem)] right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_250px_-_theme(spacing.12))]" 
+                className="absolute bottom-[calc(250px+2rem)] right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_250px_-_theme(spacing.12))]"
                 onClose={() => togglePanel('agentHub')}
                 isMobile={isMobile}
                 addConsoleMessage={addConsoleMessage}
@@ -596,7 +619,7 @@ export default function LoomStudioPage() {
               {panelVisibility.inspector &&
                 <InspectorPanel
                   key={selectedNode ? `inspector-mobile-${selectedNode.id}` : 'inspector-mobile-no-node'}
-                  className="h-full overflow-y-auto" 
+                  className="h-full overflow-y-auto"
                   onClose={() => togglePanel('inspector')}
                   selectedNode={selectedNode}
                   onNodeUpdate={handleNodeUpdate}
@@ -609,10 +632,10 @@ export default function LoomStudioPage() {
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
               {panelVisibility.agentHub && <AgentHubPanel className="h-full" onClose={() => togglePanel('agentHub')} isMobile={isMobile} addConsoleMessage={addConsoleMessage} addTimelineEvent={addTimelineEvent} />}
             </div>
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'} mb-14`}> 
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
               {panelVisibility.timeline && <TimelinePanel className="h-full" onClose={() => togglePanel('timeline')} events={timelineEvents} isMobile={isMobile} />}
             </div>
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} mb-14`}> 
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
               {panelVisibility.console && <ConsolePanel className="h-full" onClose={() => togglePanel('console')} messages={consoleMessages.filter(msg => consoleFilters[msg.type])} filters={consoleFilters} onToggleFilter={toggleConsoleFilter} onClearConsole={handleClearConsole} isMobile={isMobile} />}
             </div>
             {anyMobilePanelOpen && (
@@ -625,3 +648,5 @@ export default function LoomStudioPage() {
     </div>
   );
 }
+
+    

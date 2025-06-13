@@ -1,8 +1,9 @@
+
 // src/components/workflow/workflow-node.tsx
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
 import type { ExecutePromptOutput } from '@/ai/flows/execute-prompt-flow';
@@ -17,7 +18,7 @@ export interface WorkflowNodeData {
   description: string;
   status?: NodeStatus;
   agentName?: string;
-  position?: { x: number; y: number }; // For potential future dragging
+  position?: { x: number; y: number };
   config?: {
     url?: string;
     promptText?: string;
@@ -32,8 +33,8 @@ interface WorkflowNodeProps {
   onClick?: (e: React.MouseEvent<HTMLDivElement>, node: WorkflowNodeData) => void;
   isSelected?: boolean;
   onInputPortClick?: (nodeId: string, e: React.MouseEvent<HTMLDivElement>) => void;
-  onOutputPortClick?: (nodeId: string, e: React.MouseEvent<HTMLDivElement>) => void;
-  isConnectingFrom?: boolean; // True if this node is the source of an active connection attempt
+  onOutputPortClick?: (nodeId: string, portElement: HTMLDivElement) => void; // portElement is the div for the port
+  isConnectingFrom?: boolean;
 }
 
 const statusIcons: Record<NodeStatus, React.ReactNode> = {
@@ -81,16 +82,18 @@ const formatDisplayValue = (value: string = '') => {
 
 export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
   ({ node, className, onClick, isSelected, onInputPortClick, onOutputPortClick, isConnectingFrom }, ref) => {
-    const { id, title, type, status = 'unknown', description, agentName } = node;
+    const { id, title, type, status = 'unknown', description, agentName, position } = node;
     const currentTypeIcon = typeIcons[type] || typeIcons.custom;
     const currentStatusIcon = statusIcons[status] || statusIcons.unknown;
 
+    const outputPortRef = useRef<HTMLDivElement>(null);
+
     const handleNodeClick = (e: React.MouseEvent<HTMLDivElement>) => {
-      // Prevent node selection if a port was clicked.
       if ((e.target as HTMLElement).closest('.node-port')) {
         return;
       }
       if (onClick) {
+        e.stopPropagation(); // Prevent canvas click from immediately deselecting
         onClick(e, node);
       }
     };
@@ -102,51 +105,57 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
 
     const handleOutputClick = (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation();
-      onOutputPortClick?.(id, e);
+      if (outputPortRef.current) {
+        onOutputPortClick?.(id, outputPortRef.current);
+      }
     };
-    
-    // Style for ports, can be enhanced
-    const portBaseStyle = "node-port absolute w-4 h-4 bg-card border-2 border-primary rounded-full cursor-pointer hover:bg-primary/50 transition-colors flex items-center justify-center";
-    const connectingPortStyle = isConnectingFrom ? "ring-2 ring-accent ring-offset-2 ring-offset-card" : "";
+
+    const portBaseStyle = "node-port absolute w-4 h-4 bg-card border-2 border-primary rounded-full cursor-pointer hover:bg-primary/50 transition-colors flex items-center justify-center z-10";
+    const connectingPortStyle = isConnectingFrom ? "ring-2 ring-accent ring-offset-1 ring-offset-card animate-pulse" : "";
 
 
     return (
       <Card
         ref={ref}
-        id={`node-${id}`}
+        id={`node-${id}`} // Add ID for direct DOM access by CanvasZone
         className={cn(
-          'min-w-[250px] max-w-xs bg-card/80 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] relative', // Added relative for port positioning
+          'absolute min-w-[250px] max-w-xs bg-card/90 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] group',
           'border-2',
           cardDynamicStyles[status] || cardDynamicStyles.unknown,
-          isSelected && !isConnectingFrom && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30',
+          isSelected && !isConnectingFrom && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30 scale-[1.02]',
           className
         )}
-        style={{ x: node.position?.x, y: node.position?.y }} // For potential future drag support
+        style={{
+          left: position?.x || 0,
+          top: position?.y || 0,
+          transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+         }}
         onClick={handleNodeClick}
       >
-        {/* Input Port */}
         {onInputPortClick && (
           <div
-            className={cn(portBaseStyle, "left-[-10px] top-1/2 -translate-y-1/2", {"bg-green-500/50 border-green-500": !isConnectingFrom && isSelected})}
+            data-port-type="input"
+            className={cn(portBaseStyle, "left-[-9px] top-1/2 -translate-y-1/2", {"bg-green-400/80 border-green-600": !isConnectingFrom && isSelected})}
             onClick={handleInputClick}
-            title="Input Port"
+            title={`Input to ${title}`}
           >
-            <ArrowRight className="h-2 w-2 text-primary-foreground" />
+            {/* Visual indicator for port, e.g., a small dot or arrow shape */}
           </div>
         )}
 
-        {/* Output Port */}
         {onOutputPortClick && (
           <div
-            className={cn(portBaseStyle, "right-[-10px] top-1/2 -translate-y-1/2", connectingPortStyle)}
+            ref={outputPortRef}
+            data-port-type="output"
+            className={cn(portBaseStyle, "right-[-9px] top-1/2 -translate-y-1/2", connectingPortStyle)}
             onClick={handleOutputClick}
-            title="Output Port"
+            title={`Output from ${title}`}
           >
-             <ArrowLeft className="h-2 w-2 text-primary-foreground" />
+            {/* Visual indicator for port */}
           </div>
         )}
 
-        <CardHeader className="pb-2 pt-4 px-4 cursor-grab">
+        <CardHeader className="pb-2 pt-4 px-4 cursor-grab select-none">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {currentTypeIcon}
@@ -156,7 +165,7 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
           </div>
           <CardDescription className="text-xs text-muted-foreground ml-6">{formatDisplayValue(type)}</CardDescription>
         </CardHeader>
-        <CardContent className="px-4 pb-4 cursor-grab">
+        <CardContent className="px-4 pb-4 cursor-grab select-none">
           {description && <p className="text-xs text-muted-foreground mb-2 line-clamp-3">{description}</p>}
           {agentName && (
             <div className="flex items-center gap-1 text-xs text-primary">
@@ -174,3 +183,5 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
 );
 
 WorkflowNode.displayName = 'WorkflowNode';
+
+    
