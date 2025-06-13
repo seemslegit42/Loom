@@ -1,3 +1,4 @@
+
 // src/components/ai/ai-flow-generator-form.tsx
 'use client';
 
@@ -42,7 +43,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
           title: "Success",
           description: state.message,
         });
-        if (state.workflowDescription && state.promptSequence) {
+        if (state.workflowName && state.promptSequence) {
           onFlowGenerated(state);
         }
       }
@@ -59,7 +60,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
           id="userInput"
           name="userInput"
           type="text"
-          placeholder="e.g., Generate a new data cleanup flow"
+          placeholder="Describe the agent workflow or task you want to create..."
           className="bg-input/80 backdrop-blur-sm border-border/70 focus:ring-ring"
           defaultValue={state.userInput}
         />

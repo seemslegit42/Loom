@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -15,7 +16,7 @@ const GenerateDataCleanupFlowInputSchema = z.object({
   userInput: z
     .string()
     .describe(
-      'The user input describing the desired data cleanup workflow. Example: Generate a new data cleanup flow'
+      'The user input describing the desired agent workflow or task. Example: "Summarize recent customer feedback emails and identify common themes."'
     ),
 });
 export type GenerateDataCleanupFlowInput = z.infer<typeof GenerateDataCleanupFlowInputSchema>;
@@ -28,10 +29,10 @@ export type GenerateDataCleanupFlowInput = z.infer<typeof GenerateDataCleanupFlo
 const GenerateDataCleanupFlowOutputSchema = z.object({
   workflowDescription: z 
     .string()
-    .describe('A concise name or high-level description for the generated data cleanup workflow. e.g., "Customer Address Normalization"'),
+    .describe('A concise name or high-level description for the generated workflow. e.g., "Customer Feedback Summarizer" or "Daily News Digest Agent"'),
   promptSequence: z
     .array(z.string())
-    .describe('A sequence of textual prompts or steps to achieve the data cleanup goal. Each string is one step. e.g., ["Identify missing street numbers", "Standardize city names to uppercase"]'),
+    .describe('A sequence of textual prompts or steps to achieve the workflow goal. Each string is one step. e.g., ["Fetch unread emails with label \'feedback\'", "For each email, extract key points", "Categorize points and count occurrences"]'),
 });
 export type GenerateDataCleanupFlowOutput = z.infer<typeof GenerateDataCleanupFlowOutputSchema>;
 
@@ -45,11 +46,11 @@ const prompt = ai.definePrompt({
   name: 'generateDataCleanupPrompt',
   input: {schema: GenerateDataCleanupFlowInputSchema},
   output: {schema: GenerateDataCleanupFlowOutputSchema},
-  prompt: `You are an AI workflow generator specializing in data cleanup.
+  prompt: `You are an AI workflow generator. Your task is to design an agentic workflow based on the user's request.
 
-  Based on the user input, generate a data cleanup workflow.
-  Provide a concise 'workflowDescription' which will serve as the name of the flow.
-  Provide a 'promptSequence' which is an array of strings, where each string represents a textual description of a step or prompt in the workflow.
+  Based on the user input, generate an agent workflow.
+  Provide a concise 'workflowDescription' which will serve as the name/title of the workflow.
+  Provide a 'promptSequence' which is an array of strings, where each string represents a high-level step or prompt in the agent's workflow.
 
   User Input: {{{userInput}}}
   `,
