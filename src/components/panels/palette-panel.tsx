@@ -2,7 +2,7 @@
 // src/components/panels/palette-panel.tsx
 import { BasePanel } from './base-panel';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Zap, MessageSquare, GitMerge, Cog, Timer, Webhook, SlidersHorizontal } from 'lucide-react';
+import { LayoutGrid, Zap, MessageSquare, GitMerge, Cog, Timer, Webhook, SlidersHorizontal, Globe } from 'lucide-react'; // Added Globe
 
 interface PalettePanelProps {
   className?: string;
@@ -10,14 +10,14 @@ interface PalettePanelProps {
   isMobile?: boolean;
 }
 
-// Corresponds to WorkflowNodeProps['type']
 const paletteItems = [
   { name: 'Prompt', type: 'prompt', icon: <MessageSquare className="h-4 w-4" /> },
   { name: 'Agent Call', type: 'agent-call', icon: <Zap className="h-4 w-4" /> },
   { name: 'Decision', type: 'decision', icon: <GitMerge className="h-4 w-4" /> },
+  { name: 'Web Summarizer', type: 'web-summarizer', icon: <Globe className="h-4 w-4" /> }, // Added Web Summarizer
+  { name: 'API Call', type: 'api-call', icon: <Webhook className="h-4 w-4" /> },
   { name: 'Trigger', type: 'trigger', icon: <Cog className="h-4 w-4" /> },
   { name: 'Wait', type: 'wait', icon: <Timer className="h-4 w-4" /> },
-  { name: 'API Call', type: 'api-call', icon: <Webhook className="h-4 w-4" /> },
   { name: 'Custom Logic', type: 'custom', icon: <SlidersHorizontal className="h-4 w-4" /> },
 ];
 
@@ -50,4 +50,3 @@ export function PalettePanel({ className, onClose, isMobile }: PalettePanelProps
     </BasePanel>
   );
 }
-

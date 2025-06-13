@@ -2,11 +2,12 @@
 // src/components/workflow/workflow-node.tsx
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog } from 'lucide-react';
+import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow'; // Added import
 
 export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown';
-export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom';
+export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer'; // Added 'web-summarizer'
 
 export interface WorkflowNodeData {
   id: string;
@@ -15,7 +16,11 @@ export interface WorkflowNodeData {
   description: string;
   status?: NodeStatus;
   agentName?: string;
-  // Add other relevant fields like inputSchema, outputSchema, config values etc.
+  config?: { // Added config object
+    url?: string; // For web-summarizer
+    output?: SummarizeWebpageOutput; // To store the result for web-summarizer
+    // We can add other config fields for other node types later
+  };
 }
 
 interface WorkflowNodeProps {
@@ -27,7 +32,7 @@ interface WorkflowNodeProps {
 
 const statusIcons: Record<NodeStatus, React.ReactNode> = {
   queued: <Clock className="h-4 w-4 text-blue-400" />,
-  running: <Bot className="h-4 w-4 text-primary animate-pulse" />, // Icon can still pulse for header
+  running: <Bot className="h-4 w-4 text-primary animate-pulse" />,
   failed: <AlertTriangle className="h-4 w-4 text-destructive" />,
   completed: <CheckCircle className="h-4 w-4 text-green-500" />,
   unknown: <HelpCircle className="h-4 w-4 text-muted-foreground" />,
@@ -41,36 +46,33 @@ const typeIcons: Record<NodeType, React.ReactNode> = {
   'api-call': <Webhook className="h-4 w-4 text-indigo-400" />,
   trigger: <Cog className="h-4 w-4 text-pink-400" />,
   custom: <SlidersHorizontal className="h-4 w-4 text-teal-400" />,
+  'web-summarizer': <Globe className="h-4 w-4 text-sky-400" />, // Added icon for web-summarizer
 };
 
-// Styles for the Badge component
 const badgeStyles: Record<NodeStatus, string> = {
     queued: "bg-blue-500/20 text-blue-300 border-blue-500/50",
-    running: "bg-primary/20 text-primary border-primary/50", // Pulse removed from badge if card pulses
+    running: "bg-primary/20 text-primary border-primary/50",
     failed: "bg-destructive/20 text-destructive border-destructive/50",
     completed: "bg-green-500/20 text-green-400 border-green-500/50",
     unknown: "bg-muted/20 text-muted-foreground border-muted/50",
 };
 
-// Styles for the Card component's border and overall animation
 const cardDynamicStyles: Record<NodeStatus, string> = {
   queued: 'border-blue-500/60',
-  running: 'border-primary/60 animate-pulse', // Card itself pulses
-  failed: 'border-destructive/70', 
+  running: 'border-primary/60 animate-pulse',
+  failed: 'border-destructive/70',
   completed: 'border-green-500/60',
-  unknown: 'border-border', // Default card border from globals.css
+  unknown: 'border-border',
 };
-
 
 const formatDisplayValue = (value: string = '') => {
   if (!value) return '';
   return value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-
 export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowNodeProps) {
   const { title, type, status = 'unknown', description, agentName } = node;
-  const currentTypeIcon = typeIcons[type] || typeIcons.custom; 
+  const currentTypeIcon = typeIcons[type] || typeIcons.custom;
   const currentStatusIcon = statusIcons[status] || statusIcons.unknown;
 
   const handleNodeClick = () => {
@@ -83,7 +85,7 @@ export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowN
     <Card
       className={cn(
         'min-w-[250px] max-w-xs bg-card/80 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] cursor-pointer',
-        'border-2', // Base border width for consistent appearance
+        'border-2',
         cardDynamicStyles[status] || cardDynamicStyles.unknown,
         isSelected && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30',
         className
@@ -115,4 +117,3 @@ export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowN
     </Card>
   );
 }
-
