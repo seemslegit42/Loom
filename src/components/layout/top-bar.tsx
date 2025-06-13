@@ -4,7 +4,7 @@ import type { GenerateFlowFormState } from '@/lib/actions/ai';
 import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, Check } from 'lucide-react';
+import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, Check, FolderKanban, FileText } from 'lucide-react';
 import type { PanelVisibility } from '@/app/page';
 import {
   DropdownMenu,
@@ -37,6 +37,13 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
+              <DropdownMenuItem disabled>
+                 <FolderKanban className="mr-2 h-4 w-4" /> Projects
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                 <FileText className="mr-2 h-4 w-4" /> Docs
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => togglePanel('console')} className="cursor-pointer">
                 <Terminal className="mr-2 h-4 w-4" />
                 <span>Console</span>
@@ -57,7 +64,7 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
           Loom Studio
         </h1>
         <Separator orientation="vertical" className={`h-8 ${isMobile ? 'hidden' : 'block'}`} />
-        <nav className="hidden items-center gap-2 md:flex">
+        <nav className={`items-center gap-2 ${isMobile ? 'hidden' : 'flex md:flex'}`}>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
             Projects
           </Button>
