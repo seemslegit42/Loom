@@ -42,6 +42,8 @@ const getTextColorForType = (type: string) => {
 const filterableMessageTypes: ConsoleMessage['type'][] = ['info', 'log', 'warn', 'error'];
 
 export function ConsolePanel({ className, onClose, messages, filters, onToggleFilter, isMobile }: ConsolePanelProps) {
+  const allFiltersEnabled = Object.values(filters).every(Boolean);
+  
   return (
     <BasePanel
       title="Console"
@@ -77,7 +79,7 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
             <div className="flex items-start text-muted-foreground">
                 <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />
                 <span>
-                  {Object.values(filters).every(Boolean) 
+                  {allFiltersEnabled
                     ? "Loom Studio initialized. Waiting for events..." 
                     : "No messages match current filters."}
                 </span>
