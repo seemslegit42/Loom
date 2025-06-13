@@ -21,20 +21,22 @@ interface ConsolePanelProps {
   isMobile?: boolean;
 }
 
-const getIconForType = (type: string) => {
+const getIconForType = (type: ConsoleMessage['type']) => {
   switch (type) {
     case 'error': return <AlertCircle className="h-3.5 w-3.5 text-destructive mr-2 shrink-0" />;
     case 'warn': return <AlertCircle className="h-3.5 w-3.5 text-yellow-500 mr-2 shrink-0" />;
     case 'info': return <Info className="h-3.5 w-3.5 text-blue-400 mr-2 shrink-0" />;
+    case 'log':
     default: return <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />;
   }
 };
 
-const getTextColorForType = (type: string) => {
+const getTextColorForType = (type: ConsoleMessage['type']) => {
   switch (type) {
     case 'error': return "text-destructive";
     case 'warn': return "text-yellow-400";
     case 'info': return "text-blue-300";
+    case 'log':
     default: return "text-foreground/80";
   }
 };
@@ -62,7 +64,7 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
             variant={filters[type] ? "secondary" : "ghost"}
             size="sm"
             className={cn(
-              "text-xs h-6 px-1.5 py-0.5",
+              "text-xs h-6 px-1.5 py-0.5 flex items-center", // Ensure flex for icon alignment
               filters[type] && "border border-primary/50"
             )}
             onClick={() => onToggleFilter(type)}
@@ -77,7 +79,7 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
         <div className="p-2 space-y-1">
         {messages.length === 0 && (
             <div className="flex items-start text-muted-foreground">
-                <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />
+                {getIconForType('log')}
                 <span>
                   {allFiltersEnabled
                     ? "Loom Studio initialized. Waiting for events..." 
@@ -93,7 +95,7 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
         ))}
         {messages.length > 0 && (
           <div className="flex items-start text-muted-foreground pt-1 mt-1 border-t border-border/20">
-            <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />
+            {getIconForType('log')}
             <span>&gt; Listening for new events...</span>
             <span className="animate-ping ml-1">_</span>
           </div>

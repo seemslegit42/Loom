@@ -45,7 +45,7 @@ export function CanvasZone({
     }
   };
   
-  const allNodes = nodes.map(node => ({
+  const displayedNodes = nodes.map(node => ({
     ...node,
     status: nodeExecutionStatus[node.id] || node.status || 'queued', // Prioritize execution status map
   }));
@@ -75,9 +75,9 @@ export function CanvasZone({
             )} */}
           </div>
         )}
-        {allNodes.length > 0 ? (
+        {displayedNodes.length > 0 ? (
           <div className="flex flex-wrap gap-6">
-            {allNodes.map((node) => (
+            {displayedNodes.map((node) => (
               <WorkflowNode
                 key={node.id}
                 node={node}
