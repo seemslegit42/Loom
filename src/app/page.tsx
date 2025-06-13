@@ -14,6 +14,7 @@ import { AgentHubPanel } from '@/components/panels/agent-hub-panel';
 import type { GenerateFlowFormState } from '@/lib/actions/ai';
 import type { WorkflowNodeData } from '@/components/workflow/workflow-node';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 
 export interface PanelVisibility {
   palette: boolean;
@@ -34,6 +35,7 @@ export default function LoomStudioPage() {
     agentHub: true,
   });
   const isMobile = useIsMobile();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isMobile === undefined) return; // Wait for isMobile to be defined
@@ -61,7 +63,7 @@ export default function LoomStudioPage() {
   const handleFlowGenerated = (data: GenerateFlowFormState) => {
     setGeneratedFlow({
       ...data,
-      manualNodes: [],
+      manualNodes: [], // Clear manual nodes when AI generates a new flow
     });
     setSelectedNode(null); // Clear selected node when a new flow is generated
   };
@@ -79,6 +81,55 @@ export default function LoomStudioPage() {
 
   const handleNodeSelected = (node: WorkflowNodeData | null) => {
     setSelectedNode(node);
+  };
+
+  const handleNodeUpdate = (updatedNode: WorkflowNodeData) => {
+    setGeneratedFlow(prevFlow => {
+      if (!prevFlow) return null;
+
+      let newManualNodes = prevFlow.manualNodes || [];
+      let newPromptSequence = prevFlow.promptSequence || [];
+
+      // Check if it's a manual node
+      const manualNodeIndex = newManualNodes.findIndex(n => n.id === updatedNode.id);
+      if (manualNodeIndex !== -1) {
+        newManualNodes = [
+          ...newManualNodes.slice(0, manualNodeIndex),
+          updatedNode,
+          ...newManualNodes.slice(manualNodeIndex + 1),
+        ];
+      } else {
+        // Check if it's an AI-generated node (derived from promptSequence)
+        // AI Node IDs are like: `ai-node-${index}-${workflowName}`
+        const aiNodeIdParts = updatedNode.id.split('-');
+        if (aiNodeIdParts[0] === 'ai' && aiNodeIdParts[1] === 'node') {
+          const index = parseInt(aiNodeIdParts[2], 10);
+          if (!isNaN(index) && index < newPromptSequence.length) {
+            // For AI nodes, we primarily update the description from the prompt sequence
+            newPromptSequence = [
+              ...newPromptSequence.slice(0, index),
+              updatedNode.description, // Update the prompt string
+              ...newPromptSequence.slice(index + 1),
+            ];
+            // The title of AI nodes might still be derived in CanvasZone,
+            // but if we want to persist title changes too, we'd need a more complex state for AI nodes.
+            // For now, updating description is the main goal for AI nodes.
+          }
+        }
+      }
+      
+      toast({
+        title: "Node Updated",
+        description: `Node "${updatedNode.title}" has been saved.`,
+      });
+
+      return {
+        ...prevFlow,
+        manualNodes: newManualNodes,
+        promptSequence: newPromptSequence,
+      };
+    });
+    setSelectedNode(updatedNode); // Keep the updated node selected
   };
 
 
@@ -122,7 +173,7 @@ export default function LoomStudioPage() {
   const anyMobilePanelOpen = isMobile && Object.values(panelVisibility).some(v => v);
 
   if (isMobile === undefined) {
-    return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center">Loading UI...</div>; // Or a proper skeleton loader
+    return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center">Loading UI...</div>;
   }
 
   return (
@@ -144,10 +195,8 @@ export default function LoomStudioPage() {
           />
         </div>
 
-        {/* Panel Rendering Logic */}
         {!isMobile ? (
           <>
-            {/* Desktop Layout */}
             {panelVisibility.palette && (
               <PalettePanel className="absolute top-4 left-4 z-10" onClose={() => togglePanel('palette')} />
             )}
@@ -156,6 +205,7 @@ export default function LoomStudioPage() {
                 className="absolute top-4 right-4 z-10 max-h-[calc(50vh-2rem)]"
                 onClose={() => togglePanel('inspector')}
                 selectedNode={selectedNode}
+                onNodeUpdate={handleNodeUpdate}
               />
             )}
             <div className="absolute bottom-4 left-4 right-4 flex gap-4 z-10">
@@ -168,20 +218,19 @@ export default function LoomStudioPage() {
             </div>
             {panelVisibility.agentHub && (
               <AgentHubPanel
-                className="absolute bottom-4 right-4 z-10 max-h-[calc(50vh-2.5rem-env(safe-area-inset-bottom))]"
+                 className="absolute bottom-4 right-4 z-10 max-h-[calc(50vh-2.5rem-env(safe-area-inset-bottom))]"
                 onClose={() => togglePanel('agentHub')}
               />
             )}
           </>
         ) : (
           <>
-            {/* Mobile Overlay Panels */}
             <div className={`fixed inset-y-0 left-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.palette ? 'translate-x-0' : '-translate-x-full'}`}>
               {panelVisibility.palette && <PalettePanel className="h-full p-1" onClose={() => togglePanel('palette')} />}
             </div>
 
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.inspector ? 'translate-x-0' : 'translate-x-full'}`}>
-              {panelVisibility.inspector && <InspectorPanel className="h-full p-1" onClose={() => togglePanel('inspector')} selectedNode={selectedNode} />}
+              {panelVisibility.inspector && <InspectorPanel className="h-full p-1" onClose={() => togglePanel('inspector')} selectedNode={selectedNode} onNodeUpdate={handleNodeUpdate} />}
             </div>
             
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
@@ -192,7 +241,7 @@ export default function LoomStudioPage() {
               {panelVisibility.timeline && <TimelinePanel className="h-full p-1" onClose={() => togglePanel('timeline')} />}
             </div>
 
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${ panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
               {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} />}
             </div>
             

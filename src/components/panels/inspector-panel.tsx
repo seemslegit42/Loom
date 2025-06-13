@@ -1,25 +1,53 @@
 
 // src/components/panels/inspector-panel.tsx
 import { BasePanel } from './base-panel';
-import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow } from 'lucide-react';
+import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import type { WorkflowNodeData } from '@/components/workflow/workflow-node'; // Import the type
+import { Button } from '@/components/ui/button';
+import type { WorkflowNodeData } from '@/components/workflow/workflow-node';
+import { useState, useEffect } from 'react';
 
 interface InspectorPanelProps {
   className?: string;
   onClose?: () => void;
-  selectedNode: WorkflowNodeData | null; // Add selectedNode prop
+  selectedNode: WorkflowNodeData | null;
+  onNodeUpdate?: (updatedNode: WorkflowNodeData) => void;
 }
 
-export function InspectorPanel({ className, onClose, selectedNode }: InspectorPanelProps) {
-  // Use a key derived from selectedNode.id to force re-render of inputs when node changes
-  const formKey = selectedNode ? selectedNode.id : 'no-node-selected';
+export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate }: InspectorPanelProps) {
+  const [editableTitle, setEditableTitle] = useState('');
+  const [editableDescription, setEditableDescription] = useState('');
+
+  useEffect(() => {
+    if (selectedNode) {
+      setEditableTitle(selectedNode.title);
+      setEditableDescription(selectedNode.description);
+    } else {
+      setEditableTitle('');
+      setEditableDescription('');
+    }
+  }, [selectedNode]);
+
+  const handleSaveChanges = () => {
+    if (selectedNode && onNodeUpdate) {
+      onNodeUpdate({
+        ...selectedNode,
+        title: editableTitle,
+        description: editableDescription,
+      });
+    }
+  };
+  
+  // Use a key derived from selectedNode.id to force re-render of inputs when node changes,
+  // or to reset the component if no node is selected.
+  const panelKey = selectedNode ? selectedNode.id : 'no-node-selected';
 
   return (
     <BasePanel
+      key={panelKey} // Add key here for proper reset if needed, though internal state handles it now
       title="Inspector"
       icon={<Settings2 className="h-4 w-4" />}
       className={className}
@@ -28,16 +56,15 @@ export function InspectorPanel({ className, onClose, selectedNode }: InspectorPa
       contentClassName="space-y-3"
     >
       {selectedNode ? (
-        <div key={formKey} className="space-y-3">
+        <div className="space-y-3">
           <div className="space-y-1">
             <Label htmlFor="nodeName" className="text-xs">Node Name</Label>
             <Input 
               id="nodeName" 
               placeholder="Node name" 
-              defaultValue={selectedNode.title} 
-              className="bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring" 
-              // For now, inputs are read-only until editing logic is implemented
-              readOnly 
+              value={editableTitle}
+              onChange={(e) => setEditableTitle(e.target.value)}
+              className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring" 
             />
           </div>
           <div className="space-y-1">
@@ -67,10 +94,10 @@ export function InspectorPanel({ className, onClose, selectedNode }: InspectorPa
             <Textarea 
               id="nodeDescription" 
               placeholder="Node description" 
-              defaultValue={selectedNode.description} 
+              value={editableDescription}
+              onChange={(e) => setEditableDescription(e.target.value)}
               rows={3} 
-              className="bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring" 
-              readOnly
+              className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring" 
             />
           </div>
           <div className="flex items-center justify-between">
@@ -85,15 +112,21 @@ export function InspectorPanel({ className, onClose, selectedNode }: InspectorPa
               <Tags className="h-4 w-4 text-primary"/>
               Tags
             </Label>
-            <Input placeholder="e.g., data-processing, validation" className="bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring" readOnly />
+            <Input placeholder="e.g., data-processing, validation" className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring" readOnly />
           </div>
           <div className="space-y-1">
             <Label className="text-xs flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary"/>
               Configuration / Metadata
             </Label>
-            <Textarea placeholder="JSON configuration for this node" rows={3} className="font-code text-xs bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring" readOnly />
+            <Textarea placeholder="JSON configuration for this node" rows={3} className="font-code text-xs bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring" readOnly />
           </div>
+          {onNodeUpdate && (
+            <Button onClick={handleSaveChanges} className="w-full mt-2" size="sm">
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </Button>
+          )}
         </div>
       ) : (
         <div className="text-sm text-muted-foreground text-center py-10">
