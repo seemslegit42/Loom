@@ -323,6 +323,7 @@ export default function LoomStudioPage() {
             )}
             {panelVisibility.inspector && (
               <InspectorPanel
+                key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'}
                 className="absolute top-4 right-4 z-10 max-h-[calc(50vh-2rem)]"
                 onClose={() => togglePanel('inspector')}
                 selectedNode={selectedNode}
@@ -366,7 +367,7 @@ export default function LoomStudioPage() {
             </div>
 
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.inspector ? 'translate-x-0' : 'translate-x-full'}`}>
-              {panelVisibility.inspector && <InspectorPanel className="h-full p-1" onClose={() => togglePanel('inspector')} selectedNode={selectedNode} onNodeUpdate={handleNodeUpdate} isMobile={isMobile} />}
+              {panelVisibility.inspector && <InspectorPanel key={selectedNode ? `inspector-mobile-${selectedNode.id}` : 'inspector-mobile-no-node'} className="h-full p-1" onClose={() => togglePanel('inspector')} selectedNode={selectedNode} onNodeUpdate={handleNodeUpdate} isMobile={isMobile} />}
             </div>
             
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
