@@ -51,6 +51,11 @@ const statusColors: Record<string, string> = {
     unknown: "bg-muted/20 text-muted-foreground border-muted/50",
 };
 
+const formatDisplayValue = (value: string = '') => {
+  if (!value) return '';
+  return value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
 
 export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowNodeProps) {
   const { title, type, status = 'unknown', description, agentName } = node;
@@ -80,7 +85,7 @@ export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowN
           </div>
           {currentStatusIcon}
         </div>
-        <CardDescription className="text-xs text-muted-foreground capitalize ml-6">{type.replace('-', ' ')}</CardDescription>
+        <CardDescription className="text-xs text-muted-foreground ml-6">{formatDisplayValue(type)}</CardDescription>
       </CardHeader>
       <CardContent className="px-4 pb-4">
         {description && <p className="text-xs text-muted-foreground mb-2 line-clamp-3">{description}</p>}
@@ -91,7 +96,7 @@ export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowN
           </div>
         )}
         <Badge variant="outline" className={`mt-2 text-xs ${statusColors[status] || statusColors.unknown}`}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
+          {formatDisplayValue(status)}
         </Badge>
       </CardContent>
     </Card>

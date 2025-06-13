@@ -137,9 +137,13 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
           )}
         </div>
       ) : (
-        <div className="text-sm text-muted-foreground text-center py-10">
-          <Settings2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          Select a node on the canvas to inspect its properties.
+        <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-10 h-full">
+          <Settings2 className="h-12 w-12 mx-auto mb-4 opacity-30 text-primary" />
+          <h3 className="font-headline text-lg mb-1 text-foreground/90">Node Inspector</h3>
+          <p className="text-sm max-w-xs">
+            Select a node on the canvas to view and edit its properties.
+            The Inspector Panel allows you to fine-tune the behavior of individual workflow components.
+          </p>
         </div>
       )}
     </BasePanel>
