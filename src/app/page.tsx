@@ -54,7 +54,7 @@ export default function LoomStudioPage() {
 
   const handleClearConsole = () => {
     setConsoleMessages([]);
-    // Optionally, add a message like: addConsoleMessage('info', 'Console cleared.');
+    addConsoleMessage('info', 'Console cleared by user.');
   };
 
   const addTimelineEvent = (event: Omit<TimelineEvent, 'id' | 'timestamp'>) => {
@@ -164,7 +164,7 @@ export default function LoomStudioPage() {
         data.nodes.forEach(node => {
           initialStatuses[node.id] = node.status || 'queued';
         });
-        setNodeExecutionStatus(initialStatuses);
+        setNodeExecutionStatus(initialStatuses); // Set initial statuses for generated nodes
         simulateFlowExecution(data.nodes);
       } else {
          setTimelineEvents([]); 
@@ -244,14 +244,14 @@ export default function LoomStudioPage() {
         case 'running': eventType = 'node_running'; break;
         case 'failed': eventType = 'node_failed'; break;
         case 'queued': eventType = 'node_queued'; break;
-        default: eventType = 'info'; break;
+        default: eventType = 'info'; break; // 'unknown' or other statuses default to 'info'
       }
 
       addTimelineEvent({
         nodeId: updatedNode.id,
         nodeTitle: updatedNode.title,
         type: eventType,
-        message: `Node "${updatedNode.title}" status updated to ${updatedNode.status}.`
+        message: `Node "${updatedNode.title}" status manually updated to ${updatedNode.status}.`
       });
     }
   };
@@ -262,7 +262,8 @@ export default function LoomStudioPage() {
       const currentlyOpening = !prev[panel]; 
 
       if (isMobile) {
-        if (prev[panel] && !currentlyOpening) { // If current panel is open and we are trying to close it
+        // If current panel is open and we are trying to close it by clicking its icon
+        if (prev[panel] && !currentlyOpening) { 
           newState[panel] = false;
         } else { // If trying to open a new panel, or switch panels
           newState.palette = false;
@@ -294,8 +295,9 @@ export default function LoomStudioPage() {
   };
 
   const toggleConsoleFilter = (type: ConsoleMessage['type']) => {
-    setConsoleFilters(prev => ({ ...prev, [type]: !prev[type] }));
-     addConsoleMessage('log', `Console filter for "${type.toUpperCase()}" messages ${!consoleFilters[type] ? 'enabled' : 'disabled'}.`);
+    const newFilterState = !consoleFilters[type];
+    setConsoleFilters(prev => ({ ...prev, [type]: newFilterState }));
+    addConsoleMessage('log', `Console filter for "${type.toUpperCase()}" messages ${newFilterState ? 'enabled' : 'disabled'}.`);
   };
 
   const anyMobilePanelOpen = isMobile && Object.values(panelVisibility).some(v => v);
