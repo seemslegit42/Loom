@@ -73,7 +73,8 @@ export default function LoomStudioPage() {
         setConsoleMessages(fetchedMessages.reverse()); // Reverse to show oldest first
       } catch (error) {
         console.error("Error fetching console messages from Firestore:", error);
-        setConsoleMessages(prev => [...prev, {type: 'error', text: 'Failed to load console history from Firestore.', timestamp: new Date()}]);
+        // Add an error message directly to the UI console
+        setConsoleMessages(prev => [{type: 'error', text: 'Failed to load console history from Firestore.', timestamp: new Date()}, ...prev]);
       }
     };
 

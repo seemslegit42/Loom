@@ -3,7 +3,7 @@
 'use client';
 
 import { BasePanel } from './base-panel';
-import { ListOrdered, BarChart3, Bug, Workflow, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { ListOrdered, BarChart3, Bug, Workflow, AlertTriangle, CheckCircle, Clock, InfoIcon, PlayCircle } from 'lucide-react'; // Added InfoIcon, PlayCircle
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -27,16 +27,33 @@ interface TimelinePanelProps {
 
 const getIconForEventType = (type: TimelineEvent['type']) => {
   switch (type) {
-    case 'workflow_start': return <Workflow className="h-3.5 w-3.5 text-primary mr-2 shrink-0" />;
+    case 'workflow_start': return <PlayCircle className="h-3.5 w-3.5 text-primary mr-2 shrink-0" />;
     case 'workflow_completed': return <CheckCircle className="h-3.5 w-3.5 text-green-500 mr-2 shrink-0" />;
     case 'workflow_failed': return <AlertTriangle className="h-3.5 w-3.5 text-destructive mr-2 shrink-0" />;
     case 'node_queued': return <Clock className="h-3.5 w-3.5 text-blue-400 mr-2 shrink-0" />;
-    case 'node_running': return <Workflow className="h-3.5 w-3.5 text-yellow-400 mr-2 shrink-0 animate-pulse" />;
+    case 'node_running': return <Workflow className="h-3.5 w-3.5 text-yellow-400 mr-2 shrink-0 animate-pulse" />; // Keep animate-pulse for running
     case 'node_completed': return <CheckCircle className="h-3.5 w-3.5 text-green-500 mr-2 shrink-0" />;
     case 'node_failed': return <AlertTriangle className="h-3.5 w-3.5 text-destructive mr-2 shrink-0" />;
+    case 'info': return <InfoIcon className="h-3.5 w-3.5 text-sky-400 mr-2 shrink-0" />;
     default: return <ListOrdered className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />;
   }
 };
+
+const getEventTitleClass = (type: TimelineEvent['type']): string => {
+  switch (type) {
+    case 'workflow_failed':
+    case 'node_failed':
+      return "text-destructive";
+    case 'workflow_completed':
+    case 'node_completed':
+      return "text-green-400";
+    case 'workflow_start':
+    case 'node_running':
+      return "text-primary";
+    default:
+      return "text-foreground/90";
+  }
+}
 
 export function TimelinePanel({ className, onClose, events, isMobile }: TimelinePanelProps) {
   const { toast } = useToast();
@@ -71,19 +88,21 @@ export function TimelinePanel({ className, onClose, events, isMobile }: Timeline
           <ul className="space-y-2">
             {events.map((item) => (
               <li key={item.id} className="text-xs p-2 rounded-md bg-card/50 border border-border/30">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-start">
                     {getIconForEventType(item.type)}
-                    <span className={cn(
-                      "font-medium text-foreground/90",
-                      (item.type === 'node_failed' || item.type === 'workflow_failed') && "text-destructive"
-                    )}>
-                      {item.nodeTitle ? `Node: ${item.nodeTitle}` : item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </span>
+                    <div className="flex-1">
+                      <span className={cn(
+                        "font-medium block",
+                        getEventTitleClass(item.type)
+                      )}>
+                        {item.nodeTitle ? `Node: ${item.nodeTitle}` : item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                      <p className="text-muted-foreground/80 text-[0.7rem] leading-tight">{item.message}</p>
+                    </div>
                   </div>
-                  <span className="text-muted-foreground">{item.timestamp.toLocaleTimeString()}</span>
+                  <span className="text-muted-foreground text-[0.7rem] whitespace-nowrap pl-2">{item.timestamp.toLocaleTimeString()}</span>
                 </div>
-                <p className="text-muted-foreground/80 text-[0.7rem] ml-[22px]">{item.message}</p>
               </li>
             ))}
           </ul>
