@@ -14,6 +14,7 @@ interface ConsolePanelProps {
   className?: string;
   onClose?: () => void;
   messages: ConsoleMessage[];
+  isMobile?: boolean;
 }
 
 const getIconForType = (type: string) => {
@@ -34,13 +35,14 @@ const getTextColorForType = (type: string) => {
   }
 };
 
-export function ConsolePanel({ className, onClose, messages }: ConsolePanelProps) {
+export function ConsolePanel({ className, onClose, messages, isMobile }: ConsolePanelProps) {
   return (
     <BasePanel
       title="Console"
       icon={<Terminal className="h-4 w-4" />}
       className={className}
       onClose={onClose}
+      isMobile={isMobile}
       initialSize={{ width: 'auto', height: '250px' }}
       contentClassName="font-code text-xs p-0"
     >
@@ -70,5 +72,3 @@ export function ConsolePanel({ className, onClose, messages }: ConsolePanelProps
     </BasePanel>
   );
 }
-
-    

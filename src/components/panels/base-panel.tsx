@@ -1,3 +1,4 @@
+
 // src/components/panels/base-panel.tsx
 'use client';
 
@@ -15,6 +16,7 @@ interface BasePanelProps {
   contentClassName?: string;
   initialSize?: { width?: string; height?: string };
   onClose?: () => void;
+  isMobile?: boolean; // Added to control visibility of min/max buttons
   isDraggable?: boolean; // Future use
   isResizable?: boolean; // Future use
 }
@@ -27,6 +29,7 @@ export function BasePanel({
   contentClassName,
   initialSize = {},
   onClose,
+  isMobile,
 }: BasePanelProps) {
   const { toast } = useToast();
   const sizeStyles: React.CSSProperties = {
@@ -52,12 +55,16 @@ export function BasePanel({
           <CardTitle className="text-sm font-medium font-headline">{title}</CardTitle>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/10" title="Minimize" onClick={handleMinimize}>
-            <Minus className="h-3 w-3" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/10" title="Maximize" onClick={handleMaximize}>
-            <Maximize2 className="h-3 w-3" />
-          </Button>
+          {!isMobile && (
+            <>
+              <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/10" title="Minimize" onClick={handleMinimize}>
+                <Minus className="h-3 w-3" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/10" title="Maximize" onClick={handleMaximize}>
+                <Maximize2 className="h-3 w-3" />
+              </Button>
+            </>
+          )}
           {onClose && (
             <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-destructive/20 hover:text-destructive" onClick={onClose} title="Close">
               <X className="h-4 w-4" />

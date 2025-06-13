@@ -15,9 +15,10 @@ interface InspectorPanelProps {
   onClose?: () => void;
   selectedNode: WorkflowNodeData | null;
   onNodeUpdate?: (updatedNode: WorkflowNodeData) => void;
+  isMobile?: boolean;
 }
 
-export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate }: InspectorPanelProps) {
+export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate, isMobile }: InspectorPanelProps) {
   const [editableTitle, setEditableTitle] = useState('');
   const [editableDescription, setEditableDescription] = useState('');
 
@@ -41,17 +42,16 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate 
     }
   };
   
-  // Use a key derived from selectedNode.id to force re-render of inputs when node changes,
-  // or to reset the component if no node is selected.
   const panelKey = selectedNode ? selectedNode.id : 'no-node-selected';
 
   return (
     <BasePanel
-      key={panelKey} // Add key here for proper reset if needed, though internal state handles it now
+      key={panelKey} 
       title="Inspector"
       icon={<Settings2 className="h-4 w-4" />}
       className={className}
       onClose={onClose}
+      isMobile={isMobile}
       initialSize={{ width: '320px', height: 'auto' }}
       contentClassName="space-y-3"
     >

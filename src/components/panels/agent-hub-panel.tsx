@@ -1,3 +1,4 @@
+
 // src/components/panels/agent-hub-panel.tsx
 'use client';
 
@@ -11,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 interface AgentHubPanelProps {
   className?: string;
   onClose?: () => void;
+  isMobile?: boolean;
 }
 
 const agents = [
@@ -26,7 +28,7 @@ const statusColors: Record<string, string> = {
   error: "bg-destructive/20 text-destructive border-destructive/50",
 };
 
-export function AgentHubPanel({ className, onClose }: AgentHubPanelProps) {
+export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelProps) {
   const { toast } = useToast();
 
   const handleSpawnAgent = () => {
@@ -47,6 +49,7 @@ export function AgentHubPanel({ className, onClose }: AgentHubPanelProps) {
       icon={<Bot className="h-4 w-4" />}
       className={className}
       onClose={onClose}
+      isMobile={isMobile}
       initialSize={{ width: '380px', height: 'auto' }}
       contentClassName="space-y-3"
     >

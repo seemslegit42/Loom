@@ -1,3 +1,4 @@
+
 // src/components/panels/palette-panel.tsx
 import { BasePanel } from './base-panel';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { LayoutGrid, Zap, MessageSquare, GitMerge, Cog, ShieldQuestion, Timer, W
 interface PalettePanelProps {
   className?: string;
   onClose?: () => void;
+  isMobile?: boolean;
 }
 
 // Corresponds to WorkflowNodeProps['type']
@@ -19,13 +21,14 @@ const paletteItems = [
   { name: 'Custom Logic', type: 'custom', icon: <SlidersHorizontal className="h-4 w-4" /> },
 ];
 
-export function PalettePanel({ className, onClose }: PalettePanelProps) {
+export function PalettePanel({ className, onClose, isMobile }: PalettePanelProps) {
   return (
     <BasePanel
       title="Palette"
       icon={<LayoutGrid className="h-4 w-4" />}
       className={className}
       onClose={onClose}
+      isMobile={isMobile}
       initialSize={{ width: '280px', height: 'auto' }}
       contentClassName="space-y-2"
     >

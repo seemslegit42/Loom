@@ -1,3 +1,4 @@
+
 // src/components/panels/timeline-panel.tsx
 'use client';
 
@@ -10,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 interface TimelinePanelProps {
   className?: string;
   onClose?: () => void;
+  isMobile?: boolean;
 }
 
 const timelineEvents = [
@@ -20,7 +22,7 @@ const timelineEvents = [
   { time: "1.3s", event: "Decision Node Queued", details: "Condition: Output length > 10" },
 ];
 
-export function TimelinePanel({ className, onClose }: TimelinePanelProps) {
+export function TimelinePanel({ className, onClose, isMobile }: TimelinePanelProps) {
   const { toast } = useToast();
 
   const handleTokenUsage = () => {
@@ -37,6 +39,7 @@ export function TimelinePanel({ className, onClose }: TimelinePanelProps) {
       icon={<ListOrdered className="h-4 w-4" />}
       className={className}
       onClose={onClose}
+      isMobile={isMobile}
       initialSize={{ width: 'auto', height: '250px' }}
     >
       <div className="flex gap-2 mb-2 border-b pb-2">
