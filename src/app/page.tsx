@@ -149,6 +149,9 @@ export default function LoomStudioPage() {
       const currentlyOpening = !prev[panel];
 
       if (isMobile) {
+        // On mobile, opening one panel closes all others of the same "type" (side, bottom)
+        // For simplicity here, we'll make it so opening any panel closes all others.
+        // A more sophisticated system could group them (e.g. palette/inspector are side, timeline/console are bottom)
         if (currentlyOpening) {
           newState.palette = panel === 'palette';
           newState.inspector = panel === 'inspector';
@@ -156,9 +159,11 @@ export default function LoomStudioPage() {
           newState.console = panel === 'console';
           newState.agentHub = panel === 'agentHub';
         } else {
+          // If closing, just close that one
           newState[panel] = false;
         }
       } else {
+        // On desktop, toggle independently
         newState[panel] = !prev[panel];
       }
       return newState;
@@ -205,7 +210,7 @@ export default function LoomStudioPage() {
         {!isMobile ? (
           <>
             {panelVisibility.palette && (
-              <PalettePanel className="absolute top-4 left-4 z-10" onClose={() => togglePanel('palette')} />
+              <PalettePanel className="absolute top-4 left-4 z-10" onClose={() => togglePanel('palette')} isMobile={isMobile} />
             )}
             {panelVisibility.inspector && (
               <InspectorPanel
@@ -213,17 +218,19 @@ export default function LoomStudioPage() {
                 onClose={() => togglePanel('inspector')}
                 selectedNode={selectedNode}
                 onNodeUpdate={handleNodeUpdate}
+                isMobile={isMobile}
               />
             )}
             <div className="absolute bottom-4 left-4 right-4 flex gap-4 z-10">
               {panelVisibility.timeline && (
-                <TimelinePanel className="flex-1 min-w-[300px]" onClose={() => togglePanel('timeline')} />
+                <TimelinePanel className="flex-1 min-w-[300px]" onClose={() => togglePanel('timeline')} isMobile={isMobile} />
               )}
               {panelVisibility.console && (
                 <ConsolePanel 
                   className="flex-1 min-w-[300px]" 
                   onClose={() => togglePanel('console')}
-                  messages={consoleMessages} 
+                  messages={consoleMessages}
+                  isMobile={isMobile} 
                 />
               )}
             </div>
@@ -231,6 +238,7 @@ export default function LoomStudioPage() {
               <AgentHubPanel
                  className="absolute bottom-[calc(250px+2rem)] right-4 z-10 max-h-[calc(50vh-2.5rem-env(safe-area-inset-bottom)-250px-2rem)]"
                 onClose={() => togglePanel('agentHub')}
+                isMobile={isMobile}
               />
             )}
           </>
@@ -244,14 +252,17 @@ export default function LoomStudioPage() {
               {panelVisibility.inspector && <InspectorPanel className="h-full p-1" onClose={() => togglePanel('inspector')} selectedNode={selectedNode} onNodeUpdate={handleNodeUpdate} isMobile={isMobile} />}
             </div>
             
+            {/* AgentHub on mobile - slides from right */}
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
               {panelVisibility.agentHub && <AgentHubPanel className="h-full p-1" onClose={() => togglePanel('agentHub')} isMobile={isMobile} />}
             </div>
 
+            {/* Timeline on mobile - slides from bottom */}
             <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
               {panelVisibility.timeline && <TimelinePanel className="h-full p-1" onClose={() => togglePanel('timeline')} isMobile={isMobile} />}
             </div>
 
+            {/* Console on mobile - slides from bottom */}
             <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
               {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} messages={consoleMessages} isMobile={isMobile} />}
             </div>
@@ -269,3 +280,5 @@ export default function LoomStudioPage() {
     </div>
   );
 }
+
+    
