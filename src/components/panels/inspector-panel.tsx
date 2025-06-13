@@ -1,7 +1,7 @@
 
 // src/components/panels/inspector-panel.tsx
 import { BasePanel } from './base-panel';
-import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2, MessageSquare } from 'lucide-react';
+import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2, MessageSquare, Trash2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
 import type { ExecutePromptOutput } from '@/ai/flows/execute-prompt-flow';
+import { AlertCircle } from 'lucide-react';
 
 
 interface InspectorPanelProps {
@@ -26,14 +27,15 @@ interface InspectorPanelProps {
   onClose?: () => void;
   selectedNode: WorkflowNodeData | null;
   onNodeUpdate?: (updatedNode: WorkflowNodeData) => void;
+  onNodeDelete?: (nodeId: string) => void; // New prop for deleting a node
   isMobile?: boolean;
-  onRunNode?: (nodeId: string) => void; // New prop for running a node
-  isNodeRunning?: (nodeId: string) => boolean; // New prop to check if node is running
+  onRunNode?: (nodeId: string) => void;
+  isNodeRunning?: (nodeId: string) => boolean;
 }
 
-const allNodeStatuses: NodeStatus[] = ['queued', 'running', 'completed', 'failed', 'unknown'];
+const allNodeStatuses: NodeStatus[] = ['pending', 'queued', 'running', 'completed', 'failed', 'unknown'];
 
-export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate, isMobile, onRunNode, isNodeRunning }: InspectorPanelProps) {
+export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate, onNodeDelete, isMobile, onRunNode, isNodeRunning }: InspectorPanelProps) {
   const [editableTitle, setEditableTitle] = useState('');
   const [editableDescription, setEditableDescription] = useState('');
   const [editableStatus, setEditableStatus] = useState<NodeStatus | undefined>(undefined);
@@ -60,8 +62,14 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
         title: editableTitle,
         description: editableDescription,
         status: editableStatus,
-        config: editableConfig, // Save all editable config fields
+        config: editableConfig,
       });
+    }
+  };
+
+  const handleDelete = () => {
+    if (selectedNode && onNodeDelete) {
+        onNodeDelete(selectedNode.id);
     }
   };
 
@@ -77,7 +85,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   };
 
   const nodeIsCurrentlyRunning = selectedNode && isNodeRunning ? isNodeRunning(selectedNode.id) : false;
-  const nodeCanRun = selectedNode && onRunNode && (selectedNode.type === 'web-summarizer' || selectedNode.type === 'prompt');
+  const nodeCanRun = selectedNode && onRunNode && (selectedNode.type === 'web-summarizer' || selectedNode.type === 'prompt' || selectedNode.type !== 'decision'); // Assume most can be run for now
 
   return (
     <BasePanel
@@ -160,7 +168,6 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             />
           </div>
 
-          {/* Node-specific config section */}
           {selectedNode.type === 'web-summarizer' && (
             <div className="space-y-3 p-3 border border-dashed border-border/50 rounded-md bg-card/50">
               <h4 className="text-xs font-medium flex items-center gap-1.5 text-primary">
@@ -251,7 +258,6 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             </Button>
           )}
 
-
           <div className="flex items-center justify-between pt-2">
             <Label htmlFor="sandboxed" className="text-xs flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-primary/80" />
@@ -267,12 +273,20 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             <Input placeholder="e.g., data-processing, validation" className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" readOnly />
           </div>
           
-          {onNodeUpdate && (
-            <Button onClick={handleSaveChanges} className="w-full mt-2" size="sm" disabled={nodeIsCurrentlyRunning}>
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
-          )}
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            {onNodeUpdate && (
+              <Button onClick={handleSaveChanges} className="w-full" size="sm" disabled={nodeIsCurrentlyRunning}>
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </Button>
+            )}
+            {onNodeDelete && (
+                <Button onClick={handleDelete} variant="destructive" className="w-full" size="sm" disabled={nodeIsCurrentlyRunning}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Node
+                </Button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-10 h-full">

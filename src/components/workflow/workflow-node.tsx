@@ -1,13 +1,13 @@
-
 // src/components/workflow/workflow-node.tsx
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe } from 'lucide-react';
+import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
 import type { ExecutePromptOutput } from '@/ai/flows/execute-prompt-flow';
 
-export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown';
+export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown' | 'pending';
 export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer';
 
 export interface WorkflowNodeData {
@@ -17,24 +17,23 @@ export interface WorkflowNodeData {
   description: string;
   status?: NodeStatus;
   agentName?: string;
+  position?: { x: number; y: number }; // For potential future dragging
   config?: {
-    // Web Summarizer specific
-    url?: string; 
-    
-    // Prompt Node specific
+    url?: string;
     promptText?: string;
     modelName?: string;
-
-    // Generic output field, structure depends on node type
-    output?: SummarizeWebpageOutput | ExecutePromptOutput | Record<string, any>; 
+    output?: SummarizeWebpageOutput | ExecutePromptOutput | Record<string, any>;
   };
 }
 
 interface WorkflowNodeProps {
   node: WorkflowNodeData;
   className?: string;
-  onClick?: (e: React.MouseEvent<HTMLDivElement>, node: WorkflowNodeData) => void; // Pass event
+  onClick?: (e: React.MouseEvent<HTMLDivElement>, node: WorkflowNodeData) => void;
   isSelected?: boolean;
+  onInputPortClick?: (nodeId: string, e: React.MouseEvent<HTMLDivElement>) => void;
+  onOutputPortClick?: (nodeId: string, e: React.MouseEvent<HTMLDivElement>) => void;
+  isConnectingFrom?: boolean; // True if this node is the source of an active connection attempt
 }
 
 const statusIcons: Record<NodeStatus, React.ReactNode> = {
@@ -43,6 +42,7 @@ const statusIcons: Record<NodeStatus, React.ReactNode> = {
   failed: <AlertTriangle className="h-4 w-4 text-destructive" />,
   completed: <CheckCircle className="h-4 w-4 text-green-500" />,
   unknown: <HelpCircle className="h-4 w-4 text-muted-foreground" />,
+  pending: <HelpCircle className="h-4 w-4 text-muted-foreground/70" />,
 };
 
 const typeIcons: Record<NodeType, React.ReactNode> = {
@@ -62,6 +62,7 @@ const badgeStyles: Record<NodeStatus, string> = {
     failed: "bg-destructive/20 text-destructive border-destructive/50",
     completed: "bg-green-500/20 text-green-400 border-green-500/50",
     unknown: "bg-muted/20 text-muted-foreground border-muted/50",
+    pending: "bg-muted/20 text-muted-foreground/70 border-muted/50",
 };
 
 const cardDynamicStyles: Record<NodeStatus, string> = {
@@ -70,6 +71,7 @@ const cardDynamicStyles: Record<NodeStatus, string> = {
   failed: 'border-destructive/70',
   completed: 'border-green-500/60',
   unknown: 'border-border',
+  pending: 'border-border/70',
 };
 
 const formatDisplayValue = (value: string = '') => {
@@ -77,50 +79,98 @@ const formatDisplayValue = (value: string = '') => {
   return value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-export function WorkflowNode({ node, className, onClick, isSelected }: WorkflowNodeProps) {
-  const { title, type, status = 'unknown', description, agentName } = node;
-  const currentTypeIcon = typeIcons[type] || typeIcons.custom;
-  const currentStatusIcon = statusIcons[status] || statusIcons.unknown;
+export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
+  ({ node, className, onClick, isSelected, onInputPortClick, onOutputPortClick, isConnectingFrom }, ref) => {
+    const { id, title, type, status = 'unknown', description, agentName } = node;
+    const currentTypeIcon = typeIcons[type] || typeIcons.custom;
+    const currentStatusIcon = statusIcons[status] || statusIcons.unknown;
 
-  const handleNodeClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (onClick) {
-      onClick(e, node); // Pass event and node
-    }
-  };
+    const handleNodeClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      // Prevent node selection if a port was clicked.
+      if ((e.target as HTMLElement).closest('.node-port')) {
+        return;
+      }
+      if (onClick) {
+        onClick(e, node);
+      }
+    };
 
-  return (
-    <Card
-      className={cn(
-        'min-w-[250px] max-w-xs bg-card/80 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] cursor-pointer',
-        'border-2', // Keep base border style
-        cardDynamicStyles[status] || cardDynamicStyles.unknown,
-        isSelected && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30', // Enhanced selection style
-        className
-      )}
-      onClick={handleNodeClick}
-    >
-      <CardHeader className="pb-2 pt-4 px-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {currentTypeIcon}
-            <CardTitle className="text-md font-headline">{title}</CardTitle>
-          </div>
-          {currentStatusIcon}
-        </div>
-        <CardDescription className="text-xs text-muted-foreground ml-6">{formatDisplayValue(type)}</CardDescription>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        {description && <p className="text-xs text-muted-foreground mb-2 line-clamp-3">{description}</p>}
-        {agentName && (
-          <div className="flex items-center gap-1 text-xs text-primary">
-            <Bot className="h-3 w-3" />
-            <span>{agentName}</span>
+    const handleInputClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      onInputPortClick?.(id, e);
+    };
+
+    const handleOutputClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      onOutputPortClick?.(id, e);
+    };
+    
+    // Style for ports, can be enhanced
+    const portBaseStyle = "node-port absolute w-4 h-4 bg-card border-2 border-primary rounded-full cursor-pointer hover:bg-primary/50 transition-colors flex items-center justify-center";
+    const connectingPortStyle = isConnectingFrom ? "ring-2 ring-accent ring-offset-2 ring-offset-card" : "";
+
+
+    return (
+      <Card
+        ref={ref}
+        id={`node-${id}`}
+        className={cn(
+          'min-w-[250px] max-w-xs bg-card/80 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] relative', // Added relative for port positioning
+          'border-2',
+          cardDynamicStyles[status] || cardDynamicStyles.unknown,
+          isSelected && !isConnectingFrom && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30',
+          className
+        )}
+        style={{ x: node.position?.x, y: node.position?.y }} // For potential future drag support
+        onClick={handleNodeClick}
+      >
+        {/* Input Port */}
+        {onInputPortClick && (
+          <div
+            className={cn(portBaseStyle, "left-[-10px] top-1/2 -translate-y-1/2", {"bg-green-500/50 border-green-500": !isConnectingFrom && isSelected})}
+            onClick={handleInputClick}
+            title="Input Port"
+          >
+            <ArrowRight className="h-2 w-2 text-primary-foreground" />
           </div>
         )}
-        <Badge variant="outline" className={`mt-2 text-xs ${badgeStyles[status] || badgeStyles.unknown}`}>
-          {formatDisplayValue(status)}
-        </Badge>
-      </CardContent>
-    </Card>
-  );
-}
+
+        {/* Output Port */}
+        {onOutputPortClick && (
+          <div
+            className={cn(portBaseStyle, "right-[-10px] top-1/2 -translate-y-1/2", connectingPortStyle)}
+            onClick={handleOutputClick}
+            title="Output Port"
+          >
+             <ArrowLeft className="h-2 w-2 text-primary-foreground" />
+          </div>
+        )}
+
+        <CardHeader className="pb-2 pt-4 px-4 cursor-grab">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {currentTypeIcon}
+              <CardTitle className="text-md font-headline">{title}</CardTitle>
+            </div>
+            {currentStatusIcon}
+          </div>
+          <CardDescription className="text-xs text-muted-foreground ml-6">{formatDisplayValue(type)}</CardDescription>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 cursor-grab">
+          {description && <p className="text-xs text-muted-foreground mb-2 line-clamp-3">{description}</p>}
+          {agentName && (
+            <div className="flex items-center gap-1 text-xs text-primary">
+              <Bot className="h-3 w-3" />
+              <span>{agentName}</span>
+            </div>
+          )}
+          <Badge variant="outline" className={`mt-2 text-xs ${badgeStyles[status] || badgeStyles.unknown}`}>
+            {formatDisplayValue(status)}
+          </Badge>
+        </CardContent>
+      </Card>
+    );
+  }
+);
+
+WorkflowNode.displayName = 'WorkflowNode';
