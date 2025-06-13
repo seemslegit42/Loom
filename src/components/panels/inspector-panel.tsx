@@ -1,7 +1,7 @@
 
 // src/components/panels/inspector-panel.tsx
 import { BasePanel } from './base-panel';
-import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2, MessageSquare, Trash2 } from 'lucide-react';
+import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2, MessageSquare, Trash2, AlertCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
 import type { ExecutePromptOutput } from '@/ai/flows/execute-prompt-flow';
-import { AlertCircle } from 'lucide-react';
 
 
 interface InspectorPanelProps {
@@ -46,9 +45,9 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
       setEditableTitle(selectedNode.title);
       setEditableDescription(selectedNode.description);
       setEditableStatus(selectedNode.status || 'unknown');
-      setEditableConfig(selectedNode.config || {});
+      // Ensure config is an object, even if undefined initially in selectedNode
+      setEditableConfig(selectedNode.config || {}); 
     } else {
-      // Reset fields when no node is selected
       setEditableTitle('');
       setEditableDescription('');
       setEditableStatus(undefined);
@@ -88,6 +87,11 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   const nodeIsCurrentlyRunning = selectedNode && isNodeRunning ? isNodeRunning(selectedNode.id) : false;
   const nodeCanRun = selectedNode && onRunNode && (selectedNode.type === 'web-summarizer' || selectedNode.type === 'prompt');
 
+  // Safely access output properties
+  const output = selectedNode?.config?.output;
+  const summarizerOutput = output as SummarizeWebpageOutput | undefined;
+  const promptOutput = output as ExecutePromptOutput | undefined;
+
 
   return (
     <BasePanel
@@ -97,7 +101,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: '320px', height: 'auto' }} // Max height is handled by parent in desktop view
+      initialSize={{ width: '320px', height: 'auto' }}
       contentClassName="space-y-3"
     >
       {selectedNode ? (
@@ -185,17 +189,17 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                   className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
                 />
               </div>
-              {(editableConfig?.output as SummarizeWebpageOutput)?.summary && (
+              {summarizerOutput?.summary && (
                 <div className="space-y-1 pt-2">
                   <Label className="text-xs">Summary Output:</Label>
-                  <Textarea value={(editableConfig.output as SummarizeWebpageOutput).summary} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
+                  <Textarea value={summarizerOutput.summary} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
                 </div>
               )}
-              {(editableConfig?.output as SummarizeWebpageOutput)?.error && (
+              {summarizerOutput?.error && (
                  <Alert variant="destructive" className="mt-2">
                    <AlertCircle className="h-4 w-4" />
                    <AlertTitle className="text-xs">Summarization Error</AlertTitle>
-                   <AlertDescription className="text-xs">{(editableConfig.output as SummarizeWebpageOutput).error}</AlertDescription>
+                   <AlertDescription className="text-xs">{summarizerOutput.error}</AlertDescription>
                  </Alert>
               )}
             </div>
@@ -228,17 +232,17 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 />
                  <p className="text-xs text-muted-foreground">If blank, default model is used.</p>
               </div>
-              {(editableConfig?.output as ExecutePromptOutput)?.responseText && (
+              {promptOutput?.responseText && (
                 <div className="space-y-1 pt-2">
                   <Label className="text-xs">LLM Response:</Label>
-                  <Textarea value={(editableConfig.output as ExecutePromptOutput).responseText} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
+                  <Textarea value={promptOutput.responseText} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
                 </div>
               )}
-              {(editableConfig?.output as ExecutePromptOutput)?.error && (
+              {promptOutput?.error && (
                  <Alert variant="destructive" className="mt-2">
                    <AlertCircle className="h-4 w-4" />
                    <AlertTitle className="text-xs">Prompt Execution Error</AlertTitle>
-                   <AlertDescription className="text-xs">{(editableConfig.output as ExecutePromptOutput).error}</AlertDescription>
+                   <AlertDescription className="text-xs">{promptOutput.error}</AlertDescription>
                  </Alert>
               )}
             </div>
@@ -302,5 +306,3 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
     </BasePanel>
   );
 }
-
-    

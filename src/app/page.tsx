@@ -78,9 +78,14 @@ export default function LoomStudioPage() {
         setConsoleMessages(prev => [...fetchedMessages.reverse(), ...prev.filter(pm => !fetchedMessages.find(fm => fm.text === pm.text && fm.timestamp.getTime() === pm.timestamp.getTime()))]);
       } catch (error) {
         console.error("Error fetching console messages from Firestore:", error);
-        // Add error to UI console
-        const errorMsg: ConsoleMessage = {type: 'error', text: 'Failed to load console history from Firestore.', timestamp: new Date()};
-        setConsoleMessages(prev => [errorMsg, ...prev.filter(pm => pm.text !== errorMsg.text)]); // Avoid duplicate error messages on quick re-renders
+        const errorMsgText = 'Failed to load console history from Firestore.';
+        const errorMsg: ConsoleMessage = {type: 'error', text: errorMsgText, timestamp: new Date()};
+        setConsoleMessages(prev => {
+           if (!prev.find(pm => pm.text === errorMsgText)) { // Avoid duplicate error messages
+            return [errorMsg, ...prev];
+          }
+          return prev;
+        });
       }
     };
     fetchConsoleMessages();
@@ -97,9 +102,14 @@ export default function LoomStudioPage() {
       });
     } catch (error) {
       console.error("Error adding console message to Firestore:", error);
-      // Add error to UI console if Firestore save fails
-      const errorMsg: ConsoleMessage = {type: 'error', text: 'Failed to save message to cloud console.', timestamp: new Date()};
-      setConsoleMessages(prev => [errorMsg, ...prev.filter(pm => pm.text !== errorMsg.text)]);
+      const errorMsgText = 'Failed to save message to cloud console.';
+      const errorMsg: ConsoleMessage = {type: 'error', text: errorMsgText, timestamp: new Date()};
+      setConsoleMessages(prev => {
+        if (!prev.find(pm => pm.text === errorMsgText)) {
+          return [errorMsg, ...prev];
+        }
+        return prev;
+      });
     }
   }, []);
 
@@ -117,169 +127,166 @@ export default function LoomStudioPage() {
     }
   }, [isMobile]);
 
-  const simulateFlowExecution = useCallback(async (flowNodes: WorkflowNodeData[], currentConnections: Connection[]) => {
-    if (!flowNodes || flowNodes.length === 0 || !generatedFlow?.workflowName) return;
-
+  const visualizeWorkflowExecution = useCallback(async () => {
+    if (!generatedFlow || !generatedFlow.nodes || generatedFlow.nodes.length === 0 || !generatedFlow.workflowName) {
+        addConsoleMessage('warn', 'No workflow or nodes available to visualize.');
+        return;
+    }
+    
+    const currentNodes = generatedFlow.nodes;
+    const currentConnections = connections; // Use connections from state
     const workflowName = generatedFlow.workflowName;
-    addConsoleMessage('info', `Executing workflow: "${workflowName}" based on connections.`);
-    addTimelineEvent({ type: 'workflow_start', message: `Workflow "${workflowName}" execution started.` });
 
-    const statuses: Record<string, NodeStatus> = {};
-    flowNodes.forEach(node => statuses[node.id] = 'pending');
-    setNodeExecutionStatus(statuses);
+    addConsoleMessage('info', `Visualizing workflow: "${workflowName}" based on connections.`);
+    addTimelineEvent({ type: 'workflow_start', message: `Workflow "${workflowName}" visualization started.` });
 
-    // Build dependency graph
+    const initialStatuses: Record<string, NodeStatus> = {};
+    currentNodes.forEach(node => initialStatuses[node.id] = 'pending');
+    setNodeExecutionStatus(initialStatuses);
+
     const adj: Record<string, string[]> = {};
     const inDegree: Record<string, number> = {};
     const nodeLookup: Record<string, WorkflowNodeData> = {};
 
-    flowNodes.forEach(node => {
+    currentNodes.forEach(node => {
         adj[node.id] = [];
         inDegree[node.id] = 0;
         nodeLookup[node.id] = node;
     });
 
     currentConnections.forEach(conn => {
-        if (adj[conn.from] && nodeLookup[conn.to]) { // Ensure 'to' node exists in current flowNodes
+        if (adj[conn.from] && nodeLookup[conn.to]) {
             adj[conn.from].push(conn.to);
             inDegree[conn.to]++;
         }
     });
 
-    const queue: string[] = flowNodes.filter(node => inDegree[node.id] === 0).map(node => node.id);
+    const queue: string[] = currentNodes.filter(node => inDegree[node.id] === 0).map(node => node.id);
     let executionOrderIndex = 0;
     let activeSimulations = 0;
     const completedNodes = new Set<string>();
     const failedNodes = new Set<string>();
 
     const processNode = async (nodeId: string) => {
-      if (failedNodes.has(nodeId) || completedNodes.has(nodeId)) return; // Already processed or failed
+      if (failedNodes.has(nodeId) || completedNodes.has(nodeId)) return;
 
       activeSimulations++;
       const node = nodeLookup[nodeId];
       if (!node) {
-        addConsoleMessage('error', `Node ID ${nodeId} not found during execution.`);
+        addConsoleMessage('error', `Node ID ${nodeId} not found during visualization.`);
         activeSimulations--;
         failedNodes.add(nodeId);
         return;
       }
-
       const nodeTitle = node.title;
 
       await new Promise(resolve => setTimeout(resolve, 300 * executionOrderIndex++));
-
       setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'queued' }));
-      addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) queued.`);
-      addTimelineEvent({ nodeId, nodeTitle, type: 'node_queued', message: `Node "${nodeTitle}" queued.` });
+      addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) queued for visualization.`);
+      addTimelineEvent({ nodeId, nodeTitle, type: 'node_queued', message: `Node "${nodeTitle}" queued (visualization).` });
 
       await new Promise(resolve => setTimeout(resolve, 700));
       setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
-      addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) running.`);
-      addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" running.` });
-
-      // Actual node execution logic would go here for a real run
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 800));
-      const success = Math.random() > 0.1; // Simulate success/failure
+      addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) running (visualization).`);
+      addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" running (visualization).` });
+      
+      // Simulating success/failure
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 800)); 
+      const success = Math.random() > 0.1;
 
       if (success) {
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'completed' }));
-        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) completed.`);
-        addTimelineEvent({ nodeId, nodeTitle, type: 'node_completed', message: `Node "${nodeTitle}" completed.` });
+        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) completed (visualization).`);
+        addTimelineEvent({ nodeId, nodeTitle, type: 'node_completed', message: `Node "${nodeTitle}" completed (visualization).` });
         completedNodes.add(nodeId);
 
         adj[nodeId]?.forEach(neighborId => {
-          if (nodeLookup[neighborId]) { // Ensure neighbor exists
+          if (nodeLookup[neighborId]) {
             inDegree[neighborId]--;
-            if (inDegree[neighborId] === 0 && !failedNodes.has(neighborId)) { // Only queue if not already failed
+            if (inDegree[neighborId] === 0 && !failedNodes.has(neighborId)) {
               queue.push(neighborId);
             }
           }
         });
       } else {
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'failed' }));
-        addConsoleMessage('error', `Node "${nodeTitle}" (ID: ${nodeId}) failed.`);
-        addTimelineEvent({ nodeId, nodeTitle, type: 'node_failed', message: `Node "${nodeTitle}" failed.` });
+        addConsoleMessage('error', `Node "${nodeTitle}" (ID: ${nodeId}) failed (visualization).`);
+        addTimelineEvent({ nodeId, nodeTitle, type: 'node_failed', message: `Node "${nodeTitle}" failed (visualization).` });
         failedNodes.add(nodeId);
-        // Potentially mark downstream nodes as 'blocked' or 'skipped' if a critical node fails
       }
       activeSimulations--;
 
-      // Process next in queue if available
       if (queue.length > 0) {
           const nextNodeId = queue.shift();
           if (nextNodeId) processNode(nextNodeId);
-      } else if (activeSimulations === 0) { // All nodes processed or remaining nodes are blocked
-          const allReachableSucceeded = flowNodes.every(n => completedNodes.has(n.id) || failedNodes.has(n.id) || inDegree[n.id] > 0); // check all processed or blocked
+      } else if (activeSimulations === 0) {
           if (failedNodes.size > 0) {
-              addConsoleMessage('error', `Workflow "${workflowName}" finished with errors.`);
-              addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" finished with errors.` });
-          } else if (completedNodes.size === flowNodes.length) {
-              addConsoleMessage('info', `Workflow "${workflowName}" completed successfully.`);
-              addTimelineEvent({ type: 'workflow_completed', message: `Workflow "${workflowName}" completed successfully.` });
+              addConsoleMessage('error', `Workflow "${workflowName}" visualization finished with errors.`);
+              addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" visualization finished with errors.` });
+          } else if (completedNodes.size === currentNodes.length) {
+              addConsoleMessage('info', `Workflow "${workflowName}" visualization completed successfully.`);
+              addTimelineEvent({ type: 'workflow_completed', message: `Workflow "${workflowName}" visualization completed.` });
           } else {
-              addConsoleMessage('warn', `Workflow "${workflowName}" completed with some nodes not executed (possibly due to disconnections or prior failures).`);
-              addTimelineEvent({ type: 'info', message: `Workflow "${workflowName}" completed with some nodes not executed.` });
+              addConsoleMessage('warn', `Workflow "${workflowName}" visualization completed with some nodes not reached.`);
+              addTimelineEvent({ type: 'info', message: `Workflow "${workflowName}" visualization completed with some nodes not reached.` });
           }
       }
     };
 
-    if (queue.length === 0 && flowNodes.length > 0) {
-        addConsoleMessage('error', `Workflow "${workflowName}" has no starting nodes (check for circular dependencies or ensure at least one node has no inputs).`);
-        addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" has errors (e.g., circular dependency or no start nodes).` });
-        flowNodes.forEach(node => setNodeExecutionStatus(prev => ({...prev, [node.id]: 'failed'})));
+    if (queue.length === 0 && currentNodes.length > 0) {
+        addConsoleMessage('error', `Workflow "${workflowName}" has no starting nodes for visualization.`);
+        addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" visualization errors (e.g., no start nodes).` });
+        currentNodes.forEach(node => setNodeExecutionStatus(prev => ({...prev, [node.id]: 'failed'})));
         return;
     }
-
-    // Start processing initial queue (limit concurrent "simulations" for visual clarity)
+    
     while(queue.length > 0 && activeSimulations < 3) {
         const nodeIdToProcess = queue.shift();
         if (nodeIdToProcess) processNode(nodeIdToProcess);
     }
-  }, [generatedFlow?.workflowName, addConsoleMessage, addTimelineEvent]);
+  }, [generatedFlow, connections, addConsoleMessage, addTimelineEvent, setNodeExecutionStatus]);
 
 
   const handleFlowGenerated = useCallback((data: GenerateFlowFormState) => {
     if (!data.nodes) {
         data.nodes = [];
     }
-    setGeneratedFlow(data as GenerateFlowFormState & { nodes: WorkflowNodeData[] });
+    const newFlowData = data as GenerateFlowFormState & { nodes: WorkflowNodeData[] };
+    setGeneratedFlow(newFlowData); // Set the flow data first
     setSelectedNode(null);
-    // Connections are now managed explicitly, so we'll auto-connect AI flows.
-    setConnections([]);
-
+    
     if (data.error) {
       addConsoleMessage('error', `Failed to generate flow: ${data.message}`);
       setTimelineEvents([]);
       setNodeExecutionStatus({});
+      setConnections([]); // Clear connections on error
     } else {
-      if (data.nodes && data.nodes.length > 0 && data.workflowName) {
-        addConsoleMessage('info', `Flow "${data.workflowName}" generated by AI with ${data.nodes.length} steps.`);
+      if (newFlowData.nodes && newFlowData.nodes.length > 0 && newFlowData.workflowName) {
+        addConsoleMessage('info', `Flow "${newFlowData.workflowName}" generated by AI with ${newFlowData.nodes.length} steps.`);
 
-        // Auto-create linear connections for AI-generated flow
         const newConnections: Connection[] = [];
-        for (let i = 0; i < data.nodes.length - 1; i++) {
+        for (let i = 0; i < newFlowData.nodes.length - 1; i++) {
           newConnections.push({
-            id: `conn-${data.nodes[i].id}-to-${data.nodes[i+1].id}-${Date.now()}`,
-            from: data.nodes[i].id,
-            to: data.nodes[i+1].id,
+            id: `conn-${newFlowData.nodes[i].id}-to-${newFlowData.nodes[i+1].id}-${Date.now()}`,
+            from: newFlowData.nodes[i].id,
+            to: newFlowData.nodes[i+1].id,
           });
         }
-        setConnections(newConnections);
+        setConnections(newConnections); // Set connections state
         addConsoleMessage('info', `Auto-created ${newConnections.length} connections for the AI flow.`);
+        
+        // Call visualizeWorkflowExecution after state updates for generatedFlow and connections are likely processed
+        // Using a microtask to ensure state updates are flushed
+        Promise.resolve().then(() => visualizeWorkflowExecution());
 
-        const initialStatuses: Record<string, NodeStatus> = {};
-        data.nodes.forEach(node => {
-          initialStatuses[node.id] = 'pending';
-        });
-        setNodeExecutionStatus(initialStatuses);
-        simulateFlowExecution(data.nodes, newConnections); // Pass connections here
       } else {
-         addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled Flow'}" generated by AI but contained no actionable steps.`);
+         addConsoleMessage('info', `Flow "${newFlowData.workflowName || 'Untitled Flow'}" generated by AI but contained no actionable steps.`);
          setTimelineEvents([]);
          setNodeExecutionStatus({});
+         setConnections([]); // Clear connections if no nodes
       }
     }
-  }, [addConsoleMessage, simulateFlowExecution, addTimelineEvent]);
+  }, [addConsoleMessage, visualizeWorkflowExecution, addTimelineEvent]);
 
   const handleNodeDropped = (newNodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus }) => {
     const uniqueIndex = Date.now();
@@ -326,11 +333,10 @@ export default function LoomStudioPage() {
 
   const handleNodeSelected = (node: WorkflowNodeData | null) => {
     setSelectedNode(node);
-    if (node) { // Only clear connecting state if a node is selected, not when deselecting to canvas.
+    if (node) {
       setConnectingState(null);
       addConsoleMessage('log', `Node "${node.title}" (ID: ${node.id}) selected.`);
     } else {
-      // If clicking on canvas and not in connecting state, then clear.
       if (!connectingState) {
         addConsoleMessage('log', `Canvas selected (no node).`);
       }
@@ -343,7 +349,7 @@ export default function LoomStudioPage() {
       const newNodes = prevFlow.nodes.map(n => (n.id === updatedNode.id ? updatedNode : n));
       return { ...prevFlow, nodes: newNodes };
     });
-    setSelectedNode(updatedNode);
+    setSelectedNode(updatedNode); // Keep the updated node selected
     toast({ title: "Node Updated", description: `Node "${updatedNode.title}" has been saved.` });
     addConsoleMessage('info', `Node "${updatedNode.title}" (ID: ${updatedNode.id}) updated.`);
     const oldStatus = nodeExecutionStatus[updatedNode.id];
@@ -401,10 +407,13 @@ export default function LoomStudioPage() {
     let nodeOutput: SummarizeWebpageOutput | ExecutePromptOutput | null = null;
     let nodeError: string | undefined = undefined;
     let finalStatus: NodeStatus = 'failed';
-    addConsoleMessage('info', `Node "${nodeToRun.title}" (ID: ${nodeId}, Type: ${nodeToRun.type}) execution started.`);
-    addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_running', message: `Executing: ${nodeToRun.title}` });
+    
+    const runType = nodeToRun.type === 'web-summarizer' ? 'Web Summarizer' : nodeToRun.type === 'prompt' ? 'Prompt Node' : 'Node';
+    addConsoleMessage('info', `Executing individual ${runType}: "${nodeToRun.title}" (ID: ${nodeId})`);
+    addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_running', message: `Executing individual ${runType}: ${nodeToRun.title}` });
     setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
     if (selectedNode?.id === nodeId) setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
+
     try {
       if (nodeToRun.type === 'web-summarizer') {
         const url = nodeToRun.config?.url;
@@ -426,33 +435,39 @@ export default function LoomStudioPage() {
            if (nodeOutput?.error) nodeError = nodeOutput.error;
         }
       } else {
-        nodeError = `Node type "${nodeToRun.type}" is not runnable yet. Simulating...`;
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate work
+        nodeError = `Node type "${nodeToRun.type}" is not runnable individually. Simulating...`;
+        await new Promise(resolve => setTimeout(resolve, 1500));
         nodeOutput = { simulatedOutput: "Output from simulated node." } as any;
       }
       finalStatus = nodeError ? 'failed' : 'completed';
     } catch (e: any) {
-      nodeError = e.message || `An unexpected error occurred during ${nodeToRun.type} node execution.`;
+      nodeError = e.message || `An unexpected error occurred during ${runType} execution.`;
       finalStatus = 'failed';
     }
+
     const updatedNodeData: WorkflowNodeData = {
       ...nodeToRun,
       config: { ...nodeToRun.config, output: nodeOutput || { error: nodeError } },
       status: finalStatus,
     };
-    setGeneratedFlow(prevFlow => ({
-      ...(prevFlow!),
-      nodes: prevFlow!.nodes.map(n => n.id === nodeId ? updatedNodeData : n),
-    }));
+
+    setGeneratedFlow(prevFlow => {
+      if (!prevFlow || !prevFlow.nodes) return null; // Should ideally not happen if nodeToRun was found
+      return {
+        ...(prevFlow),
+        nodes: prevFlow.nodes.map(n => n.id === nodeId ? updatedNodeData : n),
+      }
+    });
     setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: updatedNodeData.status! }));
     if (selectedNode?.id === nodeId) setSelectedNode(updatedNodeData);
+
     if (nodeError) {
-      addConsoleMessage('error', `Node "${updatedNodeData.title}" (${updatedNodeData.type}) failed: ${nodeError}`);
-      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Failed: ${nodeError.substring(0,100)}...` });
+      addConsoleMessage('error', `Individual ${runType} "${updatedNodeData.title}" execution failed: ${nodeError}`);
+      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Individual execution failed: ${nodeError.substring(0,100)}...` });
     } else {
-      addConsoleMessage('info', `Node "${updatedNodeData.title}" (${updatedNodeData.type}) completed.`);
-      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: `${updatedNodeData.type} executed successfully.` });
-      toast({ title: "Node Executed", description: `${updatedNodeData.title} (${updatedNodeData.type}) completed.` });
+      addConsoleMessage('info', `Individual ${runType} "${updatedNodeData.title}" execution completed.`);
+      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: `Individual ${runType} execution completed.` });
+      toast({ title: "Node Executed", description: `${updatedNodeData.title} (${runType}) completed.` });
     }
   };
 
@@ -491,15 +506,22 @@ export default function LoomStudioPage() {
   };
 
   const handleClearConsole = () => {
-    setConsoleMessages(prevMessages => prevMessages.filter(msg => msg.text === 'Local console view cleared. Firestore logs are not affected by this action.')); // Keep the clear message if it exists
-    addConsoleMessage('info', 'Local console view cleared. Firestore logs are not affected by this action.');
+    const clearMessage = 'Local console view cleared. Firestore logs are not affected by this action.';
+    // Keep only the clear message if it exists, or add it if it doesn't.
+    setConsoleMessages(prevMessages => {
+        const existingClear = prevMessages.find(msg => msg.text === clearMessage);
+        return existingClear ? [existingClear] : [{ type: 'info', text: clearMessage, timestamp: new Date() }];
+    });
+    if (!consoleMessages.find(msg => msg.text === clearMessage)) { // Avoid duplicate message if already present
+       addConsoleMessage('info', clearMessage); // This will also persist it to Firestore
+    }
     toast({ title: "Console Cleared", description: "Local console messages have been cleared." });
   };
 
   const handleOutputPortClick = (nodeId: string, portElement: HTMLDivElement) => {
     addConsoleMessage('log', `Output port clicked on node ${nodeId}. Waiting for input port selection.`);
     setConnectingState({ fromNodeId: nodeId, fromPortElement: portElement });
-    setSelectedNode(generatedFlow?.nodes.find(n => n.id === nodeId) || null); // Select the source node
+    setSelectedNode(generatedFlow?.nodes.find(n => n.id === nodeId) || null);
   };
 
   const handleInputPortClick = (nodeId: string) => {
@@ -648,5 +670,3 @@ export default function LoomStudioPage() {
     </div>
   );
 }
-
-    
