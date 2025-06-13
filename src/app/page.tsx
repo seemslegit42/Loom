@@ -25,6 +25,7 @@ export interface PanelVisibility {
 
 export default function LoomStudioPage() {
   const [generatedFlow, setGeneratedFlow] = useState<GenerateFlowFormState | null>(null);
+  const [selectedNode, setSelectedNode] = useState<WorkflowNodeData | null>(null);
   const [panelVisibility, setPanelVisibility] = useState<PanelVisibility>({
     palette: true,
     inspector: true,
@@ -58,31 +59,26 @@ export default function LoomStudioPage() {
 
 
   const handleFlowGenerated = (data: GenerateFlowFormState) => {
-    // When AI generates a flow, it provides workflowName and promptSequence.
-    // We clear manualNodes.
     setGeneratedFlow({
       ...data,
-      manualNodes: [], 
+      manualNodes: [],
     });
+    setSelectedNode(null); // Clear selected node when a new flow is generated
   };
 
   const handleNodeDropped = (newNodeData: WorkflowNodeData) => {
     setGeneratedFlow(prevFlow => {
-      if (prevFlow) {
-        return {
-          ...prevFlow,
-          manualNodes: [...(prevFlow.manualNodes || []), newNodeData],
-        };
-      }
-      // If no flow exists (e.g., user starts by dragging), create one.
-      return {
-        message: "Node added to canvas.",
-        workflowName: "My Custom Flow",
-        promptSequence: [],
-        manualNodes: [newNodeData],
-        error: false,
+      const updatedFlow = {
+        ...(prevFlow || { message: "Node added to canvas.", workflowName: "My Custom Flow", promptSequence: [], error: false }),
+        manualNodes: [...(prevFlow?.manualNodes || []), newNodeData],
       };
+      return updatedFlow;
     });
+    setSelectedNode(newNodeData); // Select the newly dropped node
+  };
+
+  const handleNodeSelected = (node: WorkflowNodeData | null) => {
+    setSelectedNode(node);
   };
 
 
@@ -140,7 +136,12 @@ export default function LoomStudioPage() {
       />
       <main className={`flex-1 relative flex overflow-hidden ${isMobile ? 'p-0' : 'p-4 gap-4'} ${isMobile ? 'pb-16' : ''}`}>
         <div className={`flex-1 h-full transition-opacity duration-300 ${anyMobilePanelOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-          <CanvasZone generatedFlow={generatedFlow} onNodeDropped={handleNodeDropped} />
+          <CanvasZone
+            generatedFlow={generatedFlow}
+            onNodeDropped={handleNodeDropped}
+            selectedNode={selectedNode}
+            onNodeSelected={handleNodeSelected}
+          />
         </div>
 
         {/* Panel Rendering Logic */}
@@ -151,7 +152,11 @@ export default function LoomStudioPage() {
               <PalettePanel className="absolute top-4 left-4 z-10" onClose={() => togglePanel('palette')} />
             )}
             {panelVisibility.inspector && (
-              <InspectorPanel className="absolute top-4 right-4 z-10 max-h-[calc(50vh-2rem)]" onClose={() => togglePanel('inspector')} />
+              <InspectorPanel
+                className="absolute top-4 right-4 z-10 max-h-[calc(50vh-2rem)]"
+                onClose={() => togglePanel('inspector')}
+                selectedNode={selectedNode}
+              />
             )}
             <div className="absolute bottom-4 left-4 right-4 flex gap-4 z-10">
               {panelVisibility.timeline && (
@@ -162,7 +167,10 @@ export default function LoomStudioPage() {
               )}
             </div>
             {panelVisibility.agentHub && (
-              <AgentHubPanel className="absolute bottom-[calc(50%-(-1rem))] right-4 z-10 max-h-[calc(50vh-2.5rem)]" onClose={() => togglePanel('agentHub')} />
+              <AgentHubPanel
+                className="absolute bottom-4 right-4 z-10 max-h-[calc(50vh-2.5rem-env(safe-area-inset-bottom))]"
+                onClose={() => togglePanel('agentHub')}
+              />
             )}
           </>
         ) : (
@@ -173,7 +181,7 @@ export default function LoomStudioPage() {
             </div>
 
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.inspector ? 'translate-x-0' : 'translate-x-full'}`}>
-              {panelVisibility.inspector && <InspectorPanel className="h-full p-1" onClose={() => togglePanel('inspector')} />}
+              {panelVisibility.inspector && <InspectorPanel className="h-full p-1" onClose={() => togglePanel('inspector')} selectedNode={selectedNode} />}
             </div>
             
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
