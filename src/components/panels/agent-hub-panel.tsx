@@ -60,7 +60,7 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
       workload: '0%',
     };
     setAgents(prev => [...prev, newAgent]);
-    toast({ title: "Agent Hub Action", description: `Agent "${newAgentName}" spawned.` });
+    toast({ title: "Agent Spawned", description: `Agent "${newAgentName}" is now available.` });
   };
 
   const handleResumeAll = () => {
@@ -78,7 +78,7 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
         agent.status === 'active' ? { ...agent, status: 'paused' } : agent
       )
     );
-    toast({ title: "Agent Hub Action", description: "Activating Safe Mode: Pausing all active agents.", variant: "default" });
+    toast({ title: "Agent Hub Action", description: "Activating Safe Mode: Pausing all active agents.", variant: "secondary" });
   };
 
   return (

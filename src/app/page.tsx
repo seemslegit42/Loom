@@ -164,7 +164,7 @@ export default function LoomStudioPage() {
         data.nodes.forEach(node => {
           initialStatuses[node.id] = node.status || 'queued';
         });
-        setNodeExecutionStatus(initialStatuses); // Set initial statuses for generated nodes
+        setNodeExecutionStatus(initialStatuses); 
         simulateFlowExecution(data.nodes);
       } else {
          setTimelineEvents([]); 
@@ -181,21 +181,24 @@ export default function LoomStudioPage() {
     const nodeWithIdAndStatus: WorkflowNodeData = {
       ...newNodeData,
       id: nodeId,
-      title: `${nodeTitleBase} ${uniqueIndex.toString().slice(-4)}`, 
+      title: nodeTitleBase, // Use the base title directly, ID ensures uniqueness
       status: newNodeData.status || 'queued',
     };
     
     setGeneratedFlow(prevFlow => {
       const currentNodes = prevFlow?.nodes || [];
+      const isFirstNode = currentNodes.length === 0;
       const newWorkflowName = prevFlow?.workflowName || "My Custom Flow";
-      if (!prevFlow || currentNodes.length === 0) {
-        addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started.`);
-        addTimelineEvent({ type: 'workflow_start', message: `Custom workflow "${newWorkflowName}" started by adding a node.`});
+
+      if (isFirstNode) {
+        addConsoleMessage('info', `New custom workflow "${newWorkflowName}" started by user adding a node.`);
+        addTimelineEvent({ type: 'workflow_start', message: `Custom workflow "${newWorkflowName}" started.`});
       }
 
       return {
         ...(prevFlow || { message: "Node added to canvas.", userInput: "Custom flow", error: false, workflowName: newWorkflowName }),
         nodes: [...currentNodes, nodeWithIdAndStatus],
+        workflowName: newWorkflowName, // Ensure workflowName is set for the new flow
       };
     });
 
@@ -244,7 +247,7 @@ export default function LoomStudioPage() {
         case 'running': eventType = 'node_running'; break;
         case 'failed': eventType = 'node_failed'; break;
         case 'queued': eventType = 'node_queued'; break;
-        default: eventType = 'info'; break; // 'unknown' or other statuses default to 'info'
+        default: eventType = 'info'; break; 
       }
 
       addTimelineEvent({
@@ -262,16 +265,15 @@ export default function LoomStudioPage() {
       const currentlyOpening = !prev[panel]; 
 
       if (isMobile) {
-        // If current panel is open and we are trying to close it by clicking its icon
         if (prev[panel] && !currentlyOpening) { 
           newState[panel] = false;
-        } else { // If trying to open a new panel, or switch panels
+        } else { 
           newState.palette = false;
           newState.inspector = false;
           newState.timeline = false;
           newState.console = false;
           newState.agentHub = false;
-          if (currentlyOpening) { // Only set to true if we intend to open it
+          if (currentlyOpening) { 
             newState[panel] = true;
           }
         }
@@ -411,3 +413,4 @@ export default function LoomStudioPage() {
     </div>
   );
 }
+
