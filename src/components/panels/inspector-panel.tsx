@@ -1,7 +1,7 @@
 
 // src/components/panels/inspector-panel.tsx
 import { BasePanel } from './base-panel';
-import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2 } from 'lucide-react';
+import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2, MessageSquare } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
+import type { ExecutePromptOutput } from '@/ai/flows/execute-prompt-flow';
+
 
 interface InspectorPanelProps {
   className?: string;
@@ -34,7 +37,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   const [editableTitle, setEditableTitle] = useState('');
   const [editableDescription, setEditableDescription] = useState('');
   const [editableStatus, setEditableStatus] = useState<NodeStatus | undefined>(undefined);
-  const [editableConfig, setEditableConfig] = useState<Record<string, any>>({});
+  const [editableConfig, setEditableConfig] = useState<WorkflowNodeData['config']>({});
 
   useEffect(() => {
     if (selectedNode) {
@@ -57,12 +60,12 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
         title: editableTitle,
         description: editableDescription,
         status: editableStatus,
-        config: { ...selectedNode.config, ...editableConfig },
+        config: editableConfig, // Save all editable config fields
       });
     }
   };
 
-  const handleConfigChange = (field: string, value: string) => {
+  const handleConfigChange = (field: keyof NonNullable<WorkflowNodeData['config']>, value: string) => {
     setEditableConfig(prev => ({ ...prev, [field]: value }));
   };
   
@@ -74,6 +77,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   };
 
   const nodeIsCurrentlyRunning = selectedNode && isNodeRunning ? isNodeRunning(selectedNode.id) : false;
+  const nodeCanRun = selectedNode && onRunNode && (selectedNode.type === 'web-summarizer' || selectedNode.type === 'prompt');
 
   return (
     <BasePanel
@@ -156,7 +160,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             />
           </div>
 
-          {/* Node-specific config */}
+          {/* Node-specific config section */}
           {selectedNode.type === 'web-summarizer' && (
             <div className="space-y-3 p-3 border border-dashed border-border/50 rounded-md bg-card/50">
               <h4 className="text-xs font-medium flex items-center gap-1.5 text-primary">
@@ -167,39 +171,88 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 <Input
                   id="summarizerUrl"
                   placeholder="https://example.com"
-                  value={editableConfig.url || ''}
+                  value={editableConfig?.url || ''}
                   onChange={(e) => handleConfigChange('url', e.target.value)}
                   className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
                 />
               </div>
-              {onRunNode && (
-                <Button 
-                  onClick={() => onRunNode(selectedNode.id)} 
-                  className="w-full mt-1" 
-                  size="sm"
-                  disabled={!editableConfig.url || nodeIsCurrentlyRunning}
-                >
-                  {nodeIsCurrentlyRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                  {nodeIsCurrentlyRunning ? 'Running...' : 'Run Summarizer'}
-                </Button>
-              )}
-              {selectedNode.config?.output?.summary && (
+              {(editableConfig?.output as SummarizeWebpageOutput)?.summary && (
                 <div className="space-y-1 pt-2">
                   <Label className="text-xs">Summary Output:</Label>
-                  <Textarea value={selectedNode.config.output.summary} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
+                  <Textarea value={(editableConfig.output as SummarizeWebpageOutput).summary} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
                 </div>
               )}
-              {selectedNode.config?.output?.error && (
+              {(editableConfig?.output as SummarizeWebpageOutput)?.error && (
                  <Alert variant="destructive" className="mt-2">
                    <AlertCircle className="h-4 w-4" />
                    <AlertTitle className="text-xs">Summarization Error</AlertTitle>
-                   <AlertDescription className="text-xs">{selectedNode.config.output.error}</AlertDescription>
+                   <AlertDescription className="text-xs">{(editableConfig.output as SummarizeWebpageOutput).error}</AlertDescription>
                  </Alert>
               )}
             </div>
           )}
 
-          <div className="flex items-center justify-between">
+          {selectedNode.type === 'prompt' && (
+             <div className="space-y-3 p-3 border border-dashed border-border/50 rounded-md bg-card/50">
+              <h4 className="text-xs font-medium flex items-center gap-1.5 text-primary">
+                <MessageSquare className="h-4 w-4" /> Prompt Node Config
+              </h4>
+              <div className="space-y-1">
+                <Label htmlFor="promptText" className="text-xs">Prompt Text</Label>
+                <Textarea
+                  id="promptText"
+                  placeholder="Enter your prompt here..."
+                  value={editableConfig?.promptText || ''}
+                  onChange={(e) => handleConfigChange('promptText', e.target.value)}
+                  rows={4}
+                  className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="modelName" className="text-xs">Model Name (Optional)</Label>
+                <Input
+                  id="modelName"
+                  placeholder="e.g., googleai/gemini-pro"
+                  value={editableConfig?.modelName || ''}
+                  onChange={(e) => handleConfigChange('modelName', e.target.value)}
+                  className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
+                />
+                 <p className="text-xs text-muted-foreground">If blank, default model is used.</p>
+              </div>
+              {(editableConfig?.output as ExecutePromptOutput)?.responseText && (
+                <div className="space-y-1 pt-2">
+                  <Label className="text-xs">LLM Response:</Label>
+                  <Textarea value={(editableConfig.output as ExecutePromptOutput).responseText} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
+                </div>
+              )}
+              {(editableConfig?.output as ExecutePromptOutput)?.error && (
+                 <Alert variant="destructive" className="mt-2">
+                   <AlertCircle className="h-4 w-4" />
+                   <AlertTitle className="text-xs">Prompt Execution Error</AlertTitle>
+                   <AlertDescription className="text-xs">{(editableConfig.output as ExecutePromptOutput).error}</AlertDescription>
+                 </Alert>
+              )}
+            </div>
+          )}
+          
+          {nodeCanRun && (
+            <Button 
+              onClick={() => onRunNode!(selectedNode.id)} 
+              className="w-full mt-1" 
+              size="sm"
+              disabled={
+                nodeIsCurrentlyRunning || 
+                (selectedNode.type === 'web-summarizer' && !editableConfig?.url) ||
+                (selectedNode.type === 'prompt' && !editableConfig?.promptText)
+              }
+            >
+              {nodeIsCurrentlyRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+              {nodeIsCurrentlyRunning ? 'Running...' : `Run ${formatDisplayValue(selectedNode.type)}`}
+            </Button>
+          )}
+
+
+          <div className="flex items-center justify-between pt-2">
             <Label htmlFor="sandboxed" className="text-xs flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-primary/80" />
               Sandboxed Execution

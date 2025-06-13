@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
+import type { ExecutePromptOutput } from '@/ai/flows/execute-prompt-flow';
 
 export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown';
 export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer';
@@ -17,8 +18,15 @@ export interface WorkflowNodeData {
   status?: NodeStatus;
   agentName?: string;
   config?: {
+    // Web Summarizer specific
     url?: string; 
-    output?: SummarizeWebpageOutput;
+    
+    // Prompt Node specific
+    promptText?: string;
+    modelName?: string;
+
+    // Generic output field, structure depends on node type
+    output?: SummarizeWebpageOutput | ExecutePromptOutput | Record<string, any>; 
   };
 }
 

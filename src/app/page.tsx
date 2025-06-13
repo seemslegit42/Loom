@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
 import { AlertCircle, Globe } from 'lucide-react';
 import { summarizeWebpage, type SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
+import { executePrompt, type ExecutePromptOutput } from '@/ai/flows/execute-prompt-flow';
+
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
@@ -70,7 +72,7 @@ export default function LoomStudioPage() {
             timestamp: (data.timestamp as Timestamp).toDate(),
           });
         });
-        setConsoleMessages(fetchedMessages.reverse()); // Reverse to show oldest first
+        setConsoleMessages(prev => [...fetchedMessages.reverse(), ...prev.filter(pm => !fetchedMessages.find(fm => fm.text === pm.text && fm.timestamp.getTime() === pm.timestamp.getTime()))]);
       } catch (error) {
         console.error("Error fetching console messages from Firestore:", error);
         // Add an error message directly to the UI console
@@ -330,67 +332,71 @@ export default function LoomStudioPage() {
       addConsoleMessage('error', `Attempted to run non-existent node ID: ${nodeId}`);
       return;
     }
+    
+    let nodeOutput: SummarizeWebpageOutput | ExecutePromptOutput | null = null;
+    let nodeError: string | undefined = undefined;
+    let finalStatus: NodeStatus = 'failed'; // Default to failed
 
-    if (nodeToRun.type === 'web-summarizer') {
-      const url = nodeToRun.config?.url;
-      if (!url) {
-        toast({ title: "Missing Configuration", description: "Please provide a URL for the Web Summarizer node.", variant: "destructive" });
-        addConsoleMessage('warn', `Node "${nodeToRun.title}" (Web Summarizer) cannot run: URL is missing.`);
-        return;
+    addConsoleMessage('info', `Node "${nodeToRun.title}" (ID: ${nodeId}, Type: ${nodeToRun.type}) execution started.`);
+    addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_running', message: `Executing: ${nodeToRun.title}` });
+    setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
+    if (selectedNode?.id === nodeId) setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
+
+    try {
+      if (nodeToRun.type === 'web-summarizer') {
+        const url = nodeToRun.config?.url;
+        if (!url) {
+          nodeError = "URL is missing for Web Summarizer.";
+          toast({ title: "Missing Configuration", description: nodeError, variant: "destructive" });
+        } else {
+          nodeOutput = await summarizeWebpage({ url });
+          if (nodeOutput?.error) nodeError = nodeOutput.error;
+        }
+      } else if (nodeToRun.type === 'prompt') {
+        const promptText = nodeToRun.config?.promptText;
+        const modelName = nodeToRun.config?.modelName;
+        if (!promptText) {
+          nodeError = "Prompt text is missing for Prompt Node.";
+          toast({ title: "Missing Configuration", description: nodeError, variant: "destructive" });
+        } else {
+          nodeOutput = await executePrompt({ promptText, modelName });
+           if (nodeOutput?.error) nodeError = nodeOutput.error;
+        }
+      } else {
+        nodeError = `Node type "${nodeToRun.type}" is not runnable yet.`;
+        toast({ title: "Not Implemented", description: nodeError, variant: "secondary"});
       }
 
-      addConsoleMessage('info', `Node "${nodeToRun.title}" (ID: ${nodeId}) execution started for URL: ${url}`);
-      addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_running', message: `Executing: Summarize ${url}` });
-      setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
-      if (selectedNode?.id === nodeId) setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
+      finalStatus = nodeError ? 'failed' : 'completed';
 
+    } catch (e: any) {
+      nodeError = e.message || `An unexpected error occurred during ${nodeToRun.type} node execution.`;
+      finalStatus = 'failed';
+    }
 
-      try {
-        const result = await summarizeWebpage({ url });
+    const updatedNodeData: WorkflowNodeData = {
+      ...nodeToRun,
+      config: { ...nodeToRun.config, output: nodeOutput || { error: nodeError } },
+      status: finalStatus,
+    };
 
-        const updatedNodeData: WorkflowNodeData = {
-          ...nodeToRun,
-          config: { ...nodeToRun.config, output: result }, 
-          status: result.error ? 'failed' : 'completed',
-        };
+    setGeneratedFlow(prevFlow => ({
+      ...(prevFlow!), 
+      nodes: prevFlow!.nodes.map(n => n.id === nodeId ? updatedNodeData : n),
+    }));
+    setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: updatedNodeData.status! }));
+    if (selectedNode?.id === nodeId) setSelectedNode(updatedNodeData); 
 
-        setGeneratedFlow(prevFlow => ({
-          ...(prevFlow!), 
-          nodes: prevFlow!.nodes.map(n => n.id === nodeId ? updatedNodeData : n),
-        }));
-        setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: updatedNodeData.status! }));
-        if (selectedNode?.id === nodeId) setSelectedNode(updatedNodeData); 
-
-        if (result.error) {
-          addConsoleMessage('error', `Node "${updatedNodeData.title}" (Web Summarizer) failed: ${result.error}`);
-          addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Failed: ${result.error.substring(0,100)}...` });
-          toast({ title: "Node Execution Failed", description: `Web Summarizer: ${result.error}`, variant: "destructive" });
-        } else {
-          addConsoleMessage('info', `Node "${updatedNodeData.title}" (Web Summarizer) completed. Summary generated.`);
-          addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: 'Summary generated successfully.' });
-          toast({ title: "Node Executed", description: "Web Summarizer completed." });
-        }
-      } catch (e: any) {
-        const errorMessage = e.message || "An unexpected error occurred during node execution.";
-         const updatedNodeData: WorkflowNodeData = {
-          ...nodeToRun,
-          config: { ...nodeToRun.config, output: { summary: '', originalUrl: url, error: errorMessage } }, 
-          status: 'failed',
-        };
-        setGeneratedFlow(prevFlow => ({
-          ...(prevFlow!),
-          nodes: prevFlow!.nodes.map(n => n.id === nodeId ? updatedNodeData : n),
-        }));
-        setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'failed' }));
-        if (selectedNode?.id === nodeId) setSelectedNode(updatedNodeData);
-
-        addConsoleMessage('error', `Node "${nodeToRun.title}" (Web Summarizer) crashed: ${errorMessage}`);
-        addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_failed', message: `Execution crashed: ${errorMessage.substring(0,100)}...` });
-        toast({ title: "Node Execution Crashed", description: errorMessage, variant: "destructive" });
+    if (nodeError) {
+      addConsoleMessage('error', `Node "${updatedNodeData.title}" (${updatedNodeData.type}) failed: ${nodeError}`);
+      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Failed: ${nodeError.substring(0,100)}...` });
+      if (finalStatus === 'failed' && nodeToRun.type !== 'web-summarizer' && nodeToRun.type !== 'prompt') { // only toast for general errors here
+         toast({ title: "Node Execution Failed", description: `${nodeToRun.type}: ${nodeError}`, variant: "destructive" });
       }
     } else {
-      addConsoleMessage('warn', `Node type "${nodeToRun.type}" is not runnable yet.`);
-      toast({ title: "Not Implemented", description: `Running node type "${nodeToRun.type}" is not yet implemented.`, variant: "secondary"});
+      addConsoleMessage('info', `Node "${updatedNodeData.title}" (${updatedNodeData.type}) completed.`);
+      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: `${updatedNodeData.type} executed successfully.` });
+      toast({ title: "Node Executed", description: `${updatedNodeData.title} (${updatedNodeData.type}) completed.` });
     }
   };
 
@@ -564,4 +570,3 @@ export default function LoomStudioPage() {
     </div>
   );
 }
-
