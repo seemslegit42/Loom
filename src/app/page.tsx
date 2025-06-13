@@ -249,18 +249,19 @@ export default function LoomStudioPage() {
       const currentlyOpening = !prev[panel]; // True if we intend to open this panel
 
       if (isMobile) {
-        // Reset all panels
+        // Reset all panels first
         newState.palette = false;
         newState.inspector = false;
         newState.timeline = false;
         newState.console = false;
         newState.agentHub = false;
         
+        // If we are trying to open a panel (currentlyOpening is true), set it to true.
+        // If currentlyOpening is false, it means we clicked an already open panel's icon,
+        // so it remains closed (due to the reset above), effectively toggling it off.
         if (currentlyOpening) {
-          newState[panel] = true; // Open the target panel
+          newState[panel] = true; 
         }
-        // If currentlyOpening is false, it means we clicked an already open panel,
-        // so it remains closed (due to the reset above).
       } else {
         newState[panel] = !prev[panel]; // Desktop toggle behavior
       }
@@ -368,11 +369,11 @@ export default function LoomStudioPage() {
               {panelVisibility.agentHub && <AgentHubPanel className="h-full p-1" onClose={() => togglePanel('agentHub')} isMobile={isMobile} />}
             </div>
 
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
               {panelVisibility.timeline && <TimelinePanel className="h-full p-1" onClose={() => togglePanel('timeline')} events={timelineEvents} isMobile={isMobile} />}
             </div>
 
-            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} ${isMobile ? 'mb-14' : ''}`}>
+            <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.console ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
               {panelVisibility.console && <ConsolePanel className="h-full p-1" onClose={() => togglePanel('console')} messages={consoleMessages.filter(msg => consoleFilters[msg.type])} filters={consoleFilters} onToggleFilter={toggleConsoleFilter} isMobile={isMobile} />}
             </div>
             

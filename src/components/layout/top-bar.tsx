@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 
@@ -53,11 +54,14 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
                  <FileText className="mr-2 h-4 w-4" /> Docs
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => togglePanel('console')} className="cursor-pointer">
+              <DropdownMenuCheckboxItem
+                checked={panelVisibility.console}
+                onCheckedChange={() => togglePanel('console')}
+                className="cursor-pointer"
+              >
                 <Terminal className="mr-2 h-4 w-4" />
                 <span>Console</span>
-                {panelVisibility.console && <Check className="ml-auto h-4 w-4 text-primary" />}
-              </DropdownMenuItem>
+              </DropdownMenuCheckboxItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleComingSoon("Agent Context")} className="cursor-pointer">
                  <UserCircle className="mr-2 h-4 w-4" /> Agent Context
@@ -110,4 +114,3 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
     </header>
   );
 }
-

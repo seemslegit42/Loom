@@ -3,7 +3,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Settings2, Bot, ListOrdered } from 'lucide-react';
+import { LayoutGrid, Settings2, Bot, ListOrdered, Terminal } from 'lucide-react';
 import type { PanelVisibility } from '@/app/page';
 
 interface BottomBarProps {
@@ -23,6 +23,7 @@ export function BottomBar({ panelVisibility, togglePanel }: BottomBarProps) {
     { panel: 'inspector', label: 'Inspector', icon: <Settings2 className="h-5 w-5" /> },
     { panel: 'agentHub', label: 'Agent Hub', icon: <Bot className="h-5 w-5" /> },
     { panel: 'timeline', label: 'Timeline', icon: <ListOrdered className="h-5 w-5" /> },
+    { panel: 'console', label: 'Console', icon: <Terminal className="h-5 w-5" /> },
   ];
 
   return (
