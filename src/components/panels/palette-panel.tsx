@@ -2,7 +2,7 @@
 // src/components/panels/palette-panel.tsx
 import { BasePanel } from './base-panel';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Zap, MessageSquare, GitMerge, Cog, ShieldQuestion, Timer, Webhook, SlidersHorizontal } from 'lucide-react'; // Added GitMerge, Timer, Webhook, SlidersHorizontal
+import { LayoutGrid, Zap, MessageSquare, GitMerge, Cog, Timer, Webhook, SlidersHorizontal } from 'lucide-react';
 
 interface PalettePanelProps {
   className?: string;
