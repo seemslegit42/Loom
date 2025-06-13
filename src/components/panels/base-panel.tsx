@@ -16,7 +16,7 @@ interface BasePanelProps {
   contentClassName?: string;
   initialSize?: { width?: string; height?: string };
   onClose?: () => void;
-  isMobile?: boolean; // Added to control visibility of min/max buttons
+  isMobile?: boolean;
   isDraggable?: boolean; // Future use
   isResizable?: boolean; // Future use
 }
@@ -78,3 +78,4 @@ export function BasePanel({
     </Card>
   );
 }
+

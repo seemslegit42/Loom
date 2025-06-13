@@ -94,3 +94,4 @@ export function AgentHubPanel({ className, onClose, isMobile }: AgentHubPanelPro
     </BasePanel>
   );
 }
+

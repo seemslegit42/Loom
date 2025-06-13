@@ -90,3 +90,4 @@ export function TimelinePanel({ className, onClose, events, isMobile }: Timeline
     </BasePanel>
   );
 }
+
