@@ -1,7 +1,7 @@
 
 // src/components/panels/inspector-panel.tsx
 import { BasePanel } from './base-panel';
-import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save } from 'lucide-react';
+import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,6 +44,10 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   
   const panelKey = selectedNode ? selectedNode.id : 'no-node-selected';
 
+  const formatDisplayValue = (value: string = '') => {
+    return value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   return (
     <BasePanel
       key={panelKey} 
@@ -58,7 +62,9 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
       {selectedNode ? (
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label htmlFor="nodeName" className="text-xs">Node Name</Label>
+            <Label htmlFor="nodeName" className="text-xs flex items-center gap-1.5">
+              <Brain className="h-3.5 w-3.5 text-primary/80"/> Node Name
+            </Label>
             <Input 
               id="nodeName" 
               placeholder="Node name" 
@@ -68,29 +74,31 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="nodeType" className="text-xs flex items-center gap-1">
-              <Type className="h-3 w-3 text-primary/80"/> Node Type
+            <Label htmlFor="nodeType" className="text-xs flex items-center gap-1.5">
+              <Type className="h-3.5 w-3.5 text-primary/80"/> Node Type
             </Label>
             <Input 
               id="nodeType" 
-              value={selectedNode.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} 
-              className="bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" 
+              value={formatDisplayValue(selectedNode.type)} 
+              className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" 
               readOnly 
             />
           </div>
            <div className="space-y-1">
-            <Label htmlFor="nodeStatus" className="text-xs flex items-center gap-1">
-                <Workflow className="h-3 w-3 text-primary/80"/> Status
+            <Label htmlFor="nodeStatus" className="text-xs flex items-center gap-1.5">
+                <Workflow className="h-3.5 w-3.5 text-primary/80"/> Status
             </Label>
             <Input 
               id="nodeStatus" 
-              value={selectedNode.status?.replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown'} 
-              className="bg-input/70 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" 
+              value={formatDisplayValue(selectedNode.status)} 
+              className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" 
               readOnly 
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="nodeDescription" className="text-xs">Description</Label>
+            <Label htmlFor="nodeDescription" className="text-xs flex items-center gap-1.5">
+                <Info className="h-3.5 w-3.5 text-primary/80"/> Description
+            </Label>
             <Textarea 
               id="nodeDescription" 
               placeholder="Node description" 
@@ -101,25 +109,25 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="sandboxed" className="text-xs flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-primary" />
+            <Label htmlFor="sandboxed" className="text-xs flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary/80" />
               Sandboxed Execution
             </Label>
             <Switch id="sandboxed" defaultChecked disabled />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs flex items-center gap-2">
-              <Tags className="h-4 w-4 text-primary"/>
+            <Label className="text-xs flex items-center gap-1.5">
+              <Tags className="h-3.5 w-3.5 text-primary/80"/>
               Tags
             </Label>
-            <Input placeholder="e.g., data-processing, validation" className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring" readOnly />
+            <Input placeholder="e.g., data-processing, validation" className="bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" readOnly />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary"/>
+            <Label className="text-xs flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5 text-primary/80"/>
               Configuration / Metadata
             </Label>
-            <Textarea placeholder="JSON configuration for this node" rows={3} className="font-code text-xs bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring" readOnly />
+            <Textarea placeholder="JSON configuration for this node" rows={3} className="font-code text-xs bg-input/50 backdrop-blur-sm border-input/50 focus:ring-ring text-muted-foreground" readOnly />
           </div>
           {onNodeUpdate && (
             <Button onClick={handleSaveChanges} className="w-full mt-2" size="sm">
