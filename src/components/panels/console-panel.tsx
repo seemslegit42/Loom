@@ -18,17 +18,17 @@ interface ConsolePanelProps {
   messages: ConsoleMessage[];
   filters: Record<ConsoleMessage['type'], boolean>;
   onToggleFilter: (type: ConsoleMessage['type']) => void;
-  onClearConsole?: () => void; // New prop
+  onClearConsole?: () => void;
   isMobile?: boolean;
 }
 
 const getIconForType = (type: ConsoleMessage['type']) => {
   switch (type) {
-    case 'error': return <AlertCircle className="h-3.5 w-3.5 text-destructive mr-2 shrink-0" />;
-    case 'warn': return <AlertCircle className="h-3.5 w-3.5 text-yellow-500 mr-2 shrink-0" />;
-    case 'info': return <Info className="h-3.5 w-3.5 text-blue-400 mr-2 shrink-0" />;
+    case 'error': return <AlertCircle className="h-3.5 w-3.5 text-destructive mr-1 shrink-0" />; // Adjusted margin
+    case 'warn': return <AlertCircle className="h-3.5 w-3.5 text-yellow-500 mr-1 shrink-0" />; // Adjusted margin
+    case 'info': return <Info className="h-3.5 w-3.5 text-blue-400 mr-1 shrink-0" />; // Adjusted margin
     case 'log':
-    default: return <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-2 shrink-0" />;
+    default: return <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-1 shrink-0" />; // Adjusted margin
   }
 };
 
@@ -66,8 +66,8 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
               variant={filters[type] ? "secondary" : "ghost"}
               size="sm"
               className={cn(
-                "text-xs h-6 px-1.5 py-0.5 flex items-center", 
-                filters[type] && "border border-primary/50"
+                "text-xs h-6 px-1.5 py-0.5 flex items-center rounded-sm", // Ensure rounded-sm for consistency
+                filters[type] && "border border-primary/50" 
               )}
               onClick={() => onToggleFilter(type)}
               title={`${filters[type] ? 'Hide' : 'Show'} ${type} messages`}
@@ -94,7 +94,7 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
         <div className="p-2 space-y-1">
         {messages.length === 0 && (
             <div className="flex items-start text-muted-foreground">
-                {getIconForType('log')}
+                {getIconForType('log')} 
                 <span>
                   {allFiltersEnabled
                     ? "Loom Studio initialized. Waiting for events..." 
