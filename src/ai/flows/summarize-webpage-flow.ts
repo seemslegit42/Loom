@@ -39,15 +39,6 @@ const summarizePrompt = ai.definePrompt({
   3. If you receive content, provide a concise summary of the text.
   4. Ensure your output includes the original URL and the summary.
   `,
-  // Example of how to set safety settings if needed, though often default is fine
-  // config: {
-  //   safetySettings: [
-  //     {
-  //       category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-  //       threshold: 'BLOCK_NONE',
-  //     },
-  //   ],
-  // },
 });
 
 const summarizeWebpageFlow = ai.defineFlow(
@@ -58,7 +49,7 @@ const summarizeWebpageFlow = ai.defineFlow(
   },
   async (input) => {
     const llmResponse = await summarizePrompt(input);
-    const output = llmResponse.output();
+    const output = llmResponse.output; // Use .output as per Genkit v1.x
 
     if (!output) {
       // This case might happen if the LLM fails to adhere to the output schema or if there's a major processing error.

@@ -39,7 +39,7 @@ const executePromptFlow = ai.defineFlow(
         prompt: input.promptText,
         model: input.modelName || ai.config.model, // Use specified model or default from ai config
       });
-      const responseText = llmResponse.text();
+      const responseText = llmResponse.text; // Use .text as per Genkit v1.x
       
       if (responseText) {
         return { responseText };
@@ -63,3 +63,4 @@ const executePromptFlow = ai.defineFlow(
     }
   }
 );
+
