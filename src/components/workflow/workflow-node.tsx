@@ -1,6 +1,6 @@
 
 // src/components/workflow/workflow-node.tsx
-import React from 'react';
+import React, { useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe } from 'lucide-react';
@@ -33,7 +33,7 @@ interface WorkflowNodeProps {
   onClick?: (e: React.MouseEvent<HTMLDivElement>, node: WorkflowNodeData) => void;
   isSelected?: boolean;
   onInputPortClick?: (nodeId: string, e: React.MouseEvent<HTMLDivElement>) => void;
-  onOutputPortClick?: (nodeId: string, portElement: HTMLDivElement) => void; // portElement is the div for the port
+  onOutputPortClick?: (nodeId: string, portElement: HTMLDivElement) => void; 
   isConnectingFrom?: boolean;
 }
 
@@ -87,13 +87,14 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
     const currentStatusIcon = statusIcons[status] || statusIcons.unknown;
 
     const outputPortRef = useRef<HTMLDivElement>(null);
+    const inputPortRef = useRef<HTMLDivElement>(null);
 
     const handleNodeClick = (e: React.MouseEvent<HTMLDivElement>) => {
       if ((e.target as HTMLElement).closest('.node-port')) {
         return;
       }
       if (onClick) {
-        e.stopPropagation(); // Prevent canvas click from immediately deselecting
+        e.stopPropagation(); 
         onClick(e, node);
       }
     };
@@ -117,7 +118,7 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
     return (
       <Card
         ref={ref}
-        id={`node-${id}`} // Add ID for direct DOM access by CanvasZone
+        id={`node-${id}`} 
         className={cn(
           'absolute min-w-[250px] max-w-xs bg-card/90 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] group',
           'border-2',
@@ -134,12 +135,12 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
       >
         {onInputPortClick && (
           <div
+            ref={inputPortRef}
             data-port-type="input"
             className={cn(portBaseStyle, "left-[-9px] top-1/2 -translate-y-1/2", {"bg-green-400/80 border-green-600": !isConnectingFrom && isSelected})}
             onClick={handleInputClick}
             title={`Input to ${title}`}
           >
-            {/* Visual indicator for port, e.g., a small dot or arrow shape */}
           </div>
         )}
 
@@ -151,7 +152,6 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
             onClick={handleOutputClick}
             title={`Output from ${title}`}
           >
-            {/* Visual indicator for port */}
           </div>
         )}
 
@@ -183,5 +183,3 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
 );
 
 WorkflowNode.displayName = 'WorkflowNode';
-
-    

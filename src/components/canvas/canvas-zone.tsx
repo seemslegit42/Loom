@@ -22,8 +22,8 @@ interface CanvasZoneProps {
   selectedNode: WorkflowNodeData | null;
   onNodeSelected: (node: WorkflowNodeData | null) => void;
   nodeExecutionStatus: Record<string, NodeStatus>;
-  onInputPortClick: (nodeId: string) => void; // Updated signature
-  onOutputPortClick: (nodeId: string, portElement: HTMLDivElement) => void; // Updated signature
+  onInputPortClick: (nodeId: string) => void; 
+  onOutputPortClick: (nodeId: string, portElement: HTMLDivElement) => void; 
   connectingState: ConnectingState | null;
 }
 
@@ -50,10 +50,8 @@ export function CanvasZone({
   const [tempLinePath, setTempLinePath] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
 
-  // Initialize or clear nodeRefs when nodes change
   useEffect(() => {
     nodeRefs.current = nodes.reduce((acc, node) => {
-      // Use the id directly for the DOM element lookup
       acc[node.id] = document.getElementById(`node-${node.id}`) as HTMLDivElement | null;
       return acc;
     }, {} as Record<string, HTMLDivElement | null>);
@@ -61,27 +59,34 @@ export function CanvasZone({
 
 
   const getPortPosition = useCallback((nodeId: string, portType: 'input' | 'output'): PortPosition | null => {
-    const nodeEl = nodeRefs.current[nodeId]; // Use the ref directly
+    const nodeEl = nodeRefs.current[nodeId]; 
     const canvasEl = canvasRef.current;
     if (!nodeEl || !canvasEl) return null;
 
     const nodeRect = nodeEl.getBoundingClientRect();
     const canvasRect = canvasEl.getBoundingClientRect();
+    
+    const portEl = nodeEl.querySelector(`[data-port-type="${portType}"]`) as HTMLElement;
+    let x, y;
 
-    // The port elements themselves are now what we target.
-    // The WorkflowNode component will ensure these ports exist with identifiable classes or attributes.
-    // For now, we'll approximate based on node edges as before, but this would be more robust
-    // if we queried for child elements with specific data-port-type attributes.
-    // Example: nodeEl.querySelector(`[data-port-type="${portType}"]`)
-    // For simplicity in this step, stick to edge approximation.
-
-    const x = portType === 'input'
-      ? nodeRect.left - canvasRect.left + canvasEl.scrollLeft - 8 // Adjust for port width/offset from node edge
-      : nodeRect.right - canvasRect.left + canvasEl.scrollLeft + 8;
-    const y = nodeRect.top + nodeRect.height / 2 - canvasRect.top + canvasEl.scrollTop;
+    if (portEl) {
+      const portRect = portEl.getBoundingClientRect();
+      if (portType === 'input') {
+        x = portRect.left + portRect.width / 2 - canvasRect.left + canvasEl.scrollLeft;
+      } else { // output
+        x = portRect.left + portRect.width / 2 - canvasRect.left + canvasEl.scrollLeft;
+      }
+      y = portRect.top + portRect.height / 2 - canvasRect.top + canvasEl.scrollTop;
+    } else {
+      // Fallback if port element not found (should not happen with current WorkflowNode structure)
+      x = portType === 'input'
+        ? nodeRect.left - canvasRect.left + canvasEl.scrollLeft 
+        : nodeRect.right - canvasRect.left + canvasEl.scrollLeft;
+      y = nodeRect.top + nodeRect.height / 2 - canvasRect.top + canvasEl.scrollTop;
+    }
 
     return { x, y };
-  }, []); // Removed nodeRefs dependency as it's managed by direct DOM access
+  }, []); 
 
 
   useEffect(() => {
@@ -91,10 +96,6 @@ export function CanvasZone({
       const toPos = getPortPosition(conn.to, 'input');
 
       if (fromPos && toPos) {
-        // Simple straight line for now, can be upgraded to Bezier later
-        // paths.push(`M ${fromPos.x} ${fromPos.y} L ${toPos.x} ${toPos.y}`);
-
-        // Basic Bezier curve (horizontal)
         const c1x = fromPos.x + Math.abs(toPos.x - fromPos.x) * 0.5;
         const c1y = fromPos.y;
         const c2x = toPos.x - Math.abs(toPos.x - fromPos.x) * 0.5;
@@ -103,13 +104,12 @@ export function CanvasZone({
       }
     });
     setLinePathData(paths);
-  }, [connections, nodes, getPortPosition, nodeExecutionStatus]); // Rerun if nodes or connections change
+  }, [connections, nodes, getPortPosition, nodeExecutionStatus]); 
 
   useEffect(() => {
     if (connectingState && connectingState.fromNodeId && mousePosition) {
         const fromPos = getPortPosition(connectingState.fromNodeId, 'output');
         if (fromPos) {
-            // Basic Bezier for temp line as well
             const c1x = fromPos.x + Math.abs(mousePosition.x - fromPos.x) * 0.3;
             const c1y = fromPos.y;
             const c2x = mousePosition.x - Math.abs(mousePosition.x - fromPos.x) * 0.3;
@@ -136,8 +136,8 @@ export function CanvasZone({
         if (!canvasEl) return;
         const canvasRect = canvasEl.getBoundingClientRect();
         const position = {
-          x: event.clientX - canvasRect.left + canvasEl.scrollLeft - 125, // Adjust for node width/2
-          y: event.clientY - canvasRect.top + canvasEl.scrollTop - 50, // Adjust for node height/2
+          x: event.clientX - canvasRect.left + canvasEl.scrollLeft - 125, 
+          y: event.clientY - canvasRect.top + canvasEl.scrollTop - 50, 
         };
 
         const newNodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus } = {
@@ -154,15 +154,10 @@ export function CanvasZone({
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Ensure click is directly on canvas or its scroll area content, not a node or port.
     const target = e.target as HTMLElement;
     if (target === e.currentTarget || target.classList.contains('scroll-area-viewport-content') || target.classList.contains('grid-background')) {
-       if (!connectingState) { // Don't deselect if in middle of connecting
+       if (!connectingState) { 
         onNodeSelected(null);
-      } else {
-        // If clicking canvas while connecting, cancel connection
-        // setConnectingState(null); // This is handled in onNodeSelected(null) if page.tsx calls it.
-        // addConsoleMessage('log', 'Connection cancelled by clicking canvas.');
       }
     }
   };
@@ -188,7 +183,7 @@ export function CanvasZone({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onClick={handleCanvasClick}
-      onMouseMove={handleMouseMove} // Add mouse move listener to the ScrollArea
+      onMouseMove={handleMouseMove} 
       ref={canvasRef}
     >
       <div className="p-8 min-h-full relative scroll-area-viewport-content">
@@ -203,17 +198,16 @@ export function CanvasZone({
             </p>
           </div>
         )}
-        {/* Nodes are absolutely positioned relative to this div */}
-        <div className="relative min-h-[800px] min-w-[1200px]"> {/* Ensure enough space for absolute positioning and scrolling */}
+        <div className="relative min-h-[800px] min-w-[1200px]"> 
             {displayedNodes.map((node) => (
               <WorkflowNode
                 key={node.id}
-                ref={el => { nodeRefs.current[node.id] = el; }} // Assign ref for DOM element access
+                ref={el => { nodeRefs.current[node.id] = el; }} 
                 node={node}
                 onClick={(e, n) => { e.stopPropagation(); onNodeSelected(n);}}
                 isSelected={selectedNode?.id === node.id}
-                onInputPortClick={(nodeId, _e) => onInputPortClick(nodeId)} // _e from node is not needed in page.tsx
-                onOutputPortClick={onOutputPortClick} // Pass handler directly
+                onInputPortClick={(nodeId, _e) => onInputPortClick(nodeId)} 
+                onOutputPortClick={onOutputPortClick} 
                 isConnectingFrom={connectingState?.fromNodeId === node.id}
               />
             ))}
@@ -252,5 +246,3 @@ export function CanvasZone({
     </ScrollArea>
   );
 }
-
-    
