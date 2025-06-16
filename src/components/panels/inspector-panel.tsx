@@ -17,8 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
-import type { ExecutePromptOutput } from '@/ai/flows/execute-prompt-flow';
+import type { BackendSummarizeOutput, BackendExecutePromptOutput } from '@/app/page';
 
 
 interface InspectorPanelProps {
@@ -28,7 +27,7 @@ interface InspectorPanelProps {
   onNodeUpdate?: (updatedNode: WorkflowNodeData) => void;
   onNodeDelete?: (nodeId: string) => void;
   isMobile?: boolean;
-  onRunNode?: (nodeId: string) => void;
+  onRunNode?: (nodeId: string) => void; // Will now trigger simulated run
   isNodeRunning?: (nodeId: string) => boolean;
 }
 
@@ -45,7 +44,6 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
       setEditableTitle(selectedNode.title);
       setEditableDescription(selectedNode.description);
       setEditableStatus(selectedNode.status || 'unknown');
-      // Ensure config is an object, even if undefined initially in selectedNode
       setEditableConfig(selectedNode.config || {}); 
     } else {
       setEditableTitle('');
@@ -85,12 +83,14 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   };
 
   const nodeIsCurrentlyRunning = selectedNode && isNodeRunning ? isNodeRunning(selectedNode.id) : false;
-  const nodeCanRun = selectedNode && onRunNode && (selectedNode.type === 'web-summarizer' || selectedNode.type === 'prompt');
+  // Run button is now for simulation, but still relies on config for specific node types
+  const nodeCanRun = selectedNode && onRunNode && (selectedNode.type === 'web-summarizer' || selectedNode.type === 'prompt' || selectedNode.type === 'agent-call' || selectedNode.type === 'custom');
 
-  // Safely access output properties
+
   const output = selectedNode?.config?.output;
-  const summarizerOutput = output as SummarizeWebpageOutput | undefined;
-  const promptOutput = output as ExecutePromptOutput | undefined;
+  // Cast to appropriate backend types, knowing they might be simulations
+  const summarizerOutput = output as BackendSummarizeOutput | undefined; 
+  const promptOutput = output as BackendExecutePromptOutput | undefined;
 
 
   return (
@@ -191,14 +191,14 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
               </div>
               {summarizerOutput?.summary && (
                 <div className="space-y-1 pt-2">
-                  <Label className="text-xs">Summary Output:</Label>
+                  <Label className="text-xs">Summary Output (Simulated):</Label>
                   <Textarea value={summarizerOutput.summary} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
                 </div>
               )}
               {summarizerOutput?.error && (
                  <Alert variant="destructive" className="mt-2">
                    <AlertCircle className="h-4 w-4" />
-                   <AlertTitle className="text-xs">Summarization Error</AlertTitle>
+                   <AlertTitle className="text-xs">Summarization Error (Simulated)</AlertTitle>
                    <AlertDescription className="text-xs">{summarizerOutput.error}</AlertDescription>
                  </Alert>
               )}
@@ -222,31 +222,48 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor={`${panelKey}-modelName`} className="text-xs">Model Name (Optional)</Label>
+                <Label htmlFor={`${panelKey}-modelName`} className="text-xs">Model/Agent (Optional)</Label>
                 <Input
                   id={`${panelKey}-modelName`}
-                  placeholder="e.g., googleai/gemini-pro"
+                  placeholder="e.g., gpt-4, specific_agent_id"
                   value={editableConfig?.modelName || ''}
                   onChange={(e) => handleConfigChange('modelName', e.target.value)}
                   className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
                 />
-                 <p className="text-xs text-muted-foreground">If blank, default model is used.</p>
+                 <p className="text-xs text-muted-foreground">Backend (SuperAGI) will determine use.</p>
               </div>
               {promptOutput?.responseText && (
                 <div className="space-y-1 pt-2">
-                  <Label className="text-xs">LLM Response:</Label>
+                  <Label className="text-xs">LLM Response (Simulated):</Label>
                   <Textarea value={promptOutput.responseText} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
                 </div>
               )}
               {promptOutput?.error && (
                  <Alert variant="destructive" className="mt-2">
                    <AlertCircle className="h-4 w-4" />
-                   <AlertTitle className="text-xs">Prompt Execution Error</AlertTitle>
+                   <AlertTitle className="text-xs">Prompt Execution Error (Simulated)</AlertTitle>
                    <AlertDescription className="text-xs">{promptOutput.error}</AlertDescription>
                  </Alert>
               )}
             </div>
           )}
+          
+          {/* Placeholder for other node type configurations */}
+          {(selectedNode.type !== 'prompt' && selectedNode.type !== 'web-summarizer') && (
+            <div className="space-y-1 p-3 border border-dashed border-border/50 rounded-md bg-card/50">
+              <h4 className="text-xs font-medium flex items-center gap-1.5 text-primary">
+                 Generic Node Configuration
+              </h4>
+              <p className="text-xs text-muted-foreground">Configuration for '{formatDisplayValue(selectedNode.type)}' nodes will be handled by the SuperAGI backend.</p>
+              {output && typeof output === 'object' && Object.keys(output).length > 0 && (
+                <div className="space-y-1 pt-2">
+                    <Label className="text-xs">Last Output (Simulated):</Label>
+                    <Textarea value={JSON.stringify(output, null, 2)} readOnly rows={3} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
+                </div>
+              )}
+            </div>
+          )}
+
 
           {nodeCanRun && (
             <Button
@@ -260,7 +277,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
               }
             >
               {nodeIsCurrentlyRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-              {nodeIsCurrentlyRunning ? 'Running...' : `Run ${formatDisplayValue(selectedNode.type)}`}
+              {nodeIsCurrentlyRunning ? 'Running (Sim)...' : `Run ${formatDisplayValue(selectedNode.type)} (Simulate)`}
             </Button>
           )}
 
@@ -306,5 +323,3 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
     </BasePanel>
   );
 }
-
-    

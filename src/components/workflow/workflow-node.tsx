@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { SummarizeWebpageOutput } from '@/ai/flows/summarize-webpage-flow';
-import type { ExecutePromptOutput } from '@/ai/flows/execute-prompt-flow';
+// Use Backend types for output as Genkit is removed
+import type { BackendSummarizeOutput, BackendExecutePromptOutput } from '@/app/page';
+
 
 export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown' | 'pending';
+// Node types can remain somewhat abstract, as SuperAGI will handle the specifics
 export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer';
 
 export interface WorkflowNodeData {
@@ -17,13 +19,20 @@ export interface WorkflowNodeData {
   type: NodeType;
   description: string;
   status?: NodeStatus;
-  agentName?: string;
+  agentName?: string; // Could map to a SuperAGI agent ID or name
   position?: { x: number; y: number };
   config?: {
-    url?: string;
-    promptText?: string;
-    modelName?: string;
-    output?: SummarizeWebpageOutput | ExecutePromptOutput | Record<string, any>;
+    // Common config fields
+    url?: string; // For web-summarizer
+    promptText?: string; // For prompt node
+    modelName?: string; // Could be agent_id or model preference for SuperAGI
+    
+    // Output from backend (simulated or real)
+    output?: BackendSummarizeOutput | BackendExecutePromptOutput | Record<string, any>; 
+    
+    // Other potential SuperAGI specific configs can be added here
+    // e.g., agent_id, goal, specific_tool_params
+    [key: string]: any; // Allow other dynamic config properties
   };
 }
 
@@ -49,12 +58,12 @@ const statusIcons: Record<NodeStatus, React.ReactNode> = {
 const typeIcons: Record<NodeType, React.ReactNode> = {
   prompt: <MessageSquare className="h-4 w-4 text-purple-400" />,
   decision: <GitMerge className="h-4 w-4 text-orange-400" />,
-  'agent-call': <Zap className="h-4 w-4 text-yellow-400" />,
+  'agent-call': <Zap className="h-4 w-4 text-yellow-400" />, // Represents calling a SuperAGI agent/tool
   wait: <Timer className="h-4 w-4 text-cyan-400" />,
-  'api-call': <Webhook className="h-4 w-4 text-indigo-400" />,
-  trigger: <Cog className="h-4 w-4 text-pink-400" />,
-  custom: <SlidersHorizontal className="h-4 w-4 text-teal-400" />,
-  'web-summarizer': <Globe className="h-4 w-4 text-sky-400" />,
+  'api-call': <Webhook className="h-4 w-4 text-indigo-400" />, // Could be a generic API tool in SuperAGI
+  trigger: <Cog className="h-4 w-4 text-pink-400" />, // Represents a SuperAGI trigger
+  custom: <SlidersHorizontal className="h-4 w-4 text-teal-400" />, // For custom SuperAGI tools/logic
+  'web-summarizer': <Globe className="h-4 w-4 text-sky-400" />, // A specific SuperAGI capability
 };
 
 const badgeStyles: Record<NodeStatus, string> = {
@@ -167,7 +176,7 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
         </CardHeader>
         <CardContent className="px-4 pb-4 cursor-grab select-none">
           {description && <p className="text-xs text-muted-foreground mb-2 line-clamp-3">{description}</p>}
-          {agentName && (
+          {agentName && ( // This could display the SuperAGI agent name/ID
             <div className="flex items-center gap-1 text-xs text-primary">
               <Bot className="h-3 w-3" />
               <span>{agentName}</span>

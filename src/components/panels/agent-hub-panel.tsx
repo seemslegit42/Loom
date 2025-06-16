@@ -17,17 +17,17 @@ import type { TimelineEvent } from '@/components/panels/timeline-panel';
 interface Agent {
   id: string;
   name: string;
-  status: 'active' | 'idle' | 'error' | 'paused';
-  tasks: number;
-  permissions: string;
-  workload: string;
+  status: 'active' | 'idle' | 'error' | 'paused'; // These statuses would come from SuperAGI
+  tasks: number; // Number of active tasks/goals
+  permissions: string; // Could represent capabilities
+  workload: string; // Could represent resource usage or queue length
 }
 
+// Placeholder agents; in a real app, this would be fetched from SuperAGI
 const initialAgents: Agent[] = [
-  { id: 'agent-1', name: "DataScribe Alpha", status: "active", tasks: 5, permissions: "Read/Write", workload: "75%" },
-  { id: 'agent-2', name: "InsightGen Beta", status: "idle", tasks: 0, permissions: "Read-Only", workload: "10%" },
-  { id: 'agent-3', name: "AutoResponder Gamma", status: "error", tasks: 2, permissions: "Write", workload: "N/A" },
-  { id: 'agent-4', name: "WorkflowOrchestrator", status: "active", tasks: 12, permissions: "Admin", workload: "30%" },
+  { id: 'superagi-agent-1', name: "Web Research Agent", status: "active", tasks: 3, permissions: "Web Search, Summarization", workload: "60%" },
+  { id: 'superagi-agent-2', name: "Task Execution Agent", status: "idle", tasks: 0, permissions: "Code Execution, API Calls", workload: "5%" },
+  { id: 'superagi-agent-3', name: "Content Creation Agent", status: "paused", tasks: 1, permissions: "Text Generation, Image Generation", workload: "N/A" },
 ];
 
 const statusColors: Record<Agent['status'], string> = {
@@ -55,72 +55,75 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
 
   const handleSpawnAgent = () => {
-    const newAgentId = `agent-${Date.now()}`;
-    const newAgentName = `New Agent ${agents.length + 1}`;
+    // This would eventually be an API call to SuperAGI to provision/create a new agent
+    const newAgentId = `superagi-agent-${Date.now()}`;
+    const newAgentName = `New SuperAGI Agent ${agents.length + 1}`;
     const newAgent: Agent = {
       id: newAgentId,
       name: newAgentName,
       status: 'idle',
       tasks: 0,
-      permissions: 'Read-Only',
+      permissions: 'Basic',
       workload: '0%',
     };
     setAgents(prev => [...prev, newAgent]);
-    toast({ title: "Agent Spawned", description: `Agent "${newAgentName}" is now available.` });
-    addConsoleMessage('info', `Agent "${newAgentName}" spawned.`);
+    toast({ title: "Agent Spawned (Simulated)", description: `Agent "${newAgentName}" is now available (simulation).` });
+    addConsoleMessage('info', `Agent "${newAgentName}" spawned (simulation for SuperAGI).`);
   };
 
   const handleResumeAll = () => {
+    // This would be an API call to SuperAGI to resume agents
     setAgents(prev => 
       prev.map(agent => 
         agent.status === 'paused' || agent.status === 'idle' ? { ...agent, status: 'active' } : agent
       )
     );
-    toast({ title: "Agent Hub Action", description: "Attempting to resume all eligible agents." });
-    addConsoleMessage('info', 'Agent Hub: Resume all action triggered.');
+    toast({ title: "Agent Hub Action (Simulated)", description: "Attempting to resume all eligible agents (simulation for SuperAGI)." });
+    addConsoleMessage('info', 'Agent Hub: Resume all action triggered (simulation for SuperAGI).');
   };
 
   const handlePauseAll = () => {
+    // This would be an API call to SuperAGI to pause agents
     setAgents(prev =>
       prev.map(agent => 
         agent.status === 'active' ? { ...agent, status: 'paused' } : agent
       )
     );
-    toast({ title: "Agent Hub Action", description: "Activating Safe Mode: Pausing all active agents.", variant: "secondary" });
-    addConsoleMessage('warn', 'Agent Hub: Pause all action triggered (Safe Mode).');
+    toast({ title: "Agent Hub Action (Simulated)", description: "Activating Safe Mode: Pausing all active agents (simulation for SuperAGI).", variant: "secondary" });
+    addConsoleMessage('warn', 'Agent Hub: Pause all action triggered (simulation for SuperAGI).');
   };
 
   return (
     <BasePanel
-      title="Agent Hub"
+      title="Agent Hub (SuperAGI)"
       icon={<Bot className="h-4 w-4" />}
       className={className}
       onClose={onClose}
       isMobile={isMobile}
       initialSize={{ width: '380px', height: 'auto' }} 
-      contentClassName="space-y-3 flex flex-col" // Added flex flex-col
+      contentClassName="space-y-3 flex flex-col"
     >
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Connected Agents ({agents.length})</h3>
+          <h3 className="text-sm font-medium">Connected SuperAGI Agents ({agents.length})</h3>
           <Button variant="outline" size="sm" className="text-xs" onClick={handleSpawnAgent}>
             <UserPlus className="h-3 w-3 mr-1.5" />
-            Spawn New Agent
+            Spawn Agent (Sim)
           </Button>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" className="text-xs flex-1" onClick={handleResumeAll}>
               <PlayCircle className="h-3 w-3 mr-1.5" />
-              Resume All
+              Resume All (Sim)
           </Button>
           <Button variant="secondary" size="sm" className="text-xs flex-1" onClick={handlePauseAll}>
               <PauseCircle className="h-3 w-3 mr-1.5" />
-              Pause All
+              Pause All (Sim)
           </Button>
         </div>
-        <ScrollArea className="pr-2">
+        <ScrollArea className="pr-2 max-h-60"> {/* Added max-h for better layout control */}
           {agents.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-4">No agents currently connected. Spawn one to get started.</p>
+              <p className="text-xs text-muted-foreground text-center py-4">No SuperAGI agents connected. Spawn one to get started.</p>
           ) : (
           <ul className="space-y-2">
             {agents.map((agent) => (
@@ -130,8 +133,8 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
                   <Badge className={`text-[0.65rem] px-1.5 py-0.5 ${statusColors[agent.status] || 'bg-muted border-muted-foreground/30'}`}>{formatStatusText(agent.status)}</Badge>
                 </div>
                 <div className="text-xs text-muted-foreground space-y-0.5">
-                  <p className="flex items-center gap-1"><ListChecks className="h-3 w-3 text-primary/70" /> Tasks: {agent.tasks} | Workload: {agent.workload}</p>
-                  <p className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-primary/70" /> Permissions: {agent.permissions}</p>
+                  <p className="flex items-center gap-1"><ListChecks className="h-3 w-3 text-primary/70" /> Active Tasks: {agent.tasks} | Workload: {agent.workload}</p>
+                  <p className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-primary/70" /> Capabilities: {agent.permissions}</p>
                 </div>
               </li>
             ))}
@@ -144,7 +147,7 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
 
       <div className="space-y-2">
          <h3 className="text-sm font-medium flex items-center gap-1.5">
-            <Globe className="h-4 w-4 text-primary/80" /> Web Agent Utilities
+            <Globe className="h-4 w-4 text-primary/80" /> Web Agent Utilities (Simulated)
           </h3>
         <WebpageSummarizerForm 
           addConsoleMessage={addConsoleMessage} 
