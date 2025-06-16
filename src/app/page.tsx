@@ -372,7 +372,10 @@ export default function LoomStudioPage() {
 
   const handleDeleteNode = (nodeId: string) => {
     const nodeToDelete = generatedFlow?.nodes?.find(n => n.id === nodeId);
-    if (!nodeToDelete) return;
+    if (!nodeToDelete) {
+        addConsoleMessage('warn', `Attempted to delete non-existent node ID: ${nodeId}`);
+        return;
+    }
 
     setGeneratedFlow(prevFlow => {
       if (!prevFlow || !prevFlow.nodes) return prevFlow;
@@ -507,9 +510,10 @@ export default function LoomStudioPage() {
     const clearMessageText = 'Local console view cleared. Firestore logs are not affected by this action.';
     const clearMessageEntry: ConsoleMessage = { type: 'info', text: clearMessageText, timestamp: new Date() };
     
-    setConsoleMessages([clearMessageEntry]);
+    setConsoleMessages([clearMessageEntry]); // Set local state directly
     
-    addConsoleMessage(clearMessageEntry.type, clearMessageEntry.text); 
+    // Persist the "clear" action itself to Firestore
+    addConsoleMessage(clearMessageEntry.type, clearMessageText); 
     
     toast({ title: "Console Cleared", description: "Local console messages have been cleared." });
   };
@@ -667,3 +671,5 @@ export default function LoomStudioPage() {
     </div>
   );
 }
+
+    
