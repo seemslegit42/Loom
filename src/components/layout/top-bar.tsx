@@ -1,10 +1,10 @@
 
 // src/components/layout/top-bar.tsx
-import type { GenerateFlowFormState } from '@/lib/actions/ai';
+import type { GenerateFlowFormState } from '@/lib/actions/ai'; // This type might be from the old structure, check usage
 import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot } from 'lucide-react';
+import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot, BookMarked } from 'lucide-react';
 import type { PanelVisibility } from '@/app/page';
 import {
   DropdownMenu,
@@ -17,14 +17,15 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 interface TopBarProps {
-  onFlowGenerated: (data: GenerateFlowFormState) => void;
+  onFlowGenerated: (data: GenerateFlowFormState) => void; // Adjust GenerateFlowFormState if it's related to the old AI actions
   panelVisibility: PanelVisibility;
   togglePanel: (panel: keyof PanelVisibility) => void;
   isMobile: boolean;
-  anyMobilePanelOpen: boolean; // New prop
+  anyMobilePanelOpen: boolean;
+  onOpenTemplateSelector: () => void; // New prop for opening template selector
 }
 
-export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen }: TopBarProps) {
+export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen, onOpenTemplateSelector }: TopBarProps) {
   const showAiForm = !isMobile || !anyMobilePanelOpen; // Condition to show AI form
   const { toast } = useToast();
 
@@ -49,6 +50,9 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={() => handleComingSoon("Projects")} className="cursor-pointer">
                  <FolderKanban className="mr-2 h-4 w-4" /> Projects
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onOpenTemplateSelector} className="cursor-pointer">
+                 <BookMarked className="mr-2 h-4 w-4" /> Templates
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleComingSoon("Documentation")} className="cursor-pointer">
                  <FileText className="mr-2 h-4 w-4" /> Docs
@@ -113,6 +117,9 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => handleComingSoon("Projects")}>
             Projects
           </Button>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={onOpenTemplateSelector}>
+            <BookMarked className="mr-1.5 h-4 w-4"/> Templates
+          </Button>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => handleComingSoon("Documentation")}>
             Docs
           </Button>
@@ -147,3 +154,5 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
   );
 }
 
+
+    

@@ -11,7 +11,8 @@ import { InspectorPanel } from '@/components/panels/inspector-panel';
 import { TimelinePanel, type TimelineEvent } from '@/components/panels/timeline-panel';
 import { ConsolePanel, type ConsoleMessage } from '@/components/panels/console-panel';
 import { AgentHubPanel } from '@/components/panels/agent-hub-panel';
-import type { WorkflowNodeData, NodeStatus } from '@/components/workflow/workflow-node';
+import { TemplateSelectorDialog, type WorkflowTemplate } from '@/components/panels/template-selector-dialog';
+import type { WorkflowNodeData, NodeStatus, NodeType } from '@/components/workflow/workflow-node';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
@@ -51,6 +52,30 @@ export interface ConnectingState {
   fromPortElement: HTMLDivElement | null; // Store the element for position
 }
 
+// Define sample workflow templates
+const exampleTemplates: WorkflowTemplate[] = [
+  {
+    name: "Basic Web Summarizer",
+    description: "Fetches content from a URL and then uses a prompt node to summarize it.",
+    nodes: [
+      { localId: "fetcher", title: "Fetch Webpage", type: 'web-summarizer', description: "Fetches content from a specific URL.", position: { x: 50, y: 150 }, config: { url: 'https://example.com/article' } },
+      { localId: "summarizer", title: "Summarize Content", type: 'prompt', description: "Summarizes the fetched content.", position: { x: 350, y: 150 }, config: { promptText: 'Summarize the following text that will be passed from the previous node: {{input}}' } },
+    ],
+    connections: [
+      { fromLocalId: "fetcher", toLocalId: "summarizer" }
+    ]
+  },
+  {
+    name: "Simple Question & Answer",
+    description: "A single prompt node to ask a question.",
+    nodes: [
+      { localId: "q_prompt", title: "Ask Question", type: 'prompt', description: "Provide a question to the LLM.", position: { x: 200, y: 150 }, config: { promptText: 'What is the capital of France?' } },
+    ],
+    connections: []
+  }
+];
+
+
 export default function LoomStudioPage() {
   const [generatedFlow, setGeneratedFlow] = useState<AiGeneratedFlowData & { nodes: WorkflowNodeData[] } | null>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -72,6 +97,8 @@ export default function LoomStudioPage() {
     warn: true,
     error: true,
   });
+  const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
+
 
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -582,6 +609,56 @@ export default function LoomStudioPage() {
     }
   };
 
+  const handleOpenTemplateSelector = () => {
+    setIsTemplateSelectorOpen(true);
+    addConsoleMessage('log', 'Template selector opened.');
+  };
+
+  const handleCloseTemplateSelector = () => {
+    setIsTemplateSelectorOpen(false);
+  };
+
+  const handleLoadTemplate = useCallback((template: WorkflowTemplate) => {
+    addConsoleMessage('info', `Loading template: "${template.name}"`);
+    const idMap: Record<string, string> = {};
+    const newNodes: WorkflowNodeData[] = template.nodes.map((nodeDef, index) => {
+      const newNodeId = generateNodeId('template', nodeDef.title.replace(/\s+/g, '-'), `${Date.now()}-${index}`);
+      idMap[nodeDef.localId] = newNodeId;
+      return {
+        ...nodeDef,
+        id: newNodeId,
+        status: 'queued' as NodeStatus,
+        // Ensure position is not undefined, provide default if necessary
+        position: nodeDef.position || { x: 50 + index * 50, y: 100 + index * 50 }, 
+      };
+    });
+
+    const newConnections: Connection[] = template.connections.map((connDef, index) => ({
+      id: `conn-template-${Date.now()}-${index}`,
+      from: idMap[connDef.fromLocalId],
+      to: idMap[connDef.toLocalId],
+    }));
+
+    setGeneratedFlow({
+      workflowName: template.name,
+      nodes: newNodes,
+      message: `Template "${template.name}" loaded.`,
+      error: false,
+    });
+    setConnections(newConnections);
+    setSelectedNode(null);
+    setConnectingState(null);
+    setNodeExecutionStatus({}); // Clear old statuses
+
+    toast({ title: "Template Loaded", description: `Workflow "${template.name}" is ready.` });
+    addTimelineEvent({ type: 'info', message: `Workflow template "${template.name}" loaded onto canvas.` });
+    
+    // Delay visualization
+    Promise.resolve().then(() => visualizeWorkflowExecution());
+    setIsTemplateSelectorOpen(false);
+  }, [addConsoleMessage, addTimelineEvent, toast, visualizeWorkflowExecution]);
+
+
   const anyMobilePanelOpen = isMobile && Object.values(panelVisibility).some(v => v);
   if (isMobile === undefined) {
     return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center text-lg">Loading UI...</div>;
@@ -595,6 +672,7 @@ export default function LoomStudioPage() {
         togglePanel={togglePanel}
         isMobile={isMobile}
         anyMobilePanelOpen={anyMobilePanelOpen}
+        onOpenTemplateSelector={handleOpenTemplateSelector}
       />
       <main className={`flex-1 relative flex overflow-hidden ${isMobile ? 'p-0' : 'p-4 gap-4'} ${isMobile ? 'pb-16' : ''}`}>
         <div className={`flex-1 h-full transition-opacity duration-300 ${anyMobilePanelOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
@@ -694,8 +772,17 @@ export default function LoomStudioPage() {
             )}
           </>
         )}
+        <TemplateSelectorDialog
+          isOpen={isTemplateSelectorOpen}
+          onClose={handleCloseTemplateSelector}
+          templates={exampleTemplates}
+          onLoadTemplate={handleLoadTemplate}
+        />
       </main>
       {isMobile && <BottomBar panelVisibility={panelVisibility} togglePanel={togglePanel} />}
     </div>
   );
 }
+
+
+    
