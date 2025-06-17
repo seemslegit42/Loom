@@ -58,8 +58,8 @@ const exampleTemplates: WorkflowTemplate[] = [
     name: "Basic Web Summarizer",
     description: "Fetches content from a URL and then uses a prompt node to summarize it.",
     nodes: [
-      { localId: "fetcher", title: "Fetch Webpage", type: 'web-summarizer', description: "Fetches content from a specific URL.", position: { x: 50, y: 150 }, config: { url: 'https://example.com/article' } },
-      { localId: "summarizer", title: "Summarize Content", type: 'prompt', description: "Summarizes the fetched content.", position: { x: 350, y: 150 }, config: { promptText: 'Summarize the following text that will be passed from the previous node: {{input}}' } },
+      { localId: "fetcher", title: "Fetch Webpage", type: 'web-summarizer', description: "Fetches content from a specific URL.", position: { x: 50, y: 100 }, config: { url: 'https://example.com/article' } },
+      { localId: "summarizer", title: "Summarize Content", type: 'prompt', description: "Summarizes the fetched content using an LLM.", position: { x: 350, y: 100 }, config: { promptText: 'Summarize the following text provided as input: {{input}}' } },
     ],
     connections: [
       { fromLocalId: "fetcher", toLocalId: "summarizer" }
@@ -67,11 +67,56 @@ const exampleTemplates: WorkflowTemplate[] = [
   },
   {
     name: "Simple Question & Answer",
-    description: "A single prompt node to ask a question.",
+    description: "A single prompt node to ask a question to an LLM.",
     nodes: [
-      { localId: "q_prompt", title: "Ask Question", type: 'prompt', description: "Provide a question to the LLM.", position: { x: 200, y: 150 }, config: { promptText: 'What is the capital of France?' } },
+      { localId: "q_prompt", title: "Ask Question", type: 'prompt', description: "Provide a question to the LLM.", position: { x: 200, y: 100 }, config: { promptText: 'What is the capital of France?' } },
     ],
     connections: []
+  },
+  {
+    name: "Market Research & Content Pitch",
+    description: "Researches a topic from a URL, analyzes trends, generates a content pitch, and simulates submission.",
+    nodes: [
+      { localId: "research-url", title: "Research Topic URL", type: 'web-summarizer', description: "Fetch and summarize content from a provided URL.", position: { x: 50, y: 50 }, config: { url: 'https://example.com/market-trends' } },
+      { localId: "analyze-research", title: "Analyze Research", type: 'prompt', description: "Analyze the summarized research to identify key trends and insights. Input: {{input_from_research-url}}", position: { x: 300, y: 50 }, config: { promptText: 'Based on the following research summary, identify the top 3 key trends and insights:\n\n{{input}}' } },
+      { localId: "generate-pitch", title: "Generate Content Pitch", type: 'prompt', description: "Generate a content pitch or outline based on the identified trends. Input: {{input_from_analyze-research}}", position: { x: 550, y: 50 }, config: { promptText: 'Using the identified trends and insights below, draft a compelling content pitch (e.g., blog post outline, video script idea):\n\n{{input}}' } },
+      { localId: "submit-pitch", title: "Submit Pitch (Simulated)", type: 'agent-call', description: "Simulate sending the generated pitch to an editor or platform.", position: { x: 800, y: 50 }, config: { agent_id: 'pitch_submission_agent', task: 'Submit content pitch: {{input_from_generate-pitch}}' } },
+    ],
+    connections: [
+      { fromLocalId: "research-url", toLocalId: "analyze-research" },
+      { fromLocalId: "analyze-research", toLocalId: "generate-pitch" },
+      { fromLocalId: "generate-pitch", toLocalId: "submit-pitch" }
+    ]
+  },
+  {
+    name: "Automated Bug Report Analyzer",
+    description: "Fetches bug reports, standardizes data, analyzes for priority, and simulates routing.",
+    nodes: [
+      { localId: "fetch-bugs", title: "Fetch Bug Reports (API)", type: 'api-call', description: "Simulate fetching new bug reports from a bug tracking system API.", position: { x: 50, y: 200 }, config: { endpoint: '/api/bugs', method: 'GET' } },
+      { localId: "parse-bugs", title: "Parse & Standardize Bugs", type: 'data-transform', description: "Parse fetched bug data and standardize its format for consistent analysis. Input: {{input_from_fetch-bugs}}", position: { x: 300, y: 200 }, config: { transformationLogic: 'Ensure fields: id, title, description, severity, reporter. Convert to JSON.' } },
+      { localId: "analyze-bug", title: "Analyze & Prioritize Bug", type: 'prompt', description: "Use LLM to analyze bug details, determine severity/impact, and suggest a priority. Input: {{input_from_parse-bugs}}", position: { x: 550, y: 200 }, config: { promptText: 'Analyze the following standardized bug report. Determine its severity (Critical, High, Medium, Low), potential impact, and suggest a priority level. Explain your reasoning briefly:\n\n{{input}}' } },
+      { localId: "route-bug", title: "Route Bug Report (Sim.)", type: 'agent-call', description: "Simulate routing the analyzed bug report to the appropriate team or queue based on priority. Input: {{input_from_analyze-bug}}", position: { x: 800, y: 200 }, config: { agent_id: 'bug_routing_agent', task: 'Route bug based on analysis: {{input}}' } },
+    ],
+    connections: [
+      { fromLocalId: "fetch-bugs", toLocalId: "parse-bugs" },
+      { fromLocalId: "parse-bugs", toLocalId: "analyze-bug" },
+      { fromLocalId: "analyze-bug", toLocalId: "route-bug" }
+    ]
+  },
+  {
+    name: "Daily News Digest & Social Post Generator",
+    description: "Fetches top news, extracts key items, formats for social media, and simulates scheduling.",
+    nodes: [
+      { localId: "fetch-news", title: "Fetch Top News", type: 'web-summarizer', description: "Fetch content from a general news feed or site.", position: { x: 50, y: 350 }, config: { url: 'https://news.example.com/feed' } },
+      { localId: "extract-items", title: "Extract Key News Items", type: 'prompt', description: "Use LLM to extract 3 key headlines and their brief summaries from the fetched news content. Input: {{input_from_fetch-news}}", position: { x: 300, y: 350 }, config: { promptText: 'From the news content provided below, extract the top 3 most important headlines and provide a 1-2 sentence summary for each:\n\n{{input}}' } },
+      { localId: "format-social", title: "Format for Social Media", type: 'data-transform', description: "Format the extracted news items into a structure suitable for social media posts (e.g., character limits, hashtags). Input: {{input_from_extract-items}}", position: { x: 550, y: 350 }, config: { transformationLogic: 'For each item: {headline, summary}. Add #news #today. Ensure total length < 280 chars.' } },
+      { localId: "schedule-posts", title: "Schedule Social Posts (Sim.)", type: 'agent-call', description: "Simulate scheduling the formatted news items for posting on social media platforms. Input: {{input_from_format-social}}", position: { x: 800, y: 350 }, config: { agent_id: 'social_media_scheduler', task: 'Schedule posts: {{input}}' } },
+    ],
+    connections: [
+      { fromLocalId: "fetch-news", toLocalId: "extract-items" },
+      { fromLocalId: "extract-items", toLocalId: "format-social" },
+      { fromLocalId: "format-social", toLocalId: "schedule-posts" }
+    ]
   }
 ];
 
