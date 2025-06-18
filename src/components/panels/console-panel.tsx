@@ -54,7 +54,7 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: 'auto', height: '250px' }}
+      initialSize={{ width: 'auto', height: '220px' }} // Changed height
       contentClassName="font-code text-xs p-0 flex flex-col"
     >
       <div className="p-2 border-b border-border/30 flex items-center justify-between gap-1">

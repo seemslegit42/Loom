@@ -776,7 +776,7 @@ export default function LoomStudioPage() {
             </div>
             {panelVisibility.agentHub && (
               <AgentHubPanel
-                className="absolute bottom-[calc(250px+2rem)] right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_250px_-_theme(spacing.12))]"
+                className="absolute bottom-[calc(220px+2rem)] right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_220px_-_theme(spacing.12))]"
                 onClose={() => togglePanel('agentHub')}
                 isMobile={isMobile}
                 addConsoleMessage={addConsoleMessage}

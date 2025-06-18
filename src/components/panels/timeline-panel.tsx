@@ -73,7 +73,7 @@ export function TimelinePanel({ className, onClose, events, isMobile }: Timeline
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: 'auto', height: '250px' }}
+      initialSize={{ width: 'auto', height: '220px' }} // Changed height
     >
       <div className="flex gap-2 mb-2 border-b pb-2 border-border/30">
         <Button variant="ghost" size="sm" className="text-xs" onClick={handleTokenUsage}><BarChart3 className="mr-1 h-3 w-3"/>Token Usage</Button>
