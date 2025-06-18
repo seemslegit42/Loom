@@ -30,7 +30,7 @@ export interface BackendExecutePromptOutput extends ExecutePromptOutput {}
 export interface AiGeneratedFlowData {
   message: string | null;
   workflowName?: string;
-  nodes: WorkflowNodeData[]; // Changed from optional to required
+  nodes: WorkflowNodeData[]; 
   error?: boolean;
   userInput?: string;
 }
@@ -463,9 +463,9 @@ export default function LoomStudioPage() {
 
       const updatedNodes = [...currentNodes, nodeWithIdAndStatus];
       return {
-        message: prevFlow?.message || "Node added to canvas.", // Retain message if it exists
-        userInput: prevFlow?.userInput || "Custom flow", // Retain userInput
-        error: prevFlow?.error || false, // Retain error state
+        message: prevFlow?.message || "Node added to canvas.", 
+        userInput: prevFlow?.userInput || "Custom flow", 
+        error: prevFlow?.error || false, 
         nodes: updatedNodes,
         workflowName: newWorkflowName,
       };
@@ -496,7 +496,7 @@ export default function LoomStudioPage() {
 
   const handleNodeUpdate = (updatedNode: WorkflowNodeData) => {
      setGeneratedFlow(prevFlow => {
-      if (!prevFlow) return prevFlow; // prevFlow.nodes is guaranteed by type AiGeneratedFlowData
+      if (!prevFlow) return prevFlow; 
       const newNodes = prevFlow.nodes.map(n => (n.id === updatedNode.id ? updatedNode : n));
       return { ...prevFlow, nodes: newNodes };
     });
@@ -533,7 +533,7 @@ export default function LoomStudioPage() {
     }
 
     setGeneratedFlow(prevFlow => {
-      if (!prevFlow) return prevFlow; // prevFlow.nodes is guaranteed
+      if (!prevFlow) return prevFlow; 
       const newNodes = prevFlow.nodes.filter(n => n.id !== nodeId);
       return { ...prevFlow, nodes: newNodes };
     });
@@ -571,7 +571,6 @@ export default function LoomStudioPage() {
     setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
     if (selectedNode?.id === nodeId) setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
 
-    // Simulate backend/task call delay for visual feedback
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
 
     try {
@@ -599,7 +598,6 @@ export default function LoomStudioPage() {
           if (nodeOutput.error) nodeError = nodeOutput.error;
         }
       } else {
-        // Generic simulation for other node types
         if (Math.random() > 0.2) { 
             let simulatedResult: Record<string, any> = { simulatedOutput: `Output from simulated task for '${nodeToRun.type}' node. Title: ${nodeToRun.title}.`};
             if (nodeToRun.type === 'data-transform' && nodeToRun.config?.transformationLogic) {
@@ -620,7 +618,7 @@ export default function LoomStudioPage() {
     } catch (e: any) {
       nodeError = e.message || `An unexpected error occurred during ${runType} task execution.`;
       finalStatus = 'failed';
-      nodeOutput = { error: nodeError }; // Ensure output has error structure
+      nodeOutput = { error: nodeError }; 
     }
 
     const updatedNodeData: WorkflowNodeData = {

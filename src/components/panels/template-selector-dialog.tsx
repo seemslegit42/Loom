@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { WorkflowNodeData, NodeType } from '@/components/workflow/workflow-node'; // Assuming Connection is defined in page.tsx or similar
+import type { WorkflowNodeData, NodeType } from '@/components/workflow/workflow-node'; 
 import { BookMarked, LayoutTemplate } from 'lucide-react';
 
 // This defines the structure of a template *before* it's loaded (no final IDs)
@@ -56,7 +56,7 @@ export function TemplateSelectorDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col bg-card/90 backdrop-blur-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BookMarked className="h-6 w-6 text-primary" />
@@ -66,7 +66,7 @@ export function TemplateSelectorDialog({
             Choose a pre-defined workflow to get started quickly.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-grow pr-6 -mr-6"> {/* Offset padding for scrollbar */}
+        <ScrollArea className="flex-grow pr-6 -mr-6"> 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             {templates.length === 0 && (
                 <p className="col-span-full text-center text-muted-foreground">No templates available yet.</p>
@@ -110,5 +110,4 @@ export function TemplateSelectorDialog({
     </Dialog>
   );
 }
-
     

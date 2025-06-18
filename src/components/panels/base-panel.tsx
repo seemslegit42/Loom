@@ -32,7 +32,7 @@ export function BasePanel({
   children,
   className,
   contentClassName,
-  initialSize: initialSizeProp = {}, // Renamed to avoid conflict in useState initializer
+  initialSize: initialSizeProp = {},
   onClose,
   isMobile,
   isResizable = false,
@@ -41,8 +41,8 @@ export function BasePanel({
   const [isMinimized, setIsMinimized] = useState(false);
 
   const [currentSize, setCurrentSize] = useState<{ width: number; height: number }>(() => {
-    let initialW = 300; // Default width
-    let initialH = 200; // Default height
+    let initialW = 300; 
+    let initialH = 200; 
 
     if (typeof window !== 'undefined' && isResizable && !isMobile) {
       const storageKey = getStorageKey(title);
@@ -62,7 +62,6 @@ export function BasePanel({
       }
     }
 
-    // If no saved size, try to use initialSize prop (for pixel values) or fallback to defaults
     const propW = parseInt(initialSizeProp.width || '', 10);
     const propH = parseInt(initialSizeProp.height || '', 10);
 
@@ -77,20 +76,7 @@ export function BasePanel({
   const isResizing = useRef(false);
   const initialResizeState = useRef({ mouseX: 0, mouseY: 0, width: 0, height: 0 });
 
-  const handleMouseDownResize = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isResizable || isMobile) return;
-    e.preventDefault();
-    isResizing.current = true;
-    initialResizeState.current = {
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      width: panelRef.current?.offsetWidth || currentSize.width,
-      height: panelRef.current?.offsetHeight || currentSize.height,
-    };
-    document.addEventListener('mousemove', handleMouseMoveResize);
-    document.addEventListener('mouseup', handleMouseUpResize);
-  }, [isResizable, isMobile, currentSize.width, currentSize.height]); // Added handleMouseMoveResize, handleMouseUpResize to dependencies
-
+  // Define handleMouseMoveResize first as it has no dependencies on other resize handlers
   const handleMouseMoveResize = useCallback((e: MouseEvent) => {
     if (!isResizing.current || !isResizable || isMobile) return;
     const dx = e.clientX - initialResizeState.current.mouseX;
@@ -102,18 +88,15 @@ export function BasePanel({
     newWidth = Math.max(newWidth, MIN_WIDTH);
     newHeight = Math.max(newHeight, MIN_HEIGHT);
     
-    // Optional: Add max width/height constraints (e.g., based on viewport)
-    // newWidth = Math.min(newWidth, window.innerWidth - 50); 
-    // newHeight = Math.min(newHeight, window.innerHeight - 50);
-
     setCurrentSize({ width: newWidth, height: newHeight });
-  }, [isResizable, isMobile]);
+  }, [isResizable, isMobile]); // Dependencies: isResizable, isMobile
 
+  // Define handleMouseUpResize next, it depends on handleMouseMoveResize
   const handleMouseUpResize = useCallback(() => {
     if (!isResizing.current || !isResizable || isMobile) return;
     isResizing.current = false;
     document.removeEventListener('mousemove', handleMouseMoveResize);
-    document.removeEventListener('mouseup', handleMouseUpResize);
+    document.removeEventListener('mouseup', handleMouseUpResize); // Pass itself to remove
 
     if (typeof window !== 'undefined') {
       const storageKey = getStorageKey(title);
@@ -128,7 +111,22 @@ export function BasePanel({
         });
       }
     }
-  }, [isResizable, isMobile, handleMouseMoveResize, title, currentSize, toast]);
+  }, [isResizable, isMobile, handleMouseMoveResize, title, currentSize, toast]); // Dependencies: isResizable, isMobile, handleMouseMoveResize, title, currentSize, toast
+
+  // Define handleMouseDownResize last, as it depends on the others
+  const handleMouseDownResize = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isResizable || isMobile) return;
+    e.preventDefault();
+    isResizing.current = true;
+    initialResizeState.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      width: panelRef.current?.offsetWidth || currentSize.width,
+      height: panelRef.current?.offsetHeight || currentSize.height,
+    };
+    document.addEventListener('mousemove', handleMouseMoveResize);
+    document.addEventListener('mouseup', handleMouseUpResize);
+  }, [isResizable, isMobile, currentSize.width, currentSize.height, handleMouseMoveResize, handleMouseUpResize]);
 
 
   const handleMinimize = () => {
@@ -153,8 +151,6 @@ export function BasePanel({
     });
   };
   
-  // Apply size styles only if resizable and not on mobile
-  // Otherwise, rely on className for sizing (e.g., for mobile full-screen panels or non-resizable panels)
   const sizeStyles: React.CSSProperties = isResizable && !isMobile
     ? { width: `${currentSize.width}px`, height: `${currentSize.height}px` }
     : {};
@@ -165,10 +161,10 @@ export function BasePanel({
       ref={panelRef}
       className={cn(
         'flex flex-col bg-card/80 backdrop-blur-lg border-border shadow-xl transition-all duration-300 ease-out relative',
-        isMinimized && !isMobile && 'h-auto', // This allows it to shrink when minimized
+        isMinimized && !isMobile && 'h-auto', 
         className
       )}
-      style={sizeStyles} // Apply dynamic size styles
+      style={sizeStyles}
     >
       <CardHeader className="flex flex-row items-center justify-between p-3 border-b border-border/50 cursor-grab select-none">
         <div className="flex items-center gap-2">
@@ -194,13 +190,13 @@ export function BasePanel({
         </div>
       </CardHeader>
       <CardContent className={cn(
-        "p-3 overflow-auto flex-grow", // Ensure content can scroll if panel is smaller
+        "p-3 overflow-auto flex-grow", 
         contentClassName,
         isMinimized && !isMobile && "hidden"
       )}>
         {children}
       </CardContent>
-      {isResizable && !isMobile && (
+      {isResizable && !isMobile && !isMinimized && (
         <div
           ref={resizeHandleRef}
           onMouseDown={handleMouseDownResize}
