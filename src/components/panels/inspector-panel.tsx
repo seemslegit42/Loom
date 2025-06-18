@@ -30,11 +30,24 @@ interface InspectorPanelProps {
   isMobile?: boolean;
   onRunNode?: (nodeId: string) => void;
   isNodeRunning?: (nodeId: string) => boolean;
+  isResizable?: boolean;
+  initialSize?: {width?: string; height?: string};
 }
 
 const allNodeStatuses: NodeStatus[] = ['pending', 'queued', 'running', 'completed', 'failed', 'unknown'];
 
-export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate, onNodeDelete, isMobile, onRunNode, isNodeRunning }: InspectorPanelProps) {
+export function InspectorPanel({ 
+  className, 
+  onClose, 
+  selectedNode, 
+  onNodeUpdate, 
+  onNodeDelete, 
+  isMobile, 
+  onRunNode, 
+  isNodeRunning,
+  isResizable,
+  initialSize
+}: InspectorPanelProps) {
   const [editableTitle, setEditableTitle] = useState('');
   const [editableDescription, setEditableDescription] = useState('');
   const [editableStatus, setEditableStatus] = useState<NodeStatus | undefined>(undefined);
@@ -105,7 +118,8 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: '320px', height: 'auto' }}
+      isResizable={isResizable}
+      initialSize={initialSize}
       contentClassName="space-y-3"
     >
       {selectedNode ? (
@@ -370,6 +384,3 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
     </BasePanel>
   );
 }
-
-
-    

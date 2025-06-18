@@ -60,9 +60,19 @@ interface AgentHubPanelProps {
   isMobile?: boolean;
   addConsoleMessage: (type: ConsoleMessage['type'], text: string) => void;
   addTimelineEvent: (event: Omit<TimelineEvent, 'id' | 'timestamp'>) => void;
+  isResizable?: boolean;
+  initialSize?: {width?: string; height?: string};
 }
 
-export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage, addTimelineEvent }: AgentHubPanelProps) {
+export function AgentHubPanel({ 
+  className, 
+  onClose, 
+  isMobile, 
+  addConsoleMessage, 
+  addTimelineEvent,
+  isResizable,
+  initialSize 
+}: AgentHubPanelProps) {
   const { toast } = useToast();
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -179,7 +189,8 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: '380px', height: 'auto' }}
+      isResizable={isResizable}
+      initialSize={initialSize}
       contentClassName="space-y-3 flex flex-col"
     >
       <div className="space-y-3">

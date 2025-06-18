@@ -23,6 +23,8 @@ interface TimelinePanelProps {
   onClose?: () => void;
   events: TimelineEvent[];
   isMobile?: boolean;
+  isResizable?: boolean;
+  initialSize?: {width?: string; height?: string};
 }
 
 const getIconForEventType = (type: TimelineEvent['type']) => {
@@ -60,7 +62,14 @@ const getEventTitleClass = (type: TimelineEvent['type']): string => {
   }
 }
 
-export function TimelinePanel({ className, onClose, events, isMobile }: TimelinePanelProps) {
+export function TimelinePanel({ 
+  className, 
+  onClose, 
+  events, 
+  isMobile,
+  isResizable,
+  initialSize 
+}: TimelinePanelProps) {
   const { toast } = useToast();
 
   const handleTokenUsage = () => {
@@ -78,7 +87,8 @@ export function TimelinePanel({ className, onClose, events, isMobile }: Timeline
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: 'auto', height: '220px' }}
+      isResizable={isResizable}
+      initialSize={initialSize}
     >
       <div className="flex gap-2 mb-2 border-b pb-2 border-border/30">
         <Button variant="ghost" size="sm" className="text-xs" onClick={handleTokenUsage}><BarChart3 className="mr-1 h-3 w-3"/>Token Usage</Button>
@@ -116,4 +126,3 @@ export function TimelinePanel({ className, onClose, events, isMobile }: Timeline
     </BasePanel>
   );
 }
-

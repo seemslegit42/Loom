@@ -4,9 +4,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, Minus, Maximize2, PlusSquare } from 'lucide-react'; // Added PlusSquare for potential icon change
+import { X, Minus, Maximize2, PlusSquare, GripHorizontal } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -19,9 +19,11 @@ interface BasePanelProps {
   initialSize?: { width?: string; height?: string };
   onClose?: () => void;
   isMobile?: boolean;
-  isDraggable?: boolean; // Future use
-  isResizable?: boolean; // Future use
+  isResizable?: boolean; 
 }
+
+const MIN_WIDTH = 200;
+const MIN_HEIGHT = 150;
 
 export function BasePanel({
   title,
@@ -32,13 +34,69 @@ export function BasePanel({
   initialSize = {},
   onClose,
   isMobile,
+  isResizable = false, // Default to false
 }: BasePanelProps) {
   const { toast } = useToast();
   const [isMinimized, setIsMinimized] = useState(false);
+  const [currentSize, setCurrentSize] = useState<{ width: number; height: number }>({
+    width: parseInt(initialSize.width || '0', 10) || MIN_WIDTH,
+    height: parseInt(initialSize.height || '0', 10) || MIN_HEIGHT,
+  });
 
-  const sizeStyles: React.CSSProperties = {
-    ...initialSize,
-  };
+  const panelRef = useRef<HTMLDivElement>(null);
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
+  const isResizing = useRef(false);
+  const initialResizeState = useRef({ mouseX: 0, mouseY: 0, width: 0, height: 0 });
+
+  useEffect(() => {
+    const width = parseInt(initialSize.width || '300', 10); // Default width if not specified
+    const height = parseInt(initialSize.height || '200', 10); // Default height if not specified
+    setCurrentSize({
+      width: Math.max(width, MIN_WIDTH),
+      height: Math.max(height, MIN_HEIGHT),
+    });
+  }, [initialSize.width, initialSize.height]);
+
+  const handleMouseDownResize = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isResizable || isMobile) return;
+    e.preventDefault();
+    isResizing.current = true;
+    initialResizeState.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      width: panelRef.current?.offsetWidth || currentSize.width,
+      height: panelRef.current?.offsetHeight || currentSize.height,
+    };
+    document.addEventListener('mousemove', handleMouseMoveResize);
+    document.addEventListener('mouseup', handleMouseUpResize);
+  }, [isResizable, isMobile, currentSize.width, currentSize.height]);
+
+  const handleMouseMoveResize = useCallback((e: MouseEvent) => {
+    if (!isResizing.current || !isResizable || isMobile) return;
+    const dx = e.clientX - initialResizeState.current.mouseX;
+    const dy = e.clientY - initialResizeState.current.mouseY;
+
+    let newWidth = initialResizeState.current.width + dx;
+    let newHeight = initialResizeState.current.height + dy;
+
+    newWidth = Math.max(newWidth, MIN_WIDTH);
+    newHeight = Math.max(newHeight, MIN_HEIGHT);
+    
+    // Optional: Add max width/height constraints (e.g., based on viewport)
+    // newWidth = Math.min(newWidth, window.innerWidth - 50); 
+    // newHeight = Math.min(newHeight, window.innerHeight - 50);
+
+
+    setCurrentSize({ width: newWidth, height: newHeight });
+  }, [isResizable, isMobile]);
+
+  const handleMouseUpResize = useCallback(() => {
+    if (!isResizing.current || !isResizable || isMobile) return;
+    isResizing.current = false;
+    document.removeEventListener('mousemove', handleMouseMoveResize);
+    document.removeEventListener('mouseup', handleMouseUpResize);
+  }, [isResizable, isMobile, handleMouseMoveResize]);
+
 
   const handleMinimize = () => {
     if (!isMobile) {
@@ -56,18 +114,23 @@ export function BasePanel({
   };
 
   const handleMaximize = () => {
-    // Maximize could also be desktop-specific
     toast({ 
       title: "Panel Action", 
       description: `Maximize action for panel "${title}" not yet implemented.` 
     });
   };
+  
+  const sizeStyles: React.CSSProperties = isResizable && !isMobile
+    ? { width: `${currentSize.width}px`, height: `${currentSize.height}px` }
+    : {};
+
 
   return (
     <Card
+      ref={panelRef}
       className={cn(
-        'flex flex-col bg-card/80 backdrop-blur-lg border-border shadow-xl transition-all duration-300 ease-out',
-        isMinimized && !isMobile && 'h-auto', // Allow panel to shrink if content is hidden
+        'flex flex-col bg-card/80 backdrop-blur-lg border-border shadow-xl transition-all duration-300 ease-out relative',
+        isMinimized && !isMobile && 'h-auto',
         className
       )}
       style={sizeStyles}
@@ -98,11 +161,20 @@ export function BasePanel({
       <CardContent className={cn(
         "p-3 overflow-auto flex-grow",
         contentClassName,
-        isMinimized && !isMobile && "hidden" // Hide content when minimized on desktop
+        isMinimized && !isMobile && "hidden"
       )}>
         {children}
       </CardContent>
+      {isResizable && !isMobile && (
+        <div
+          ref={resizeHandleRef}
+          onMouseDown={handleMouseDownResize}
+          className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end p-0.5 text-muted-foreground/50 hover:text-primary z-20"
+          title="Resize panel"
+        >
+          <GripHorizontal className="h-3 w-3 rotate-45 transform " />
+        </div>
+      )}
     </Card>
   );
 }
-

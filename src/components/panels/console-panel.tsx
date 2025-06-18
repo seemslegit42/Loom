@@ -20,6 +20,8 @@ interface ConsolePanelProps {
   onToggleFilter: (type: ConsoleMessage['type']) => void;
   onClearConsole?: () => void;
   isMobile?: boolean;
+  isResizable?: boolean;
+  initialSize?: {width?: string; height?: string};
 }
 
 const getIconForType = (type: ConsoleMessage['type']) => {
@@ -44,7 +46,17 @@ const getTextColorForType = (type: ConsoleMessage['type']) => {
 
 const filterableMessageTypes: ConsoleMessage['type'][] = ['info', 'log', 'warn', 'error'];
 
-export function ConsolePanel({ className, onClose, messages, filters, onToggleFilter, onClearConsole, isMobile }: ConsolePanelProps) {
+export function ConsolePanel({ 
+  className, 
+  onClose, 
+  messages, 
+  filters, 
+  onToggleFilter, 
+  onClearConsole, 
+  isMobile,
+  isResizable,
+  initialSize
+}: ConsolePanelProps) {
   const allFiltersEnabled = Object.values(filters).every(Boolean);
   
   return (
@@ -54,7 +66,8 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: 'auto', height: '220px' }}
+      isResizable={isResizable}
+      initialSize={initialSize}
       contentClassName="font-code text-xs p-0 flex flex-col"
     >
       <div className="p-2 border-b border-border/30 flex items-center justify-between gap-1">

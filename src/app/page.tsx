@@ -783,9 +783,6 @@ export default function LoomStudioPage() {
     return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center text-lg">Loading UI...</div>;
   }
 
-  const desktopBottomPanelHeight = '220px'; 
-  const desktopRightPanelWidth = '380px'; 
-
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <TopBar
@@ -820,7 +817,7 @@ export default function LoomStudioPage() {
             {panelVisibility.inspector && (
               <InspectorPanel
                 key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'}
-                className="absolute top-4 right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_theme(spacing.8))]"
+                className="absolute top-4 right-4 z-10"
                 onClose={() => togglePanel('inspector')}
                 selectedNode={selectedNode}
                 onNodeUpdate={handleNodeUpdate}
@@ -828,6 +825,8 @@ export default function LoomStudioPage() {
                 isMobile={isMobile}
                 onRunNode={handleRunNode}
                 isNodeRunning={isNodeRunning}
+                isResizable={true} 
+                initialSize={{ width: '360px', height: 'calc(100vh - 280px)' }} 
               />
             )}
             <div className="absolute bottom-4 left-4 right-4 flex gap-4 z-10">
@@ -837,6 +836,8 @@ export default function LoomStudioPage() {
                   onClose={() => togglePanel('timeline')}
                   events={timelineEvents}
                   isMobile={isMobile}
+                  isResizable={true}
+                  initialSize={{ height: '220px' }}
                 />
               )}
               {panelVisibility.console && (
@@ -848,28 +849,34 @@ export default function LoomStudioPage() {
                   onToggleFilter={toggleConsoleFilter}
                   onClearConsole={handleClearConsole}
                   isMobile={isMobile}
+                  isResizable={true}
+                  initialSize={{ height: '220px' }}
                 />
               )}
             </div>
             <div className="absolute top-[calc(theme(spacing.16)_+_theme(spacing.4))] right-4 z-10 flex flex-col gap-4">
               {panelVisibility.agentHub && (
-                <AgentHubPanel
-                  className={`max-h-[calc(50vh_-_theme(spacing.16)_-_theme(spacing.10))] w-[${desktopRightPanelWidth}]`}
+                 <AgentHubPanel
+                  className="" 
                   onClose={() => togglePanel('agentHub')}
                   isMobile={isMobile}
                   addConsoleMessage={addConsoleMessage}
                   addTimelineEvent={addTimelineEvent}
+                  isResizable={true}
+                  initialSize={{ width: '360px', height: '45%' }} 
                 />
               )}
               {panelVisibility.actionConsole && (
-                <ActionConsolePanel
-                  className={`max-h-[calc(50vh_-_theme(spacing.16)_-_theme(spacing.10)_-_${desktopBottomPanelHeight}_-_theme(spacing.4))] w-[${desktopRightPanelWidth}]`}
+                 <ActionConsolePanel
+                  className="" 
                   onClose={() => togglePanel('actionConsole')}
                   requests={actionRequests}
                   onRespond={handleAgentActionResponse}
                   isMobile={isMobile}
                   addConsoleMessage={addConsoleMessage}
                   addTimelineEvent={addTimelineEvent}
+                  isResizable={true}
+                  initialSize={{ width: '360px', height: '35%'}} 
                 />
               )}
             </div>

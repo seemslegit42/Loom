@@ -34,6 +34,8 @@ interface ActionConsolePanelProps {
   isMobile?: boolean;
   addConsoleMessage: (type: ConsoleMessage['type'], text: string) => void;
   addTimelineEvent: (event: Omit<TimelineEvent, 'id' | 'timestamp'>) => void;
+  isResizable?: boolean;
+  initialSize?: {width?: string; height?: string};
 }
 
 const requestTypeIcons: Record<ActionRequest['requestType'], React.ReactNode> = {
@@ -53,7 +55,9 @@ export function ActionConsolePanel({
   onRespond,
   isMobile,
   addConsoleMessage, 
-  addTimelineEvent,  
+  addTimelineEvent,
+  isResizable,
+  initialSize,  
 }: ActionConsolePanelProps) {
   const [inputValue, setInputValue] = useState<Record<string, string>>({});
 
@@ -86,7 +90,8 @@ export function ActionConsolePanel({
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: 'auto', height: 'auto' }}
+      isResizable={isResizable}
+      initialSize={initialSize}
       contentClassName="flex flex-col"
     >
       <ScrollArea className="flex-grow pr-1">
@@ -169,5 +174,3 @@ export function ActionConsolePanel({
     </BasePanel>
   );
 }
-
-    
