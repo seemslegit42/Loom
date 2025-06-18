@@ -31,7 +31,7 @@ const getIconForEventType = (type: TimelineEvent['type']) => {
     case 'workflow_completed': return <CheckCircle className="h-3.5 w-3.5 text-green-500 mr-2 shrink-0" />;
     case 'workflow_failed': return <AlertTriangle className="h-3.5 w-3.5 text-destructive mr-2 shrink-0" />;
     case 'node_queued': return <Clock className="h-3.5 w-3.5 text-blue-400 mr-2 shrink-0" />;
-    case 'node_running': return <Workflow className="h-3.5 w-3.5 text-yellow-400 mr-2 shrink-0 animate-pulse" />; // Keep animate-pulse for running
+    case 'node_running': return <Workflow className="h-3.5 w-3.5 text-yellow-400 mr-2 shrink-0 animate-pulse" />;
     case 'node_completed': return <CheckCircle className="h-3.5 w-3.5 text-green-500 mr-2 shrink-0" />;
     case 'node_failed': return <AlertTriangle className="h-3.5 w-3.5 text-destructive mr-2 shrink-0" />;
     case 'info': return <InfoIcon className="h-3.5 w-3.5 text-sky-400 mr-2 shrink-0" />;
@@ -48,8 +48,13 @@ const getEventTitleClass = (type: TimelineEvent['type']): string => {
     case 'node_completed':
       return "text-green-400";
     case 'workflow_start':
-    case 'node_running':
       return "text-primary";
+    case 'node_running':
+      return "text-yellow-400"; // Changed from primary to yellow for running node
+    case 'node_queued':
+      return "text-blue-400";
+    case 'info':
+      return "text-sky-400";
     default:
       return "text-foreground/90";
   }
@@ -73,7 +78,7 @@ export function TimelinePanel({ className, onClose, events, isMobile }: Timeline
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: 'auto', height: '220px' }} // Changed height
+      initialSize={{ width: 'auto', height: '220px' }}
     >
       <div className="flex gap-2 mb-2 border-b pb-2 border-border/30">
         <Button variant="ghost" size="sm" className="text-xs" onClick={handleTokenUsage}><BarChart3 className="mr-1 h-3 w-3"/>Token Usage</Button>
@@ -111,3 +116,4 @@ export function TimelinePanel({ className, onClose, events, isMobile }: Timeline
     </BasePanel>
   );
 }
+
