@@ -74,25 +74,26 @@ export function TemplateSelectorDialog({
             {templates.map((template) => (
               <div
                 key={template.name}
-                className="p-4 border rounded-lg bg-card/50 hover:border-primary transition-colors flex flex-col justify-between"
+                className="p-4 border rounded-lg bg-card/50 hover:border-primary/70 hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div>
-                  <h3 className="text-md font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                    <LayoutTemplate className="h-4 w-4 text-primary/80"/>
+                  <h3 className="text-md font-semibold text-foreground mb-1.5 flex items-center gap-2">
+                    <LayoutTemplate className="h-5 w-5 text-primary/90 shrink-0"/>
                     {template.name}
                   </h3>
-                  <p className="text-xs text-muted-foreground mb-3 line-clamp-3">
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-3 h-[3em] overflow-hidden">
                     {template.description}
                   </p>
-                  <ul className="text-xs text-muted-foreground list-disc list-inside mb-2">
-                    <li>Nodes: {template.nodes.length}</li>
-                    <li>Connections: {template.connections.length}</li>
+                  <ul className="text-xs text-muted-foreground space-y-0.5 mb-3 border-t border-border/50 pt-2">
+                    <li className="flex items-center justify-between"><span>Nodes:</span> <span className="font-medium text-foreground/80">{template.nodes.length}</span></li>
+                    <li className="flex items-center justify-between"><span>Connections:</span> <span className="font-medium text-foreground/80">{template.connections.length}</span></li>
                   </ul>
                 </div>
                 <Button
                   onClick={() => onLoadTemplate(template)}
                   size="sm"
                   className="w-full mt-auto"
+                  variant="secondary"
                 >
                   Load Template
                 </Button>
