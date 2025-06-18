@@ -4,26 +4,26 @@
 
 import { useState } from 'react';
 import { BasePanel } from './base-panel';
-import { Bot, ShieldCheck, ListChecks, UserPlus, PlayCircle, PauseCircle, Globe } from 'lucide-react';
+import { Bot, ShieldCheck, ListChecks, UserPlus, PlayCircle, PauseCircle, Globe, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { WebpageSummarizerForm } from '@/components/ai/webpage-summarizer-form';
+import { PromptExecutorForm } from '@/components/ai/prompt-executor-form'; // New import
 import type { ConsoleMessage } from '@/components/panels/console-panel';
 import type { TimelineEvent } from '@/components/panels/timeline-panel';
 
 interface Agent {
   id: string;
   name: string;
-  status: 'active' | 'idle' | 'error' | 'paused'; // These statuses would come from SuperAGI
-  tasks: number; // Number of active tasks/goals
-  permissions: string; // Could represent capabilities
-  workload: string; // Could represent resource usage or queue length
+  status: 'active' | 'idle' | 'error' | 'paused';
+  tasks: number;
+  permissions: string;
+  workload: string;
 }
 
-// Placeholder agents; in a real app, this would be fetched from SuperAGI
 const initialAgents: Agent[] = [
   { id: 'superagi-agent-1', name: "Web Research Agent", status: "active", tasks: 3, permissions: "Web Search, Summarization", workload: "60%" },
   { id: 'superagi-agent-2', name: "Task Execution Agent", status: "idle", tasks: 0, permissions: "Code Execution, API Calls", workload: "5%" },
@@ -55,7 +55,6 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
 
   const handleSpawnAgent = () => {
-    // This would eventually be an API call to SuperAGI to provision/create a new agent
     const newAgentId = `superagi-agent-${Date.now()}`;
     const newAgentName = `New SuperAGI Agent ${agents.length + 1}`;
     const newAgent: Agent = {
@@ -72,7 +71,6 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
   };
 
   const handleResumeAll = () => {
-    // This would be an API call to SuperAGI to resume agents
     setAgents(prev => 
       prev.map(agent => 
         agent.status === 'paused' || agent.status === 'idle' ? { ...agent, status: 'active' } : agent
@@ -83,7 +81,6 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
   };
 
   const handlePauseAll = () => {
-    // This would be an API call to SuperAGI to pause agents
     setAgents(prev =>
       prev.map(agent => 
         agent.status === 'active' ? { ...agent, status: 'paused' } : agent
@@ -121,7 +118,7 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
               Pause All (Sim)
           </Button>
         </div>
-        <ScrollArea className="pr-2 max-h-60"> {/* Added max-h for better layout control */}
+        <ScrollArea className="pr-2 max-h-60">
           {agents.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-4">No SuperAGI agents connected. Spawn one to get started.</p>
           ) : (
@@ -145,7 +142,7 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
       
       <Separator className="my-3" />
 
-      <div className="space-y-2">
+      <div className="space-y-3">
          <h3 className="text-sm font-medium flex items-center gap-1.5">
             <Globe className="h-4 w-4 text-primary/80" /> Web Agent Utilities (Simulated)
           </h3>
@@ -154,7 +151,18 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
           addTimelineEvent={addTimelineEvent} 
         />
       </div>
+
+      <Separator className="my-3" />
+      
+      <div className="space-y-3">
+         <h3 className="text-sm font-medium flex items-center gap-1.5">
+            <MessageSquare className="h-4 w-4 text-primary/80" /> LLM Utilities (Simulated)
+          </h3>
+        <PromptExecutorForm
+            addConsoleMessage={addConsoleMessage}
+            addTimelineEvent={addTimelineEvent}
+        />
+      </div>
     </BasePanel>
   );
 }
-
