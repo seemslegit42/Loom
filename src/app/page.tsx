@@ -440,17 +440,19 @@ export default function LoomStudioPage() {
     setSelectedNode(updatedNode); 
     toast({ title: "Node Updated", description: `Node "${updatedNode.title}" has been saved.` });
     addConsoleMessage('info', `Node "${updatedNode.title}" (ID: ${updatedNode.id}) updated.`);
+    
     const oldStatus = nodeExecutionStatus[updatedNode.id];
     if (updatedNode.status && oldStatus !== updatedNode.status) {
       setNodeExecutionStatus(prev => ({...prev, [updatedNode.id]: updatedNode.status! }));
-      let eventType: TimelineEvent['type'] = 'info';
-      switch(updatedNode.status) {
-        case 'completed': eventType = 'node_completed'; break;
-        case 'running': eventType = 'node_running'; break;
-        case 'failed': eventType = 'node_failed'; break;
-        case 'queued': eventType = 'node_queued'; break;
-        default: eventType = 'info'; break;
-      }
+      
+      const statusToEventTypeMap: Partial<Record<NodeStatus, TimelineEvent['type']>> = {
+        completed: 'node_completed',
+        running: 'node_running',
+        failed: 'node_failed',
+        queued: 'node_queued',
+      };
+      const eventType: TimelineEvent['type'] = statusToEventTypeMap[updatedNode.status!] || 'info';
+      
       addTimelineEvent({
         nodeId: updatedNode.id,
         nodeTitle: updatedNode.title,
@@ -829,5 +831,7 @@ export default function LoomStudioPage() {
   );
 }
 
+
+    
 
     
