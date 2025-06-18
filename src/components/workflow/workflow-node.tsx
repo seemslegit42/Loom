@@ -7,6 +7,7 @@ import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitM
 import { cn } from '@/lib/utils';
 // Use Backend types for output as Genkit is removed
 import type { BackendSummarizeOutput, BackendExecutePromptOutput } from '@/app/page';
+import type { ConnectingState } from '@/app/page'; // Import ConnectingState
 
 
 export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown' | 'pending';
@@ -46,6 +47,7 @@ interface WorkflowNodeProps {
   onInputPortClick?: (nodeId: string, e: React.MouseEvent<HTMLDivElement>) => void;
   onOutputPortClick?: (nodeId: string, portElement: HTMLDivElement) => void; 
   isConnectingFrom?: boolean;
+  connectingState: ConnectingState | null; // Added connectingState prop
 }
 
 const statusIcons: Record<NodeStatus, React.ReactNode> = {
@@ -94,7 +96,7 @@ const formatDisplayValue = (value: string = '') => {
 };
 
 export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
-  ({ node, className, onClick, isSelected, onInputPortClick, onOutputPortClick, isConnectingFrom }, ref) => {
+  ({ node, className, onClick, isSelected, onInputPortClick, onOutputPortClick, isConnectingFrom, connectingState }, ref) => {
     const { id, title, type, status = 'unknown', description, agentName, position } = node;
     const currentTypeIcon = typeIcons[type] || typeIcons.custom;
     const currentStatusIcon = statusIcons[status] || statusIcons.unknown;
@@ -125,7 +127,10 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
     };
 
     const portBaseStyle = "node-port absolute w-4 h-4 bg-card border-2 border-primary rounded-full cursor-pointer hover:bg-primary/50 transition-colors flex items-center justify-center z-10";
-    const connectingPortStyle = isConnectingFrom ? "ring-2 ring-accent ring-offset-1 ring-offset-card animate-pulse" : "";
+    const outputPortConnectingStyle = isConnectingFrom ? "ring-2 ring-accent ring-offset-1 ring-offset-card animate-pulse" : "";
+    
+    // Highlight input port if a connection is in progress from another node and this node is selected
+    const inputPortTargetableStyle = connectingState && connectingState.fromNodeId !== id && isSelected ? "bg-green-400/80 border-green-600" : "";
 
 
     return (
@@ -150,7 +155,7 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
           <div
             ref={inputPortRef}
             data-port-type="input"
-            className={cn(portBaseStyle, "left-[-9px] top-1/2 -translate-y-1/2", {"bg-green-400/80 border-green-600": !isConnectingFrom && isSelected})}
+            className={cn(portBaseStyle, "left-[-9px] top-1/2 -translate-y-1/2", inputPortTargetableStyle)}
             onClick={handleInputClick}
             title={`Input to ${title}`}
           >
@@ -161,7 +166,7 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
           <div
             ref={outputPortRef}
             data-port-type="output"
-            className={cn(portBaseStyle, "right-[-9px] top-1/2 -translate-y-1/2", connectingPortStyle)}
+            className={cn(portBaseStyle, "right-[-9px] top-1/2 -translate-y-1/2", outputPortConnectingStyle)}
             onClick={handleOutputClick}
             title={`Output from ${title}`}
           >
@@ -196,3 +201,4 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
 );
 
 WorkflowNode.displayName = 'WorkflowNode';
+

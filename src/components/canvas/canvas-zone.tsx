@@ -209,6 +209,7 @@ export function CanvasZone({
                 onInputPortClick={(nodeId, _e) => onInputPortClick(nodeId)} 
                 onOutputPortClick={onOutputPortClick} 
                 isConnectingFrom={connectingState?.fromNodeId === node.id}
+                connectingState={connectingState} // Pass connectingState down
               />
             ))}
         </div>
@@ -246,3 +247,4 @@ export function CanvasZone({
     </ScrollArea>
   );
 }
+
