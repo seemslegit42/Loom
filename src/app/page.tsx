@@ -119,6 +119,21 @@ const exampleTemplates: WorkflowTemplate[] = [
       { fromLocalId: "extract-items", toLocalId: "format-social" },
       { fromLocalId: "format-social", toLocalId: "schedule-posts" }
     ]
+  },
+  {
+    name: "Conditional Content Processing",
+    description: "Fetches web content, then processes it differently based on a simulated condition (e.g., summary length).",
+    nodes: [
+      { localId: "fetch-content-conditional", title: "Fetch Web Content", type: 'web-summarizer', description: "Fetches content from a URL for conditional processing.", position: { x: 50, y: 500 }, config: { url: 'https://example.com/some/content' } },
+      { localId: "check-condition", title: "Check Content Condition", type: 'conditional', description: "Simulates checking if content summary is 'long' (e.g., >100 chars). Outputs to 'Long Content Processor' if true, 'Short Content Analyzer' if false. Visualization shows both paths.", position: { x: 350, y: 500 }, config: { condition: "summary.length > 100" } },
+      { localId: "process-long", title: "Long Content Processor", type: 'prompt', description: "Handles long content. Input: {{input_from_check-condition}}", position: { x: 600, y: 450 }, config: { promptText: 'The content summary is long. Generate an extended analysis: {{input}}' } },
+      { localId: "process-short", title: "Short Content Analyzer", type: 'prompt', description: "Handles short content. Input: {{input_from_check-condition}}", position: { x: 600, y: 550 }, config: { promptText: 'The content summary is short. Provide a brief overview and key tags: {{input}}' } },
+    ],
+    connections: [
+      { fromLocalId: "fetch-content-conditional", toLocalId: "check-condition" },
+      { fromLocalId: "check-condition", toLocalId: "process-long" }, // Represents conceptual 'true' branch
+      { fromLocalId: "check-condition", toLocalId: "process-short" }  // Represents conceptual 'false' branch
+    ]
   }
 ];
 
@@ -152,7 +167,7 @@ const initialActionRequests: ActionRequest[] = [
     message: 'Agent "Content Creation Agent" has generated two drafts for the blog post. Should it proceed with Draft A (focus on SEO) or Draft B (focus on engagement)? Please specify "A" or "B".',
     timestamp: new Date(),
     status: 'pending',
-    requiresInput: true, // Clarification might sometimes require specific input
+    requiresInput: true, 
     inputPrompt: 'Enter Draft (A/B):',
   },
 ];
@@ -600,8 +615,23 @@ export default function LoomStudioPage() {
           }
         }
       } else {
-        nodeError = `Node type "${nodeToRun.type}" individual execution is simulated.`;
-        nodeOutput = { simulatedOutput: "Output from simulated non-AI node." };
+        // For other node types like 'data-transform' or 'conditional', simulate a generic output
+        // based on the success/failure simulation.
+        if (Math.random() > 0.2) { // Simulate success
+            let simulatedResult: Record<string, any> = { simulatedOutput: `Output from simulated '${nodeToRun.type}' node. Title: ${nodeToRun.title}.`};
+            if (nodeToRun.type === 'data-transform' && nodeToRun.config?.transformationLogic) {
+                simulatedResult.appliedLogic = nodeToRun.config.transformationLogic;
+                simulatedResult.transformedData = { original: "some_input", new_format: "transformed_output_based_on_logic"};
+            } else if (nodeToRun.type === 'conditional' && nodeToRun.config?.condition) {
+                simulatedResult.conditionChecked = nodeToRun.config.condition;
+                simulatedResult.conditionResult = Math.random() > 0.5; // Simulate true/false
+                simulatedResult.message = `Condition evaluated to ${simulatedResult.conditionResult}.`;
+            }
+            nodeOutput = simulatedResult;
+        } else { // Simulate failure
+            nodeError = `Simulated API error during execution of '${nodeToRun.type}' node: ${nodeToRun.title}.`;
+            nodeOutput = { error: nodeError };
+        }
       }
       finalStatus = nodeError ? 'failed' : 'completed';
     } catch (e: any) {
@@ -673,7 +703,8 @@ export default function LoomStudioPage() {
     const clearMessageText = 'Local console view cleared. Firestore logs are not affected by this action.';
     const clearMessageEntry: ConsoleMessage = { type: 'info', text: clearMessageText, timestamp: new Date() };
     setConsoleMessages([clearMessageEntry]);
-    addConsoleMessage(clearMessageEntry.type, clearMessageText); 
+    // Do not log this specific action to firestore itself, as it's a local view clear.
+    // addConsoleMessage(clearMessageEntry.type, clearMessageText); 
     toast({ title: "Console Cleared", description: "Local console messages have been cleared." });
   };
 
@@ -906,5 +937,7 @@ export default function LoomStudioPage() {
     </div>
   );
 }
+
+    
 
     
