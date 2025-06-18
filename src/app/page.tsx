@@ -11,23 +11,22 @@ import { InspectorPanel } from '@/components/panels/inspector-panel';
 import { TimelinePanel, type TimelineEvent } from '@/components/panels/timeline-panel';
 import { ConsolePanel, type ConsoleMessage } from '@/components/panels/console-panel';
 import { AgentHubPanel } from '@/components/panels/agent-hub-panel';
-import { ActionConsolePanel, type ActionRequest } from '@/components/panels/action-console-panel'; // Added ActionConsolePanel
+import { ActionConsolePanel, type ActionRequest } from '@/components/panels/action-console-panel';
 import { TemplateSelectorDialog, type WorkflowTemplate } from '@/components/panels/template-selector-dialog';
 import type { WorkflowNodeData, NodeStatus, NodeType } from '@/components/workflow/workflow-node';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
 
+// Import task functions and their types
+import { summarizeWebpageTask, type SummarizeWebpageOutput, type SummarizeWebpageInput } from '@/tasks/summarize-webpage-task';
+import { executePromptTask, type ExecutePromptOutput, type ExecutePromptInput } from '@/tasks/execute-prompt-task';
+
 // Placeholder types for backend interactions (to be defined based on FastAPI SuperAGI)
-export interface BackendSummarizeOutput {
-  summary?: string;
-  originalUrl?: string;
-  error?: string;
-}
-export interface BackendExecutePromptOutput {
-  responseText?: string;
-  error?: string;
-}
+// These can be slowly replaced by or mapped to the task output types
+export interface BackendSummarizeOutput extends SummarizeWebpageOutput {}
+export interface BackendExecutePromptOutput extends ExecutePromptOutput {}
+
 export interface AiGeneratedFlowData {
   message: string | null;
   workflowName?: string;
@@ -46,15 +45,14 @@ export interface PanelVisibility {
   timeline: boolean;
   console: boolean;
   agentHub: boolean;
-  actionConsole: boolean; // Added actionConsole
+  actionConsole: boolean;
 }
 
 export interface ConnectingState {
   fromNodeId: string;
-  fromPortElement: HTMLDivElement | null; // Store the element for position
+  fromPortElement: HTMLDivElement | null; 
 }
 
-// Define sample workflow templates
 const exampleTemplates: WorkflowTemplate[] = [
   {
     name: "Basic Web Summarizer",
@@ -131,13 +129,12 @@ const exampleTemplates: WorkflowTemplate[] = [
     ],
     connections: [
       { fromLocalId: "fetch-content-conditional", toLocalId: "check-condition" },
-      { fromLocalId: "check-condition", toLocalId: "process-long" }, // Represents conceptual 'true' branch
-      { fromLocalId: "check-condition", toLocalId: "process-short" }  // Represents conceptual 'false' branch
+      { fromLocalId: "check-condition", toLocalId: "process-long" }, 
+      { fromLocalId: "check-condition", toLocalId: "process-short" }  
     ]
   }
 ];
 
-// Sample Action Requests for demonstration
 const initialActionRequests: ActionRequest[] = [
   {
     id: 'action-req-1',
@@ -145,7 +142,7 @@ const initialActionRequests: ActionRequest[] = [
     agentName: 'Web Research Agent',
     requestType: 'permission',
     message: 'Agent "Web Research Agent" requests permission to access external URL: https://api.example.com/data. This action might incur costs or have security implications. Proceed?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
+    timestamp: new Date(Date.now() - 1000 * 60 * 5), 
     status: 'pending',
   },
   {
@@ -154,7 +151,7 @@ const initialActionRequests: ActionRequest[] = [
     agentName: 'Task Execution Agent',
     requestType: 'input',
     message: 'Agent "Task Execution Agent" requires a filename for the generated report. Please provide a name (e.g., "monthly_sales.pdf").',
-    timestamp: new Date(Date.now() - 1000 * 60 * 2), // 2 minutes ago
+    timestamp: new Date(Date.now() - 1000 * 60 * 2), 
     status: 'pending',
     requiresInput: true,
     inputPrompt: 'Enter filename:',
@@ -184,7 +181,7 @@ export default function LoomStudioPage() {
     timeline: true,
     console: true,
     agentHub: true,
-    actionConsole: true, // Default Action Console to visible
+    actionConsole: true, 
   });
   const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
@@ -223,7 +220,7 @@ export default function LoomStudioPage() {
         const errorMsgText = 'Failed to load console history from Firestore.';
         const errorMsg: ConsoleMessage = {type: 'error', text: errorMsgText, timestamp: new Date()};
         setConsoleMessages(prev => {
-           if (!prev.find(pm => pm.text === errorMsgText)) { // Avoid duplicate error messages
+           if (!prev.find(pm => pm.text === errorMsgText)) { 
             return [errorMsg, ...prev];
           }
           return prev;
@@ -274,7 +271,6 @@ export default function LoomStudioPage() {
       title: `Agent Action ${responseStatus.charAt(0).toUpperCase() + responseStatus.slice(1)}`,
       description: `Request from ${request.agentName} has been ${responseStatus}. ${details ? `Input: "${details.substring(0, 50)}${details.length > 50 ? "..." : ""}"` : ""}`,
     });
-    // In a real system, this would also send the response back to the agent.
   }, [actionRequests, addConsoleMessage, addTimelineEvent, toast]);
 
 
@@ -351,7 +347,7 @@ export default function LoomStudioPage() {
       addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" running (visualization).` });
       
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 800)); 
-      const success = Math.random() > 0.1; // Simulate success/failure
+      const success = Math.random() > 0.1; 
 
       if (success) {
         setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'completed' }));
@@ -399,7 +395,7 @@ export default function LoomStudioPage() {
         return;
     }
     
-    while(queue.length > 0 && activeSimulations < 3) { // Limit concurrent simulations for clarity
+    while(queue.length > 0 && activeSimulations < 3) { 
         const nodeIdToProcess = queue.shift();
         if (nodeIdToProcess) processNode(nodeIdToProcess);
     }
@@ -409,7 +405,7 @@ export default function LoomStudioPage() {
   const handleFlowGenerated = useCallback((data: AiGeneratedFlowData) => {
     const newFlowData = data as AiGeneratedFlowData & { nodes: WorkflowNodeData[] };
     
-    if (!newFlowData.nodes) { // Ensure nodes array exists
+    if (!newFlowData.nodes) { 
       newFlowData.nodes = [];
     }
 
@@ -436,7 +432,6 @@ export default function LoomStudioPage() {
         setConnections(newConnections);
         addConsoleMessage('info', `Auto-created ${newConnections.length} connections for the generated flow.`);
         
-        // Delay visualization slightly to allow state updates to propagate
         Promise.resolve().then(() => visualizeWorkflowExecution());
 
       } else {
@@ -569,18 +564,19 @@ export default function LoomStudioPage() {
       addConsoleMessage('error', `Attempted to run non-existent node ID: ${nodeId}`);
       return;
     }
-    let nodeOutput: BackendSummarizeOutput | BackendExecutePromptOutput | Record<string, any> | null = null;
+    
+    let nodeOutput: SummarizeWebpageOutput | ExecutePromptOutput | Record<string, any> | null = null;
     let nodeError: string | undefined = undefined;
     let finalStatus: NodeStatus = 'failed';
     
     const runType = nodeToRun.type === 'web-summarizer' ? 'Web Summarizer' : nodeToRun.type === 'prompt' ? 'Prompt Node' : 'Node';
-    addConsoleMessage('info', `Executing individual ${runType}: "${nodeToRun.title}" (ID: ${nodeId}) - Simulating backend call.`);
-    addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_running', message: `Executing individual ${runType}: ${nodeToRun.title} (simulation)` });
+    addConsoleMessage('info', `Executing individual ${runType}: "${nodeToRun.title}" (ID: ${nodeId}) - Calling task.`);
+    addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_running', message: `Executing individual ${runType}: ${nodeToRun.title} (task)` });
     setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
     if (selectedNode?.id === nodeId) setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+    // Simulate backend/task call delay for visual feedback
+    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
 
     try {
       if (nodeToRun.type === 'web-summarizer') {
@@ -588,60 +584,52 @@ export default function LoomStudioPage() {
         if (!url) {
           nodeError = "URL is missing for Web Summarizer.";
           toast({ title: "Missing Configuration", description: nodeError, variant: "destructive" });
+          nodeOutput = { error: nodeError, originalUrl: url || '' };
         } else {
-          // Placeholder for FastAPI call: fetch(`/api/superagi/summarize?url=${encodeURIComponent(url)}`)
-          // For now, simulate response:
-          if (Math.random() > 0.2) {
-            nodeOutput = { summary: `This is a simulated summary for ${url}. The real summary would come from the SuperAGI backend.`, originalUrl: url };
-          } else {
-            nodeError = "Simulated API error: Failed to summarize webpage.";
-            nodeOutput = { error: nodeError, originalUrl: url };
-          }
+          const taskInput: SummarizeWebpageInput = { url };
+          nodeOutput = await summarizeWebpageTask(taskInput);
+          if (nodeOutput.error) nodeError = nodeOutput.error;
         }
       } else if (nodeToRun.type === 'prompt') {
         const promptText = nodeToRun.config?.promptText;
-        const modelName = nodeToRun.config?.modelName; // SuperAGI might handle model selection differently or take it as a param
+        const modelName = nodeToRun.config?.modelName; 
         if (!promptText) {
           nodeError = "Prompt text is missing for Prompt Node.";
           toast({ title: "Missing Configuration", description: nodeError, variant: "destructive" });
+          nodeOutput = { error: nodeError };
         } else {
-          // Placeholder for FastAPI call: fetch(`/api/superagi/execute_prompt`, { method: 'POST', body: JSON.stringify({ prompt: promptText, model: modelName }) })
-          // For now, simulate response:
-          if (Math.random() > 0.2) {
-            nodeOutput = { responseText: `Simulated LLM response to: "${promptText}". Model: ${modelName || 'default'}. This would come from SuperAGI.` };
-          } else {
-            nodeError = "Simulated API error: LLM failed to respond.";
-            nodeOutput = { error: nodeError };
-          }
+          const taskInput: ExecutePromptInput = { promptText, modelName };
+          nodeOutput = await executePromptTask(taskInput);
+          if (nodeOutput.error) nodeError = nodeOutput.error;
         }
       } else {
-        // For other node types like 'data-transform' or 'conditional', simulate a generic output
-        // based on the success/failure simulation.
-        if (Math.random() > 0.2) { // Simulate success
-            let simulatedResult: Record<string, any> = { simulatedOutput: `Output from simulated '${nodeToRun.type}' node. Title: ${nodeToRun.title}.`};
+        // Generic simulation for other node types
+        if (Math.random() > 0.2) { 
+            let simulatedResult: Record<string, any> = { simulatedOutput: `Output from simulated task for '${nodeToRun.type}' node. Title: ${nodeToRun.title}.`};
             if (nodeToRun.type === 'data-transform' && nodeToRun.config?.transformationLogic) {
                 simulatedResult.appliedLogic = nodeToRun.config.transformationLogic;
                 simulatedResult.transformedData = { original: "some_input", new_format: "transformed_output_based_on_logic"};
             } else if (nodeToRun.type === 'conditional' && nodeToRun.config?.condition) {
                 simulatedResult.conditionChecked = nodeToRun.config.condition;
-                simulatedResult.conditionResult = Math.random() > 0.5; // Simulate true/false
+                simulatedResult.conditionResult = Math.random() > 0.5; 
                 simulatedResult.message = `Condition evaluated to ${simulatedResult.conditionResult}.`;
             }
             nodeOutput = simulatedResult;
-        } else { // Simulate failure
-            nodeError = `Simulated API error during execution of '${nodeToRun.type}' node: ${nodeToRun.title}.`;
+        } else { 
+            nodeError = `Simulated task error during execution of '${nodeToRun.type}' node: ${nodeToRun.title}.`;
             nodeOutput = { error: nodeError };
         }
       }
       finalStatus = nodeError ? 'failed' : 'completed';
     } catch (e: any) {
-      nodeError = e.message || `An unexpected error occurred during ${runType} execution simulation.`;
+      nodeError = e.message || `An unexpected error occurred during ${runType} task execution.`;
       finalStatus = 'failed';
+      nodeOutput = { error: nodeError }; // Ensure output has error structure
     }
 
     const updatedNodeData: WorkflowNodeData = {
       ...nodeToRun,
-      config: { ...nodeToRun.config, output: nodeOutput || { error: nodeError || "Unknown error during simulation" } },
+      config: { ...nodeToRun.config, output: nodeOutput || { error: nodeError || "Unknown error during task execution" } },
       status: finalStatus,
     };
 
@@ -656,12 +644,12 @@ export default function LoomStudioPage() {
     if (selectedNode?.id === nodeId) setSelectedNode(updatedNodeData);
 
     if (nodeError) {
-      addConsoleMessage('error', `Individual ${runType} "${updatedNodeData.title}" (simulation) failed: ${nodeError}`);
-      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Individual execution (simulation) failed: ${nodeError.substring(0,100)}...` });
+      addConsoleMessage('error', `Individual ${runType} "${updatedNodeData.title}" (task) failed: ${nodeError}`);
+      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Individual execution (task) failed: ${nodeError.substring(0,100)}...` });
     } else {
-      addConsoleMessage('info', `Individual ${runType} "${updatedNodeData.title}" (simulation) completed.`);
-      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: `Individual ${runType} execution (simulation) completed.` });
-      toast({ title: "Node Executed (Simulated)", description: `${updatedNodeData.title} (${runType}) completed its simulation.` });
+      addConsoleMessage('info', `Individual ${runType} "${updatedNodeData.title}" (task) completed.`);
+      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: `Individual ${runType} execution (task) completed.` });
+      toast({ title: "Node Executed (Task)", description: `${updatedNodeData.title} (${runType}) completed its task.` });
     }
   };
 
@@ -703,8 +691,6 @@ export default function LoomStudioPage() {
     const clearMessageText = 'Local console view cleared. Firestore logs are not affected by this action.';
     const clearMessageEntry: ConsoleMessage = { type: 'info', text: clearMessageText, timestamp: new Date() };
     setConsoleMessages([clearMessageEntry]);
-    // Do not log this specific action to firestore itself, as it's a local view clear.
-    // addConsoleMessage(clearMessageEntry.type, clearMessageText); 
     toast({ title: "Console Cleared", description: "Local console messages have been cleared." });
   };
 
@@ -763,7 +749,6 @@ export default function LoomStudioPage() {
         ...nodeDef,
         id: newNodeId,
         status: 'queued' as NodeStatus,
-        // Ensure position is not undefined, provide default if necessary
         position: nodeDef.position || { x: 50 + index * 50, y: 100 + index * 50 }, 
       };
     });
@@ -783,12 +768,11 @@ export default function LoomStudioPage() {
     setConnections(newConnections);
     setSelectedNode(null);
     setConnectingState(null);
-    setNodeExecutionStatus({}); // Clear old statuses
+    setNodeExecutionStatus({}); 
 
     toast({ title: "Template Loaded", description: `Workflow "${template.name}" is ready.` });
     addTimelineEvent({ type: 'info', message: `Workflow template "${template.name}" loaded onto canvas.` });
     
-    // Delay visualization
     Promise.resolve().then(() => visualizeWorkflowExecution());
     setIsTemplateSelectorOpen(false);
   }, [addConsoleMessage, addTimelineEvent, toast, visualizeWorkflowExecution]);
@@ -799,8 +783,8 @@ export default function LoomStudioPage() {
     return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center text-lg">Loading UI...</div>;
   }
 
-  const desktopBottomPanelHeight = '220px'; // Consistent height for bottom panels
-  const desktopRightPanelWidth = '380px'; // Consistent width for AgentHub and ActionConsole
+  const desktopBottomPanelHeight = '220px'; 
+  const desktopRightPanelWidth = '380px'; 
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
@@ -937,7 +921,3 @@ export default function LoomStudioPage() {
     </div>
   );
 }
-
-    
-
-    
