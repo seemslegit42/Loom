@@ -24,11 +24,11 @@ interface ConsolePanelProps {
 
 const getIconForType = (type: ConsoleMessage['type']) => {
   switch (type) {
-    case 'error': return <AlertCircle className="h-3.5 w-3.5 text-destructive mr-1 shrink-0" />; // Adjusted margin
-    case 'warn': return <AlertCircle className="h-3.5 w-3.5 text-yellow-500 mr-1 shrink-0" />; // Adjusted margin
-    case 'info': return <Info className="h-3.5 w-3.5 text-blue-400 mr-1 shrink-0" />; // Adjusted margin
+    case 'error': return <AlertCircle className="h-3.5 w-3.5 text-destructive mr-1 shrink-0" />;
+    case 'warn': return <AlertCircle className="h-3.5 w-3.5 text-yellow-500 mr-1 shrink-0" />;
+    case 'info': return <Info className="h-3.5 w-3.5 text-blue-400 mr-1 shrink-0" />;
     case 'log':
-    default: return <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-1 shrink-0" />; // Adjusted margin
+    default: return <Terminal className="h-3.5 w-3.5 text-muted-foreground mr-1 shrink-0" />;
   }
 };
 
@@ -54,7 +54,7 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: 'auto', height: '220px' }} // Changed height
+      initialSize={{ width: 'auto', height: '220px' }}
       contentClassName="font-code text-xs p-0 flex flex-col"
     >
       <div className="p-2 border-b border-border/30 flex items-center justify-between gap-1">
@@ -66,7 +66,7 @@ export function ConsolePanel({ className, onClose, messages, filters, onToggleFi
               variant={filters[type] ? "secondary" : "ghost"}
               size="sm"
               className={cn(
-                "text-xs h-6 px-1.5 py-0.5 flex items-center rounded-sm", // Ensure rounded-sm for consistency
+                "text-xs h-6 px-1.5 py-0.5 flex items-center rounded-sm",
                 filters[type] && "border border-primary/50" 
               )}
               onClick={() => onToggleFilter(type)}
