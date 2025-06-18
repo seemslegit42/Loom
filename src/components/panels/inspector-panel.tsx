@@ -370,3 +370,6 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
     </BasePanel>
   );
 }
+
+
+    
