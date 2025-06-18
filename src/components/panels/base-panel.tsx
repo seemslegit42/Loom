@@ -1,4 +1,3 @@
-
 // src/components/panels/base-panel.tsx
 'use client';
 
@@ -25,37 +24,58 @@ interface BasePanelProps {
 const MIN_WIDTH = 200;
 const MIN_HEIGHT = 150;
 
+const getStorageKey = (panelTitle: string) => `panel-size-${panelTitle.replace(/\s+/g, '-').toLowerCase()}`;
+
 export function BasePanel({
   title,
   icon,
   children,
   className,
   contentClassName,
-  initialSize = {},
+  initialSize: initialSizeProp = {}, // Renamed to avoid conflict in useState initializer
   onClose,
   isMobile,
-  isResizable = false, // Default to false
+  isResizable = false,
 }: BasePanelProps) {
   const { toast } = useToast();
   const [isMinimized, setIsMinimized] = useState(false);
-  const [currentSize, setCurrentSize] = useState<{ width: number; height: number }>({
-    width: parseInt(initialSize.width || '0', 10) || MIN_WIDTH,
-    height: parseInt(initialSize.height || '0', 10) || MIN_HEIGHT,
+
+  const [currentSize, setCurrentSize] = useState<{ width: number; height: number }>(() => {
+    let initialW = 300; // Default width
+    let initialH = 200; // Default height
+
+    if (typeof window !== 'undefined' && isResizable && !isMobile) {
+      const storageKey = getStorageKey(title);
+      const savedSize = localStorage.getItem(storageKey);
+      if (savedSize) {
+        try {
+          const parsed = JSON.parse(savedSize);
+          if (parsed && typeof parsed.width === 'number' && typeof parsed.height === 'number') {
+            return {
+              width: Math.max(parsed.width, MIN_WIDTH),
+              height: Math.max(parsed.height, MIN_HEIGHT),
+            };
+          }
+        } catch (e) {
+          console.warn(`Failed to parse saved size for panel "${title}" from localStorage.`, e);
+        }
+      }
+    }
+
+    // If no saved size, try to use initialSize prop (for pixel values) or fallback to defaults
+    const propW = parseInt(initialSizeProp.width || '', 10);
+    const propH = parseInt(initialSizeProp.height || '', 10);
+
+    initialW = !isNaN(propW) && propW > 0 ? Math.max(propW, MIN_WIDTH) : initialW;
+    initialH = !isNaN(propH) && propH > 0 ? Math.max(propH, MIN_HEIGHT) : initialH;
+    
+    return { width: initialW, height: initialH };
   });
 
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const isResizing = useRef(false);
   const initialResizeState = useRef({ mouseX: 0, mouseY: 0, width: 0, height: 0 });
-
-  useEffect(() => {
-    const width = parseInt(initialSize.width || '300', 10); // Default width if not specified
-    const height = parseInt(initialSize.height || '200', 10); // Default height if not specified
-    setCurrentSize({
-      width: Math.max(width, MIN_WIDTH),
-      height: Math.max(height, MIN_HEIGHT),
-    });
-  }, [initialSize.width, initialSize.height]);
 
   const handleMouseDownResize = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isResizable || isMobile) return;
@@ -69,7 +89,7 @@ export function BasePanel({
     };
     document.addEventListener('mousemove', handleMouseMoveResize);
     document.addEventListener('mouseup', handleMouseUpResize);
-  }, [isResizable, isMobile, currentSize.width, currentSize.height]);
+  }, [isResizable, isMobile, currentSize.width, currentSize.height]); // Added handleMouseMoveResize, handleMouseUpResize to dependencies
 
   const handleMouseMoveResize = useCallback((e: MouseEvent) => {
     if (!isResizing.current || !isResizable || isMobile) return;
@@ -86,7 +106,6 @@ export function BasePanel({
     // newWidth = Math.min(newWidth, window.innerWidth - 50); 
     // newHeight = Math.min(newHeight, window.innerHeight - 50);
 
-
     setCurrentSize({ width: newWidth, height: newHeight });
   }, [isResizable, isMobile]);
 
@@ -95,7 +114,21 @@ export function BasePanel({
     isResizing.current = false;
     document.removeEventListener('mousemove', handleMouseMoveResize);
     document.removeEventListener('mouseup', handleMouseUpResize);
-  }, [isResizable, isMobile, handleMouseMoveResize]);
+
+    if (typeof window !== 'undefined') {
+      const storageKey = getStorageKey(title);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(currentSize));
+      } catch (e) {
+        console.error(`Failed to save size for panel "${title}" to localStorage.`, e);
+        toast({
+          title: "Storage Error",
+          description: "Could not save panel size. Local storage might be full or disabled.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [isResizable, isMobile, handleMouseMoveResize, title, currentSize, toast]);
 
 
   const handleMinimize = () => {
@@ -120,6 +153,8 @@ export function BasePanel({
     });
   };
   
+  // Apply size styles only if resizable and not on mobile
+  // Otherwise, rely on className for sizing (e.g., for mobile full-screen panels or non-resizable panels)
   const sizeStyles: React.CSSProperties = isResizable && !isMobile
     ? { width: `${currentSize.width}px`, height: `${currentSize.height}px` }
     : {};
@@ -130,10 +165,10 @@ export function BasePanel({
       ref={panelRef}
       className={cn(
         'flex flex-col bg-card/80 backdrop-blur-lg border-border shadow-xl transition-all duration-300 ease-out relative',
-        isMinimized && !isMobile && 'h-auto',
+        isMinimized && !isMobile && 'h-auto', // This allows it to shrink when minimized
         className
       )}
-      style={sizeStyles}
+      style={sizeStyles} // Apply dynamic size styles
     >
       <CardHeader className="flex flex-row items-center justify-between p-3 border-b border-border/50 cursor-grab select-none">
         <div className="flex items-center gap-2">
@@ -159,7 +194,7 @@ export function BasePanel({
         </div>
       </CardHeader>
       <CardContent className={cn(
-        "p-3 overflow-auto flex-grow",
+        "p-3 overflow-auto flex-grow", // Ensure content can scroll if panel is smaller
         contentClassName,
         isMinimized && !isMobile && "hidden"
       )}>
