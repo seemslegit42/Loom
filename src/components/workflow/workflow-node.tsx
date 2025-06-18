@@ -3,7 +3,7 @@
 import React, { useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe, FunctionSquare } from 'lucide-react'; // Added FunctionSquare
+import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe, FunctionSquare, Binary } from 'lucide-react'; // Added Binary
 import { cn } from '@/lib/utils';
 // Use Backend types for output as Genkit is removed
 import type { BackendSummarizeOutput, BackendExecutePromptOutput } from '@/app/page';
@@ -11,7 +11,7 @@ import type { BackendSummarizeOutput, BackendExecutePromptOutput } from '@/app/p
 
 export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown' | 'pending';
 // Node types can remain somewhat abstract, as SuperAGI will handle the specifics
-export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer' | 'data-transform'; // Added 'data-transform'
+export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer' | 'data-transform' | 'conditional'; // Added 'conditional'
 
 export interface WorkflowNodeData {
   id: string;
@@ -27,6 +27,7 @@ export interface WorkflowNodeData {
     promptText?: string; // For prompt node
     modelName?: string; // Could be agent_id or model preference for SuperAGI
     transformationLogic?: string; // For data-transform
+    condition?: string; // For conditional node
     
     // Output from backend (simulated or real)
     output?: BackendSummarizeOutput | BackendExecutePromptOutput | Record<string, any>; 
@@ -65,7 +66,8 @@ const typeIcons: Record<NodeType, React.ReactNode> = {
   trigger: <Cog className="h-4 w-4 text-pink-400" />, // Represents a SuperAGI trigger
   custom: <SlidersHorizontal className="h-4 w-4 text-teal-400" />, // For custom SuperAGI tools/logic
   'web-summarizer': <Globe className="h-4 w-4 text-sky-400" />, // A specific SuperAGI capability
-  'data-transform': <FunctionSquare className="h-4 w-4 text-lime-400" />, // Added icon for data-transform
+  'data-transform': <FunctionSquare className="h-4 w-4 text-lime-400" />,
+  conditional: <Binary className="h-4 w-4 text-orange-500" />, // Added icon for conditional
 };
 
 const badgeStyles: Record<NodeStatus, string> = {

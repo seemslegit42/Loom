@@ -1,7 +1,7 @@
 
 // src/components/panels/inspector-panel.tsx
 import { BasePanel } from './base-panel';
-import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2, MessageSquare, Trash2, AlertCircle, FunctionSquare } from 'lucide-react'; // Added FunctionSquare
+import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2, MessageSquare, Trash2, AlertCircle, FunctionSquare, Binary } from 'lucide-react'; // Added Binary
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -83,8 +83,15 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
   };
 
   const nodeIsCurrentlyRunning = selectedNode && isNodeRunning ? isNodeRunning(selectedNode.id) : false;
-  // Run button is now for simulation, but still relies on config for specific node types
-  const nodeCanRun = selectedNode && onRunNode && (selectedNode.type === 'web-summarizer' || selectedNode.type === 'prompt' || selectedNode.type === 'agent-call' || selectedNode.type === 'custom' || selectedNode.type === 'data-transform');
+
+  const nodeCanRun = selectedNode && onRunNode && (
+    selectedNode.type === 'web-summarizer' ||
+    selectedNode.type === 'prompt' ||
+    selectedNode.type === 'agent-call' ||
+    selectedNode.type === 'custom' ||
+    selectedNode.type === 'data-transform' ||
+    selectedNode.type === 'conditional'
+  );
 
 
   const output = selectedNode?.config?.output;
@@ -273,9 +280,36 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
               )}
             </div>
           )}
+
+          {selectedNode.type === 'conditional' && (
+            <div className="space-y-3 p-3 border border-dashed border-border/50 rounded-md bg-card/50">
+              <h4 className="text-xs font-medium flex items-center gap-1.5 text-primary">
+                <Binary className="h-4 w-4" /> Conditional Logic Config
+              </h4>
+              <div className="space-y-1">
+                <Label htmlFor={`${panelKey}-conditionExpression`} className="text-xs">Condition Expression</Label>
+                <Textarea
+                  id={`${panelKey}-conditionExpression`}
+                  placeholder="e.g., {{input.value}} > 10 OR {{input.text}} CONTAINS 'error'"
+                  value={editableConfig?.condition || ''}
+                  onChange={(e) => handleConfigChange('condition', e.target.value)}
+                  rows={3}
+                  className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
+                />
+                <p className="text-xs text-muted-foreground">Define the condition. Backend (SuperAGI) will interpret this. Output implies 'true'/'false' paths.</p>
+              </div>
+              {/* Output display for conditional logic might be about which path was chosen */}
+               {output && typeof output === 'object' && Object.keys(output).length > 0 && (
+                <div className="space-y-1 pt-2">
+                    <Label className="text-xs">Last Result (Simulated):</Label>
+                    <Textarea value={JSON.stringify(output, null, 2)} readOnly rows={3} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Placeholder for other node type configurations */}
-          {(selectedNode.type !== 'prompt' && selectedNode.type !== 'web-summarizer' && selectedNode.type !== 'data-transform') && (
+          {(selectedNode.type !== 'prompt' && selectedNode.type !== 'web-summarizer' && selectedNode.type !== 'data-transform' && selectedNode.type !== 'conditional') && (
             <div className="space-y-1 p-3 border border-dashed border-border/50 rounded-md bg-card/50">
               <h4 className="text-xs font-medium flex items-center gap-1.5 text-primary">
                  Generic Node Configuration
@@ -300,7 +334,8 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 nodeIsCurrentlyRunning ||
                 (selectedNode.type === 'web-summarizer' && !editableConfig?.url) ||
                 (selectedNode.type === 'prompt' && !editableConfig?.promptText) ||
-                (selectedNode.type === 'data-transform' && !editableConfig?.transformationLogic)
+                (selectedNode.type === 'data-transform' && !editableConfig?.transformationLogic) ||
+                (selectedNode.type === 'conditional' && !editableConfig?.condition)
               }
             >
               {nodeIsCurrentlyRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}

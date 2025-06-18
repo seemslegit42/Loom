@@ -2,7 +2,7 @@
 // src/components/panels/palette-panel.tsx
 import { BasePanel } from './base-panel';
 import { Button } from '@/components/ui/button';
-import { LayoutGrid, Zap, MessageSquare, GitMerge, Cog, Timer, Webhook, SlidersHorizontal, Globe, FunctionSquare } from 'lucide-react'; // Added FunctionSquare
+import { LayoutGrid, Zap, MessageSquare, GitMerge, Cog, Timer, Webhook, SlidersHorizontal, Globe, FunctionSquare, Binary } from 'lucide-react'; // Added Binary
 
 interface PalettePanelProps {
   className?: string;
@@ -13,9 +13,10 @@ interface PalettePanelProps {
 const paletteItems = [
   { name: 'Prompt', type: 'prompt', icon: <MessageSquare className="h-4 w-4" /> },
   { name: 'Agent Call', type: 'agent-call', icon: <Zap className="h-4 w-4" /> },
-  { name: 'Decision', type: 'decision', icon: <GitMerge className="h-4 w-4" /> },
+  { name: 'Decision', type: 'decision', icon: <GitMerge className="h-4 w-4" /> }, // Often used for conditional-like splits
+  { name: 'Conditional Logic', type: 'conditional', icon: <Binary className="h-4 w-4" /> },
   { name: 'Web Summarizer', type: 'web-summarizer', icon: <Globe className="h-4 w-4" /> },
-  { name: 'Data Transform', type: 'data-transform', icon: <FunctionSquare className="h-4 w-4" /> }, // Added Data Transform
+  { name: 'Data Transform', type: 'data-transform', icon: <FunctionSquare className="h-4 w-4" /> },
   { name: 'API Call', type: 'api-call', icon: <Webhook className="h-4 w-4" /> },
   { name: 'Trigger', type: 'trigger', icon: <Cog className="h-4 w-4" /> },
   { name: 'Wait', type: 'wait', icon: <Timer className="h-4 w-4" /> },
