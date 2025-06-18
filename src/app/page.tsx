@@ -11,6 +11,7 @@ import { InspectorPanel } from '@/components/panels/inspector-panel';
 import { TimelinePanel, type TimelineEvent } from '@/components/panels/timeline-panel';
 import { ConsolePanel, type ConsoleMessage } from '@/components/panels/console-panel';
 import { AgentHubPanel } from '@/components/panels/agent-hub-panel';
+import { ActionConsolePanel, type ActionRequest } from '@/components/panels/action-console-panel'; // Added ActionConsolePanel
 import { TemplateSelectorDialog, type WorkflowTemplate } from '@/components/panels/template-selector-dialog';
 import type { WorkflowNodeData, NodeStatus, NodeType } from '@/components/workflow/workflow-node';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -45,6 +46,7 @@ export interface PanelVisibility {
   timeline: boolean;
   console: boolean;
   agentHub: boolean;
+  actionConsole: boolean; // Added actionConsole
 }
 
 export interface ConnectingState {
@@ -120,6 +122,37 @@ const exampleTemplates: WorkflowTemplate[] = [
   }
 ];
 
+// Sample Action Requests for demonstration
+const initialActionRequests: ActionRequest[] = [
+  {
+    id: 'action-req-1',
+    agentId: 'superagi-agent-1',
+    agentName: 'Web Research Agent',
+    requestType: 'permission',
+    message: 'Agent "Web Research Agent" requests permission to access external URL: https://api.example.com/data. This action might incur costs or have security implications. Proceed?',
+    timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
+    status: 'pending',
+  },
+  {
+    id: 'action-req-2',
+    agentId: 'superagi-agent-2',
+    agentName: 'Task Execution Agent',
+    requestType: 'input',
+    message: 'Agent "Task Execution Agent" requires a filename for the generated report. Please provide a name (e.g., "monthly_sales.pdf").',
+    timestamp: new Date(Date.now() - 1000 * 60 * 2), // 2 minutes ago
+    status: 'pending',
+  },
+    {
+    id: 'action-req-3',
+    agentId: 'superagi-agent-3',
+    agentName: 'Content Creation Agent',
+    requestType: 'clarification',
+    message: 'Agent "Content Creation Agent" has generated two drafts for the blog post. Should it proceed with Draft A (focus on SEO) or Draft B (focus on engagement)?',
+    timestamp: new Date(),
+    status: 'pending',
+  },
+];
+
 
 export default function LoomStudioPage() {
   const [generatedFlow, setGeneratedFlow] = useState<AiGeneratedFlowData & { nodes: WorkflowNodeData[] } | null>(null);
@@ -132,6 +165,7 @@ export default function LoomStudioPage() {
     timeline: true,
     console: true,
     agentHub: true,
+    actionConsole: true, // Default Action Console to visible
   });
   const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
@@ -143,6 +177,7 @@ export default function LoomStudioPage() {
     error: true,
   });
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
+  const [actionRequests, setActionRequests] = useState<ActionRequest[]>(initialActionRequests);
 
 
   const isMobile = useIsMobile();
@@ -206,12 +241,29 @@ export default function LoomStudioPage() {
     setTimelineEvents(prev => [{ ...event, id: crypto.randomUUID(), timestamp: new Date() }, ...prev.slice(0, 49)]);
   }, []);
 
+  const handleAgentActionResponse = useCallback((requestId: string, responseStatus: 'approved' | 'denied' | 'responded', details?: string) => {
+    const request = actionRequests.find(r => r.id === requestId);
+    if (!request) return;
+
+    setActionRequests(prev => prev.filter(r => r.id !== requestId)); // Remove from pending
+    
+    const logMessage = `Agent Action: Request ID ${requestId} (${request.requestType} from ${request.agentName}) was ${responseStatus}. ${details ? `Details: ${details}` : ''}`;
+    addConsoleMessage(responseStatus === 'denied' ? 'warn' : 'info', logMessage);
+    addTimelineEvent({ type: 'info', message: `User responded to agent action: ${request.agentName} - ${responseStatus}` });
+    toast({
+      title: `Agent Action ${responseStatus.charAt(0).toUpperCase() + responseStatus.slice(1)}`,
+      description: `Request from ${request.agentName} has been ${responseStatus}.`,
+    });
+    // In a real system, this would also send the response back to the agent.
+  }, [actionRequests, addConsoleMessage, addTimelineEvent, toast]);
+
+
   useEffect(() => {
     if (isMobile === undefined) return;
     if (isMobile) {
-      setPanelVisibility({ palette: false, inspector: false, timeline: false, console: false, agentHub: false });
+      setPanelVisibility({ palette: false, inspector: false, timeline: false, console: false, agentHub: false, actionConsole: false });
     } else {
-      setPanelVisibility({ palette: true, inspector: true, timeline: true, console: true, agentHub: true });
+      setPanelVisibility({ palette: true, inspector: true, timeline: true, console: true, agentHub: true, actionConsole: true });
     }
   }, [isMobile]);
 
@@ -602,7 +654,7 @@ export default function LoomStudioPage() {
 
   const closeAllMobilePanels = () => {
     if (isMobile) {
-      setPanelVisibility({ palette: false, inspector: false, timeline: false, console: false, agentHub: false });
+      setPanelVisibility({ palette: false, inspector: false, timeline: false, console: false, agentHub: false, actionConsole: false });
     }
   };
 
@@ -711,6 +763,9 @@ export default function LoomStudioPage() {
     return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center text-lg">Loading UI...</div>;
   }
 
+  const desktopBottomPanelHeight = '220px'; // Consistent height for bottom panels
+  const desktopRightPanelWidth = '380px'; // Consistent width for AgentHub and ActionConsole
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <TopBar
@@ -776,15 +831,28 @@ export default function LoomStudioPage() {
                 />
               )}
             </div>
-            {panelVisibility.agentHub && (
-              <AgentHubPanel
-                className="absolute bottom-[calc(220px+2rem)] right-4 z-10 max-h-[calc(100vh_-_theme(spacing.16)_-_220px_-_theme(spacing.12))]"
-                onClose={() => togglePanel('agentHub')}
-                isMobile={isMobile}
-                addConsoleMessage={addConsoleMessage}
-                addTimelineEvent={addTimelineEvent}
-              />
-            )}
+            <div className="absolute top-[calc(theme(spacing.16)_+_theme(spacing.4))] right-4 z-10 flex flex-col gap-4">
+              {panelVisibility.agentHub && (
+                <AgentHubPanel
+                  className={`max-h-[calc(50vh_-_theme(spacing.16)_-_theme(spacing.10))] w-[${desktopRightPanelWidth}]`}
+                  onClose={() => togglePanel('agentHub')}
+                  isMobile={isMobile}
+                  addConsoleMessage={addConsoleMessage}
+                  addTimelineEvent={addTimelineEvent}
+                />
+              )}
+              {panelVisibility.actionConsole && (
+                <ActionConsolePanel
+                  className={`max-h-[calc(50vh_-_theme(spacing.16)_-_theme(spacing.10)_-_${desktopBottomPanelHeight}_-_theme(spacing.4))] w-[${desktopRightPanelWidth}]`}
+                  onClose={() => togglePanel('actionConsole')}
+                  requests={actionRequests}
+                  onRespond={handleAgentActionResponse}
+                  isMobile={isMobile}
+                  addConsoleMessage={addConsoleMessage}
+                  addTimelineEvent={addTimelineEvent}
+                />
+              )}
+            </div>
           </>
         ) : (
           <>
@@ -805,8 +873,11 @@ export default function LoomStudioPage() {
                   isNodeRunning={isNodeRunning}
                 />}
             </div>
-            <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
+             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
               {panelVisibility.agentHub && <AgentHubPanel className="h-full" onClose={() => togglePanel('agentHub')} isMobile={isMobile} addConsoleMessage={addConsoleMessage} addTimelineEvent={addTimelineEvent} />}
+            </div>
+             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.actionConsole ? 'translate-x-0' : 'translate-x-full'}`}>
+              {panelVisibility.actionConsole && <ActionConsolePanel className="h-full" requests={actionRequests} onRespond={handleAgentActionResponse} onClose={() => togglePanel('actionConsole')} isMobile={isMobile} addConsoleMessage={addConsoleMessage} addTimelineEvent={addTimelineEvent} />}
             </div>
             <div className={`fixed inset-x-0 bottom-0 z-40 h-3/5 bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.timeline ? 'translate-y-0' : 'translate-y-full'} mb-14`}>
               {panelVisibility.timeline && <TimelinePanel className="h-full" onClose={() => togglePanel('timeline')} events={timelineEvents} isMobile={isMobile} />}
@@ -830,8 +901,3 @@ export default function LoomStudioPage() {
     </div>
   );
 }
-
-
-    
-
-    

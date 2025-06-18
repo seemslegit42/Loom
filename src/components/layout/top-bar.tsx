@@ -4,7 +4,7 @@ import type { GenerateFlowFormState } from '@/lib/actions/ai'; // This type migh
 import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot, BookMarked, Eye } from 'lucide-react';
+import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot, BookMarked, Eye, ShieldQuestion } from 'lucide-react';
 import type { PanelVisibility } from '@/app/page';
 import {
   DropdownMenu,
@@ -42,6 +42,7 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
     { panel: 'palette' as keyof PanelVisibility, label: 'Palette', icon: <LayoutGrid className="mr-2 h-4 w-4" /> },
     { panel: 'inspector' as keyof PanelVisibility, label: 'Inspector', icon: <Settings2 className="mr-2 h-4 w-4" /> },
     { panel: 'agentHub' as keyof PanelVisibility, label: 'Agent Hub', icon: <Bot className="mr-2 h-4 w-4" /> },
+    { panel: 'actionConsole' as keyof PanelVisibility, label: 'Action Console', icon: <ShieldQuestion className="mr-2 h-4 w-4" /> },
     { panel: 'timeline' as keyof PanelVisibility, label: 'Timeline', icon: <ListOrdered className="mr-2 h-4 w-4" /> },
     { panel: 'console' as keyof PanelVisibility, label: 'Console', icon: <Terminal className="mr-2 h-4 w-4" /> },
   ];
