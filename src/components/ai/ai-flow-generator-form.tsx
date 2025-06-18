@@ -1,4 +1,3 @@
-
 // src/components/ai/ai-flow-generator-form.tsx
 'use client';
 
@@ -10,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Send, Loader2 } from 'lucide-react';
 import type { AiGeneratedFlowData, WorkflowNodeData } from '@/app/page';
 // Updated import to use the new task function
-import { generateDataCleanupTask, type GenerateDataCleanupOutput } from '@/tasks/generate-data-cleanup-task';
+import { generateDataCleanupTask, type GenerateDataCleanupOutput, type GenerateDataCleanupInput } from '@/tasks/generate-data-cleanup-task';
 import { generateNodeId } from '@/lib/utils';
 
 
@@ -39,7 +38,8 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
     
     try {
       // Call the new task function
-      const taskOutput: GenerateDataCleanupOutput = await generateDataCleanupTask({ userInput });
+      const taskInput: GenerateDataCleanupInput = { userInput };
+      const taskOutput: GenerateDataCleanupOutput = await generateDataCleanupTask(taskInput);
 
       if (taskOutput.error) {
         throw new Error(taskOutput.error);

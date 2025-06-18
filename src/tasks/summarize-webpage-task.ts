@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A task for summarizing the content of a webpage (simulated).
@@ -8,19 +7,15 @@
  * - SummarizeWebpageOutput - The return type for the summarizeWebpageTask function.
  */
 
-import { z } from 'zod';
+export interface SummarizeWebpageInput {
+  url: string;
+}
 
-const SummarizeWebpageInputSchema = z.object({
-  url: z.string().url().describe('The URL of the webpage to summarize.'),
-});
-export type SummarizeWebpageInput = z.infer<typeof SummarizeWebpageInputSchema>;
-
-const SummarizeWebpageOutputSchema = z.object({
-  summary: z.string().optional().describe('The summarized content of the webpage.'),
-  originalUrl: z.string().url().describe('The original URL that was summarized.'),
-  error: z.string().optional().describe('An error message if summarization failed or content could not be fetched.'),
-});
-export type SummarizeWebpageOutput = z.infer<typeof SummarizeWebpageOutputSchema>;
+export interface SummarizeWebpageOutput {
+  summary?: string;
+  originalUrl: string;
+  error?: string;
+}
 
 export async function summarizeWebpageTask(input: SummarizeWebpageInput): Promise<SummarizeWebpageOutput> {
   console.log(`[SIMULATE_TASK] summarizeWebpageTask called with URL: "${input.url}"`);
@@ -32,7 +27,7 @@ export async function summarizeWebpageTask(input: SummarizeWebpageInput): Promis
           error: 'Simulated error (from task): Failed to fetch or summarize content from error.com.',
       };
   }
-  if (!input.url || !input.url.startsWith('http')) {
+  if (!input.url || !(input.url.startsWith('http://') || input.url.startsWith('https://'))) {
       return {
           summary: '',
           originalUrl: input.url || 'invalid_url',

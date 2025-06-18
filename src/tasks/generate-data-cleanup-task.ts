@@ -1,6 +1,4 @@
-
 'use server';
-
 /**
  * @fileOverview A task to generate a data cleanup workflow based on natural language input (simulated).
  *
@@ -9,27 +7,15 @@
  * - GenerateDataCleanupOutput - The return type for the generateDataCleanupTask function.
  */
 
-import { z } from 'zod';
+export interface GenerateDataCleanupInput {
+  userInput: string;
+}
 
-const GenerateDataCleanupInputSchema = z.object({
-  userInput: z
-    .string()
-    .describe(
-      'The user input describing the desired agent workflow or task. Example: "Summarize recent customer feedback emails and identify common themes."'
-    ),
-});
-export type GenerateDataCleanupInput = z.infer<typeof GenerateDataCleanupInputSchema>;
-
-const GenerateDataCleanupOutputSchema = z.object({
-  workflowDescription: z
-    .string()
-    .describe('A concise name or high-level description for the generated workflow. e.g., "Customer Feedback Summarizer" or "Daily News Digest Agent"'),
-  promptSequence: z
-    .array(z.string())
-    .describe('A sequence of textual prompts or steps to achieve the workflow goal. Each string is one step. e.g., ["Fetch unread emails with label \'feedback\'", "For each email, extract key points", "Categorize points and count occurrences"]'),
-  error: z.string().optional().describe('An error message if generation failed.'),
-});
-export type GenerateDataCleanupOutput = z.infer<typeof GenerateDataCleanupOutputSchema>;
+export interface GenerateDataCleanupOutput {
+  workflowDescription: string;
+  promptSequence: string[];
+  error?: string;
+}
 
 export async function generateDataCleanupTask(
   input: GenerateDataCleanupInput
