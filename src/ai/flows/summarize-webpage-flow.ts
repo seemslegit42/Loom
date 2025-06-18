@@ -10,7 +10,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { fetchUrlContentTool } from '@/ai/tools/fetch-url-content-tool';
+// fetchUrlContentTool is not directly used if we bypass the prompt, but kept for potential future use or direct tool calls.
+// import { fetchUrlContentTool } from '@/ai/tools/fetch-url-content-tool';
 
 const SummarizeWebpageInputSchema = z.object({
   url: z.string().url().describe('The URL of the webpage to summarize.'),
@@ -28,18 +29,19 @@ export async function summarizeWebpage(input: SummarizeWebpageInput): Promise<Su
   return summarizeWebpageFlow(input);
 }
 
-const summarizePrompt = ai.definePrompt({
-  name: 'summarizeWebpagePrompt',
-  input: { schema: SummarizeWebpageInputSchema },
-  output: { schema: SummarizeWebpageOutputSchema },
-  tools: [fetchUrlContentTool],
-  prompt: `You are a helpful AI assistant that summarizes webpages.
-  1. Use the 'fetchUrlContentTool' to get the text content of the webpage at the given URL: {{{url}}}.
-  2. If the tool returns an error or empty content, set the 'error' field in your output and provide a brief explanation. Do not attempt to summarize and ensure the 'summary' field is an empty string.
-  3. If you receive content, provide a concise summary of the text.
-  4. Ensure your output includes the original URL and the summary.
-  `,
-});
+// Original prompt definition commented out as we are simulating the flow's output directly.
+// const summarizePrompt = ai.definePrompt({
+//   name: 'summarizeWebpagePrompt',
+//   input: { schema: SummarizeWebpageInputSchema },
+//   output: { schema: SummarizeWebpageOutputSchema },
+//   tools: [fetchUrlContentTool],
+//   prompt: `You are a helpful AI assistant that summarizes webpages.
+//   1. Use the 'fetchUrlContentTool' to get the text content of the webpage at the given URL: {{{url}}}.
+//   2. If the tool returns an error or empty content, set the 'error' field in your output and provide a brief explanation. Do not attempt to summarize and ensure the 'summary' field is an empty string.
+//   3. If you receive content, provide a concise summary of the text.
+//   4. Ensure your output includes the original URL and the summary.
+//   `,
+// });
 
 const summarizeWebpageFlow = ai.defineFlow(
   {
@@ -48,48 +50,67 @@ const summarizeWebpageFlow = ai.defineFlow(
     outputSchema: SummarizeWebpageOutputSchema,
   },
   async (input) => {
-    const llmResponse = await summarizePrompt(input);
-    const output = llmResponse.output; // Use .output as per Genkit v1.x
+    // Simulate backend call to SuperAGI/CrewAI or LLM for summarization
+    console.log(`[SIMULATE] summarizeWebpageFlow called with URL: "${input.url}"`);
 
-    if (!output) {
-      // This case might happen if the LLM fails to adhere to the output schema or if there's a major processing error.
-      // Or if the LLM response itself is blocked by safety settings.
-      let errorMessage = "Failed to generate summary. The LLM did not produce valid output.";
-      if (llmResponse.candidates && llmResponse.candidates.length > 0) {
-        const firstCandidate = llmResponse.candidates[0];
-        if (firstCandidate.finishReason !== 'STOP' && firstCandidate.finishMessage) {
-            errorMessage = `LLM generation incomplete: ${firstCandidate.finishMessage} (Reason: ${firstCandidate.finishReason})`;
-        } else if (firstCandidate.blocked && firstCandidate.blockedMessage) {
-             errorMessage = `LLM response blocked by safety settings or other policy: ${firstCandidate.blockedMessage}`;
-        }
-      }
-      return {
-        summary: '',
-        originalUrl: input.url,
-        error: errorMessage,
-      };
-    }
-    
-    // If the tool call itself returned an error that the LLM decided to put in the 'error' field based on prompt instructions
-    if (output.error) {
-        return {
-            summary: '', // Ensure summary is empty as per prompt instruction
-            originalUrl: input.url,
-            error: output.error,
-        };
-    }
-
-    // Check if the summary is empty even if no explicit error was set by the LLM.
-    // This can happen if the webpage had no summarizable content, or the LLM decided not to summarize.
-    if (!output.summary && !output.error) {
+    if (input.url.includes("error.com")) {
         return {
             summary: '',
             originalUrl: input.url,
-            error: 'The webpage might have no summarizable content, or the AI chose not to summarize.',
+            error: 'Simulated error: Failed to fetch or summarize content from error.com.',
         };
     }
+    if (!input.url || !input.url.startsWith('http')) {
+        return {
+            summary: '',
+            originalUrl: input.url || 'invalid_url',
+            error: 'Invalid URL provided for summarization.',
+        };
+    }
+
+    // Simulate a successful summarization response
+    return {
+      summary: `This is a simulated summary for the webpage at ${input.url}. The actual summary would be generated by the SuperAGI/CrewAI backend. It would typically involve fetching the content and then processing it with an LLM. For example, it might highlight key points, extract entities, and provide an overall sentiment if configured to do so.`,
+      originalUrl: input.url,
+    };
+
+    // Original Genkit prompt call is commented out.
+    // const llmResponse = await summarizePrompt(input);
+    // const output = llmResponse.output;
+
+    // if (!output) {
+    //   let errorMessage = "Failed to generate summary. The LLM did not produce valid output.";
+    //   if (llmResponse.candidates && llmResponse.candidates.length > 0) {
+    //     const firstCandidate = llmResponse.candidates[0];
+    //     if (firstCandidate.finishReason !== 'STOP' && firstCandidate.finishMessage) {
+    //         errorMessage = `LLM generation incomplete: ${firstCandidate.finishMessage} (Reason: ${firstCandidate.finishReason})`;
+    //     } else if (firstCandidate.blocked && firstCandidate.blockedMessage) {
+    //          errorMessage = `LLM response blocked by safety settings or other policy: ${firstCandidate.blockedMessage}`;
+    //     }
+    //   }
+    //   return {
+    //     summary: '',
+    //     originalUrl: input.url,
+    //     error: errorMessage,
+    //   };
+    // }
     
-    return output; // Contains summary and originalUrl, error will be undefined if all went well.
+    // if (output.error) {
+    //     return {
+    //         summary: '', 
+    //         originalUrl: input.url,
+    //         error: output.error,
+    //     };
+    // }
+
+    // if (!output.summary && !output.error) {
+    //     return {
+    //         summary: '',
+    //         originalUrl: input.url,
+    //         error: 'The webpage might have no summarizable content, or the AI chose not to summarize.',
+    //     };
+    // }
+    
+    // return output; 
   }
 );
-

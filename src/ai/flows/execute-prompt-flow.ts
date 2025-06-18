@@ -34,33 +34,49 @@ const executePromptFlow = ai.defineFlow(
     outputSchema: ExecutePromptOutputSchema,
   },
   async (input) => {
-    try {
-      const llmResponse = await ai.generate({
-        prompt: input.promptText,
-        model: input.modelName || ai.config.model, // Use specified model or default from ai config
-      });
-      const responseText = llmResponse.text; // Use .text as per Genkit v1.x
-      
-      if (responseText) {
-        return { responseText };
-      } else {
-        // This case can happen if the LLM response is empty or if there was a different kind of issue
-        // not caught by the safety settings or other explicit errors during generation.
-        let errorMessage = "LLM returned an empty response.";
-         if (llmResponse.candidates && llmResponse.candidates.length > 0) {
-            const firstCandidate = llmResponse.candidates[0];
-            if (firstCandidate.finishReason !== 'STOP' && firstCandidate.finishMessage) {
-                errorMessage = `LLM generation incomplete: ${firstCandidate.finishMessage} (Reason: ${firstCandidate.finishReason})`;
-            } else if (firstCandidate.blocked && firstCandidate.blockedMessage) {
-                 errorMessage = `LLM response blocked: ${firstCandidate.blockedMessage}`;
-            }
-          }
-        return { error: errorMessage };
-      }
-    } catch (e: any) {
-      console.error('Error executing prompt flow:', e);
-      return { error: e.message || 'An unexpected error occurred during prompt execution.' };
+    // Simulate backend call to SuperAGI/CrewAI or LLM
+    console.log(`[SIMULATE] executePromptFlow called with prompt: "${input.promptText}", model: ${input.modelName || 'default'}`);
+    
+    // Simulate a successful response
+    if (input.promptText.toLowerCase().includes("error test")) {
+        return {
+            error: "Simulated error during prompt execution as requested by 'error test' in prompt.",
+        };
     }
+    
+    return {
+      responseText: `Simulated LLM response to: "${input.promptText}". Model/Agent specified: ${input.modelName || 'default/not specified'}. This response would come from SuperAGI/CrewAI.`,
+    };
+    
+    // Original Genkit call is commented out to prevent errors and align with SuperAGI/CrewAI direction.
+    // try {
+    //   const llmOptions: any = {
+    //     prompt: input.promptText,
+    //   };
+    //   if (input.modelName) {
+    //     llmOptions.model = input.modelName;
+    //   }
+      
+    //   const llmResponse = await ai.generate(llmOptions);
+    //   const responseText = llmResponse.text; 
+      
+    //   if (responseText) {
+    //     return { responseText };
+    //   } else {
+    //     let errorMessage = "LLM returned an empty response.";
+    //      if (llmResponse.candidates && llmResponse.candidates.length > 0) {
+    //         const firstCandidate = llmResponse.candidates[0];
+    //         if (firstCandidate.finishReason !== 'STOP' && firstCandidate.finishMessage) {
+    //             errorMessage = `LLM generation incomplete: ${firstCandidate.finishMessage} (Reason: ${firstCandidate.finishReason})`;
+    //         } else if (firstCandidate.blocked && firstCandidate.blockedMessage) {
+    //              errorMessage = `LLM response blocked: ${firstCandidate.blockedMessage}`;
+    //         }
+    //       }
+    //     return { error: errorMessage };
+    //   }
+    // } catch (e: any) {
+    //   console.error('Error executing prompt flow:', e);
+    //   return { error: e.message || 'An unexpected error occurred during prompt execution.' };
+    // }
   }
 );
-
