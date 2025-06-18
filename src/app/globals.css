@@ -121,3 +121,29 @@
     linear-gradient(to bottom, hsl(var(--border)/0.1) 1px, transparent 1px);
   background-size: 3rem 3rem; /* Adjust grid size if desired */
 }
+
+@layer utilities {
+  .iridescent-aurora-bg {
+    background: linear-gradient(
+      -45deg,
+      hsl(var(--primary)), /* Imperial Purple */
+      hsl(var(--accent)),  /* Roman Aqua */
+      hsl(var(--secondary)), /* Patina Green */
+      hsl(var(--primary)) /* Loop back to purple for smoother transition */
+    );
+    background-size: 400% 400%;
+    animation: aurora-bg 20s ease infinite;
+  }
+}
+
+@keyframes aurora-bg {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

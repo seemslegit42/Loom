@@ -1,4 +1,3 @@
-
 // src/components/canvas/canvas-zone.tsx
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { WorkflowNode, type WorkflowNodeData, type NodeType, type NodeStatus } from '@/components/workflow/workflow-node';
@@ -155,7 +154,7 @@ export function CanvasZone({
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    if (target === e.currentTarget || target.classList.contains('scroll-area-viewport-content') || target.classList.contains('grid-background')) {
+    if (target === e.currentTarget || target.classList.contains('scroll-area-viewport-content') || target.classList.contains('iridescent-aurora-bg')) { // Updated to check new background class if needed
        if (!connectingState) { 
         onNodeSelected(null);
       }
@@ -179,7 +178,7 @@ export function CanvasZone({
 
   return (
     <ScrollArea
-      className="h-full w-full rounded-lg border border-dashed border-border/50 grid-background relative"
+      className="h-full w-full rounded-lg border border-dashed border-border/50 iridescent-aurora-bg relative"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onClick={handleCanvasClick}
