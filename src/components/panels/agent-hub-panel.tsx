@@ -33,6 +33,15 @@ const initialAgents: Agent[] = [
   { id: 'superagi-agent-3', name: "Content Creation Agent", status: "paused", tasks: 1, permissions: "Text Generation, Image Generation", workload: "N/A" },
 ];
 
+const agentProfiles = [
+  { namePrefix: "Web Intellect", permissions: "Web Search, Summarization, Fact Checking", baseWorkload: "10%" },
+  { namePrefix: "Task Orchestrator", permissions: "Code Execution, API Calls, File Management", baseWorkload: "5%" },
+  { namePrefix: "Content Synthesizer", permissions: "Text Generation, Image Generation, Translation", baseWorkload: "15%" },
+  { namePrefix: "Data Cruncher", permissions: "Data Analysis, Report Generation, Trend Identification", baseWorkload: "8%" },
+  { namePrefix: "Support Responder", permissions: "FAQ Lookup, Ticket Creation, Basic Chat", baseWorkload: "12%" },
+];
+
+
 const statusColors: Record<Agent['status'], string> = {
   active: "bg-green-500/20 text-green-400 border-green-500/50",
   idle: "bg-blue-500/20 text-blue-300 border-blue-500/50",
@@ -59,6 +68,7 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [editableAgentName, setEditableAgentName] = useState('');
   const [editableAgentPermissions, setEditableAgentPermissions] = useState('');
+  const [spawnProfileIndex, setSpawnProfileIndex] = useState(0);
 
   useEffect(() => {
     if (selectedAgent) {
@@ -85,7 +95,7 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
     );
     setAgents(updatedAgents);
     const updatedSelectedAgent = updatedAgents.find(a => a.id === selectedAgent.id) || null;
-    setSelectedAgent(updatedSelectedAgent); // Keep selected agent updated
+    setSelectedAgent(updatedSelectedAgent); 
 
     toast({ title: "Agent Updated (Simulated)", description: `Agent "${editableAgentName}" details saved.` });
     addConsoleMessage('info', `Agent "${editableAgentName}" (ID: ${selectedAgent.id}) configuration updated (simulated).`);
@@ -98,19 +108,25 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
 
 
   const handleSpawnAgent = () => {
+    const profile = agentProfiles[spawnProfileIndex];
     const newAgentId = `superagi-agent-${Date.now()}`;
-    const newAgentName = `New SuperAGI Agent ${agents.length + 1}`;
+    // Count existing agents with the same prefix to create a unique number
+    const agentCountForPrefix = agents.filter(a => a.name.startsWith(profile.namePrefix)).length + 1;
+    const newAgentName = `${profile.namePrefix} #${agentCountForPrefix}`;
+
     const newAgent: Agent = {
       id: newAgentId,
       name: newAgentName,
       status: 'idle',
       tasks: 0,
-      permissions: 'Basic',
-      workload: '0%',
+      permissions: profile.permissions,
+      workload: profile.baseWorkload,
     };
     setAgents(prev => [...prev, newAgent]);
-    toast({ title: "Agent Spawned (Simulated)", description: `Agent "${newAgentName}" is now available (simulation).` });
-    addConsoleMessage('info', `Agent "${newAgentName}" spawned (simulation for SuperAGI).`);
+    setSpawnProfileIndex((prevIndex) => (prevIndex + 1) % agentProfiles.length);
+
+    toast({ title: "Agent Spawned (Simulated)", description: `Agent "${newAgentName}" with capabilities "${profile.permissions}" is now available (simulation).` });
+    addConsoleMessage('info', `Agent "${newAgentName}" (type: ${profile.namePrefix}) spawned (simulation for SuperAGI).`);
   };
 
   const handleResumeAll = () => {
@@ -148,7 +164,7 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
           <h3 className="text-sm font-medium">Connected SuperAGI Agents ({agents.length})</h3>
           <Button variant="outline" size="sm" className="text-xs" onClick={handleSpawnAgent}>
             <UserPlus className="h-3 w-3 mr-1.5" />
-            Spawn Agent (Sim)
+            Spawn Next Agent (Sim)
           </Button>
         </div>
         <div className="flex items-center gap-2">
@@ -161,7 +177,7 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
             Pause All (Sim)
           </Button>
         </div>
-        <ScrollArea className="pr-2 max-h-40"> {/* Adjusted max-h for config section */}
+        <ScrollArea className="pr-2 max-h-40">
           {agents.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">No SuperAGI agents connected. Spawn one to get started.</p>
           ) : (
@@ -254,3 +270,4 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
     </BasePanel>
   );
 }
+
