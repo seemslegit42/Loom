@@ -5,7 +5,7 @@ import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot, BookMarked, Eye, ShieldQuestion } from 'lucide-react';
-import type { PanelVisibility } from '@/app/page';
+import type { PanelVisibility, AiGeneratedFlowData } from '@/app/page'; // AiGeneratedFlowData type will be updated via import
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +16,10 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
-import type { AiGeneratedFlowData } from '@/app/page';
+
 
 interface TopBarProps {
-  onFlowGenerated: (data: AiGeneratedFlowData) => void; 
+  onFlowGenerated: (data: AiGeneratedFlowData) => void; // Type will be updated via import
   panelVisibility: PanelVisibility;
   togglePanel: (panel: keyof PanelVisibility) => void;
   isMobile: boolean;

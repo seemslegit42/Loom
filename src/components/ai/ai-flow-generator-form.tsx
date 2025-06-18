@@ -7,14 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Loader2 } from 'lucide-react';
-import type { AiGeneratedFlowData, WorkflowNodeData } from '@/app/page';
+import type { AiGeneratedFlowData, WorkflowNodeData } from '@/app/page'; // Will receive updated AiGeneratedFlowData type
 // Updated import to use the new task function
 import { generateDataCleanupTask, type GenerateDataCleanupOutput, type GenerateDataCleanupInput } from '@/tasks/generate-data-cleanup-task';
 import { generateNodeId } from '@/lib/utils';
 
 
 interface AiFlowGeneratorFormProps {
-  onFlowGenerated: (data: AiGeneratedFlowData) => void;
+  onFlowGenerated: (data: AiGeneratedFlowData) => void; // Type will be updated via import
 }
 
 export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProps) {
@@ -64,10 +64,11 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
         };
       });
 
+      // This generatedData object already includes 'nodes' as a non-optional array
       const generatedData: AiGeneratedFlowData = {
         message: `Flow "${taskOutput.workflowDescription}" generated successfully with ${nodes.length} steps from AI (simulated task).`,
         workflowName: taskOutput.workflowDescription,
-        nodes: nodes,
+        nodes: nodes, // 'nodes' is always present here
         error: false,
         userInput: userInput,
       };
@@ -82,11 +83,12 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
       console.error("[AI_FLOW_FORM] Error generating flow with task:", e);
       const errorMessage = e.message || "AI (simulated task) failed to generate a flow from the provided input.";
       
+      // This generatedData object also includes 'nodes' as an empty non-optional array
       const generatedData: AiGeneratedFlowData = {
         message: errorMessage,
         error: true,
         userInput: userInput,
-        nodes: [], 
+        nodes: [], // 'nodes' is always present here, even if empty
       };
 
       toast({

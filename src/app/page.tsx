@@ -30,7 +30,7 @@ export interface BackendExecutePromptOutput extends ExecutePromptOutput {}
 export interface AiGeneratedFlowData {
   message: string | null;
   workflowName?: string;
-  nodes?: WorkflowNodeData[];
+  nodes: WorkflowNodeData[]; // Changed from optional to required
   error?: boolean;
   userInput?: string;
 }
@@ -171,7 +171,7 @@ const initialActionRequests: ActionRequest[] = [
 
 
 export default function LoomStudioPage() {
-  const [generatedFlow, setGeneratedFlow] = useState<AiGeneratedFlowData & { nodes: WorkflowNodeData[] } | null>(null);
+  const [generatedFlow, setGeneratedFlow] = useState<AiGeneratedFlowData | null>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connectingState, setConnectingState] = useState<ConnectingState | null>(null);
   const [selectedNode, setSelectedNode] = useState<WorkflowNodeData | null>(null);
@@ -284,7 +284,7 @@ export default function LoomStudioPage() {
   }, [isMobile]);
 
   const visualizeWorkflowExecution = useCallback(async () => {
-    if (!generatedFlow || !generatedFlow.nodes || generatedFlow.nodes.length === 0 || !generatedFlow.workflowName) {
+    if (!generatedFlow || generatedFlow.nodes.length === 0 || !generatedFlow.workflowName) {
         addConsoleMessage('warn', 'No workflow or nodes available to visualize.');
         return;
     }
@@ -403,30 +403,24 @@ export default function LoomStudioPage() {
 
 
   const handleFlowGenerated = useCallback((data: AiGeneratedFlowData) => {
-    const newFlowData = data as AiGeneratedFlowData & { nodes: WorkflowNodeData[] };
-    
-    if (!newFlowData.nodes) { 
-      newFlowData.nodes = [];
-    }
-
-    setGeneratedFlow(newFlowData); 
+    setGeneratedFlow(data); 
     setSelectedNode(null);
     
     if (data.error) {
-      addConsoleMessage('error', `Failed to generate flow: ${data.message}`);
+      addConsoleMessage('error', `Failed to generate flow: ${data.message || 'Unknown error'}`);
       setTimelineEvents([]);
       setNodeExecutionStatus({});
       setConnections([]); 
     } else {
-      if (newFlowData.nodes && newFlowData.nodes.length > 0 && newFlowData.workflowName) {
-        addConsoleMessage('info', `Flow "${newFlowData.workflowName}" generated with ${newFlowData.nodes.length} steps. Preparing visualization...`);
+      if (data.nodes.length > 0 && data.workflowName) {
+        addConsoleMessage('info', `Flow "${data.workflowName}" generated with ${data.nodes.length} steps. Preparing visualization...`);
 
         const newConnections: Connection[] = [];
-        for (let i = 0; i < newFlowData.nodes.length - 1; i++) {
+        for (let i = 0; i < data.nodes.length - 1; i++) {
           newConnections.push({
-            id: `conn-${newFlowData.nodes[i].id}-to-${newFlowData.nodes[i+1].id}-${Date.now()}`,
-            from: newFlowData.nodes[i].id,
-            to: newFlowData.nodes[i+1].id,
+            id: `conn-${data.nodes[i].id}-to-${data.nodes[i+1].id}-${Date.now()}`,
+            from: data.nodes[i].id,
+            to: data.nodes[i+1].id,
           });
         }
         setConnections(newConnections);
@@ -435,7 +429,7 @@ export default function LoomStudioPage() {
         Promise.resolve().then(() => visualizeWorkflowExecution());
 
       } else {
-         addConsoleMessage('info', `Flow "${newFlowData.workflowName || 'Untitled Flow'}" generated but contained no actionable steps.`);
+         addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled Flow'}" generated but contained no actionable steps.`);
          setTimelineEvents([]);
          setNodeExecutionStatus({});
          setConnections([]); 
@@ -469,7 +463,9 @@ export default function LoomStudioPage() {
 
       const updatedNodes = [...currentNodes, nodeWithIdAndStatus];
       return {
-        ...(prevFlow || { message: "Node added to canvas.", userInput: "Custom flow", error: false }),
+        message: prevFlow?.message || "Node added to canvas.", // Retain message if it exists
+        userInput: prevFlow?.userInput || "Custom flow", // Retain userInput
+        error: prevFlow?.error || false, // Retain error state
         nodes: updatedNodes,
         workflowName: newWorkflowName,
       };
@@ -500,7 +496,7 @@ export default function LoomStudioPage() {
 
   const handleNodeUpdate = (updatedNode: WorkflowNodeData) => {
      setGeneratedFlow(prevFlow => {
-      if (!prevFlow || !prevFlow.nodes) return prevFlow;
+      if (!prevFlow) return prevFlow; // prevFlow.nodes is guaranteed by type AiGeneratedFlowData
       const newNodes = prevFlow.nodes.map(n => (n.id === updatedNode.id ? updatedNode : n));
       return { ...prevFlow, nodes: newNodes };
     });
@@ -537,7 +533,7 @@ export default function LoomStudioPage() {
     }
 
     setGeneratedFlow(prevFlow => {
-      if (!prevFlow || !prevFlow.nodes) return prevFlow;
+      if (!prevFlow) return prevFlow; // prevFlow.nodes is guaranteed
       const newNodes = prevFlow.nodes.filter(n => n.id !== nodeId);
       return { ...prevFlow, nodes: newNodes };
     });
@@ -634,7 +630,7 @@ export default function LoomStudioPage() {
     };
 
     setGeneratedFlow(prevFlow => {
-      if (!prevFlow || !prevFlow.nodes) return null; 
+      if (!prevFlow) return null; 
       return {
         ...(prevFlow),
         nodes: prevFlow.nodes.map(n => n.id === nodeId ? updatedNodeData : n),
