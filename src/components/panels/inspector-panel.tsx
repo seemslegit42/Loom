@@ -296,12 +296,12 @@ export function InspectorPanel({
               <h4 className="text-xs font-medium text-primary flex items-center gap-1.5">
                 <FileText className="h-4 w-4" /> Last Simulated Output
               </h4>
-              {(output as any).error ? (
+              {typeof output === 'object' && output !== null && 'error' in output && typeof output.error === 'string' ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle className="text-xs">Error During Simulation</AlertTitle>
+                  <AlertTitle className="text-xs">Task Error During Simulation</AlertTitle>
                   <AlertDescription className="text-xs whitespace-pre-wrap">
-                    {typeof (output as any).error === 'string' ? (output as any).error : JSON.stringify((output as any).error, null, 2)}
+                    {output.error}
                   </AlertDescription>
                 </Alert>
               ) : selectedNode.type === 'web-summarizer' && typeof (output as BackendSummarizeOutput).summary === 'string' ? (
@@ -384,3 +384,5 @@ export function InspectorPanel({
     </BasePanel>
   );
 }
+
+    
