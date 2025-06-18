@@ -4,7 +4,7 @@ import type { GenerateFlowFormState } from '@/lib/actions/ai'; // This type migh
 import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot, BookMarked } from 'lucide-react';
+import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot, BookMarked, Eye } from 'lucide-react';
 import type { PanelVisibility } from '@/app/page';
 import {
   DropdownMenu,
@@ -13,20 +13,22 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
+import type { AiGeneratedFlowData } from '@/app/page';
 
 interface TopBarProps {
-  onFlowGenerated: (data: GenerateFlowFormState) => void; // Adjust GenerateFlowFormState if it's related to the old AI actions
+  onFlowGenerated: (data: AiGeneratedFlowData) => void; 
   panelVisibility: PanelVisibility;
   togglePanel: (panel: keyof PanelVisibility) => void;
   isMobile: boolean;
   anyMobilePanelOpen: boolean;
-  onOpenTemplateSelector: () => void; // New prop for opening template selector
+  onOpenTemplateSelector: () => void; 
 }
 
 export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen, onOpenTemplateSelector }: TopBarProps) {
-  const showAiForm = !isMobile || !anyMobilePanelOpen; // Condition to show AI form
+  const showAiForm = !isMobile || !anyMobilePanelOpen; 
   const { toast } = useToast();
 
   const handleComingSoon = (featureName: string) => {
@@ -35,6 +37,14 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
       description: `${featureName} feature is under development.`,
     });
   };
+
+  const panelToggleItems = [
+    { panel: 'palette' as keyof PanelVisibility, label: 'Palette', icon: <LayoutGrid className="mr-2 h-4 w-4" /> },
+    { panel: 'inspector' as keyof PanelVisibility, label: 'Inspector', icon: <Settings2 className="mr-2 h-4 w-4" /> },
+    { panel: 'agentHub' as keyof PanelVisibility, label: 'Agent Hub', icon: <Bot className="mr-2 h-4 w-4" /> },
+    { panel: 'timeline' as keyof PanelVisibility, label: 'Timeline', icon: <ListOrdered className="mr-2 h-4 w-4" /> },
+    { panel: 'console' as keyof PanelVisibility, label: 'Console', icon: <Terminal className="mr-2 h-4 w-4" /> },
+  ];
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 shadow-sm backdrop-blur-lg sm:px-6 lg:px-8">
@@ -58,46 +68,18 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
                  <FileText className="mr-2 h-4 w-4" /> Docs
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem
-                checked={panelVisibility.palette}
-                onCheckedChange={() => togglePanel('palette')}
-                className="cursor-pointer"
-              >
-                <LayoutGrid className="mr-2 h-4 w-4" />
-                <span>Palette</span>
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={panelVisibility.inspector}
-                onCheckedChange={() => togglePanel('inspector')}
-                className="cursor-pointer"
-              >
-                <Settings2 className="mr-2 h-4 w-4" />
-                <span>Inspector</span>
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={panelVisibility.agentHub}
-                onCheckedChange={() => togglePanel('agentHub')}
-                className="cursor-pointer"
-              >
-                <Bot className="mr-2 h-4 w-4" />
-                <span>Agent Hub</span>
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={panelVisibility.timeline}
-                onCheckedChange={() => togglePanel('timeline')}
-                className="cursor-pointer"
-              >
-                <ListOrdered className="mr-2 h-4 w-4" />
-                <span>Timeline</span>
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={panelVisibility.console}
-                onCheckedChange={() => togglePanel('console')}
-                className="cursor-pointer"
-              >
-                <Terminal className="mr-2 h-4 w-4" />
-                <span>Console</span>
-              </DropdownMenuCheckboxItem>
+              <DropdownMenuLabel>Toggle Panels</DropdownMenuLabel>
+              {panelToggleItems.map(item => (
+                 <DropdownMenuCheckboxItem
+                    key={item.panel}
+                    checked={panelVisibility[item.panel]}
+                    onCheckedChange={() => togglePanel(item.panel)}
+                    className="cursor-pointer"
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </DropdownMenuCheckboxItem>
+              ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleComingSoon("Agent Context")} className="cursor-pointer">
                  <UserCircle className="mr-2 h-4 w-4" /> Agent Context
@@ -113,13 +95,35 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
           Loom Studio
         </h1>
         <Separator orientation="vertical" className={`h-8 ${isMobile ? 'hidden' : 'block'}`} />
-        <nav className={`items-center gap-2 ${isMobile ? 'hidden' : 'flex md:flex'}`}>
+        <nav className={`items-center gap-1 ${isMobile ? 'hidden' : 'flex md:flex'}`}>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => handleComingSoon("Projects")}>
             Projects
           </Button>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={onOpenTemplateSelector}>
             <BookMarked className="mr-1.5 h-4 w-4"/> Templates
           </Button>
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                <Eye className="mr-1.5 h-4 w-4" />
+                View
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>Toggle Panels</DropdownMenuLabel>
+              {panelToggleItems.map(item => (
+                 <DropdownMenuCheckboxItem
+                    key={item.panel}
+                    checked={panelVisibility[item.panel]}
+                    onCheckedChange={() => togglePanel(item.panel)}
+                    className="cursor-pointer"
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => handleComingSoon("Documentation")}>
             Docs
           </Button>
@@ -153,6 +157,3 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
     </header>
   );
 }
-
-
-    
