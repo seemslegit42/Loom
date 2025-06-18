@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { BasePanel } from './base-panel';
-import { Bot, ShieldCheck, ListChecks, UserPlus, PlayCircle, PauseCircle, Globe, MessageSquare, Edit3, Save, XCircle } from 'lucide-react';
+import { Bot, ShieldCheck, ListChecks, UserPlus, PlayCircle, PauseCircle, Globe, MessageSquare, Edit3, Save, XCircle, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -110,7 +110,6 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
   const handleSpawnAgent = () => {
     const profile = agentProfiles[spawnProfileIndex];
     const newAgentId = `superagi-agent-${Date.now()}`;
-    // Count existing agents with the same prefix to create a unique number
     const agentCountForPrefix = agents.filter(a => a.name.startsWith(profile.namePrefix)).length + 1;
     const newAgentName = `${profile.namePrefix} #${agentCountForPrefix}`;
 
@@ -137,6 +136,7 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
     );
     toast({ title: "Agent Hub Action (Simulated)", description: "Attempting to resume all eligible agents (simulation for SuperAGI)." });
     addConsoleMessage('info', 'Agent Hub: Resume all action triggered (simulation for SuperAGI).');
+    addTimelineEvent({ type: 'info', message: 'All eligible agents resumed (simulated).' });
   };
 
   const handlePauseAll = () => {
@@ -147,7 +147,30 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
     );
     toast({ title: "Agent Hub Action (Simulated)", description: "Activating Safe Mode: Pausing all active agents (simulation for SuperAGI).", variant: "secondary" });
     addConsoleMessage('warn', 'Agent Hub: Pause all action triggered (simulation for SuperAGI).');
+    addTimelineEvent({ type: 'info', message: 'All active agents paused (simulated).' });
   };
+
+  const handleToggleAgentStatus = (agentId: string) => {
+    let agentName = "";
+    let newStatus: Agent['status'] = 'idle';
+
+    setAgents(prev =>
+      prev.map(agent => {
+        if (agent.id === agentId) {
+          agentName = agent.name;
+          newStatus = (agent.status === 'active') ? 'paused' : 'active';
+          return { ...agent, status: newStatus };
+        }
+        return agent;
+      })
+    );
+
+    const action = newStatus === 'active' ? 'Resumed' : 'Paused';
+    toast({ title: `Agent ${action} (Simulated)`, description: `Agent "${agentName}" has been ${action.toLowerCase()}.` });
+    addConsoleMessage('info', `Agent "${agentName}" (ID: ${agentId}) ${action.toLowerCase()} (simulated).`);
+    addTimelineEvent({ type: 'info', message: `Agent "${agentName}" ${action.toLowerCase()} (simulated).` });
+  };
+
 
   return (
     <BasePanel
@@ -186,16 +209,32 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
                 <li
                   key={agent.id}
                   className={cn(
-                    "p-2.5 rounded-md bg-card/60 border border-border/40 hover:border-primary/50 transition-colors cursor-pointer group",
+                    "p-2.5 rounded-md bg-card/60 border border-border/40 hover:border-primary/50 transition-colors group",
                     selectedAgent?.id === agent.id && "border-primary ring-1 ring-primary bg-primary/5"
                   )}
-                  onClick={() => handleSelectAgent(agent)}
+                  
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-foreground/90 group-hover:text-primary">{agent.name}</span>
-                    <Badge className={`text-[0.65rem] px-1.5 py-0.5 ${statusColors[agent.status] || 'bg-muted border-muted-foreground/30'}`}>{formatStatusText(agent.status)}</Badge>
+                    <span 
+                      className="text-sm font-medium text-foreground/90 group-hover:text-primary cursor-pointer"
+                      onClick={() => handleSelectAgent(agent)}
+                    >
+                      {agent.name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                       <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-muted-foreground hover:text-primary"
+                          onClick={() => handleToggleAgentStatus(agent.id)}
+                          title={agent.status === 'active' ? "Pause Agent" : "Resume Agent"}
+                        >
+                          {agent.status === 'active' ? <Pause className="h-4 w-4"/> : <Play className="h-4 w-4"/>}
+                       </Button>
+                       <Badge className={`text-[0.65rem] px-1.5 py-0.5 ${statusColors[agent.status] || 'bg-muted border-muted-foreground/30'}`}>{formatStatusText(agent.status)}</Badge>
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground space-y-0.5">
+                  <div className="text-xs text-muted-foreground space-y-0.5" onClick={() => handleSelectAgent(agent)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleSelectAgent(agent)}>
                     <p className="flex items-center gap-1"><ListChecks className="h-3 w-3 text-primary/70" /> Active Tasks: {agent.tasks} | Workload: {agent.workload}</p>
                     <p className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-primary/70" /> Capabilities: {agent.permissions}</p>
                   </div>
@@ -270,6 +309,4 @@ export function AgentHubPanel({ className, onClose, isMobile, addConsoleMessage,
     </BasePanel>
   );
 }
-
-
     
