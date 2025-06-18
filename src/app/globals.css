@@ -4,92 +4,105 @@
 
 @layer base {
   :root {
-    /* PRD Theme Colors */
-    --background: 0 0% 7%; /* #121212 Dark Gray */
-    --foreground: 0 0% 95%; /* Light Gray for text */
+    /* AXEVON Core Color Tokens - Dark Theme */
 
-    --primary: 271 93% 75%; /* #BB86FC Light Purple */
-    --primary-foreground: 270 50% 10%; /* Dark text on primary for contrast */
+    /* Obsidian Black (#1C1934) - Role: Primary Text, Dark Base */
+    --background: 247 35% 15%; /* Obsidian Black */
+    /* Vitreous White (#F5FFFA) - Role: Primary Background, Text Contrast */
+    --foreground: 150 100% 98%; /* Vitreous White (for text) */
 
-    --accent: 337 77% 48%; /* #D81B60 Bright Pink */
-    --accent-foreground: 0 0% 98%; /* Light text on accent */
+    /* Imperial Purple (#6A0DAD) - Role: Primary Brand Color, Dominant UI */
+    --primary: 279 86% 37%;      /* Imperial Purple */
+    --primary-foreground: 150 100% 98%; /* Vitreous White (text on primary) */
 
-    /* Derived Colors */
-    --card: 0 0% 10%; /* Slightly lighter than background */
-    --card-foreground: 0 0% 95%; /* Same as global foreground */
+    /* Roman Aqua (#20B2AA) - Role: Tertiary Accent, Interactive States */
+    --accent: 177 69% 41%;       /* Roman Aqua */
+    --accent-foreground: 150 100% 98%; /* Vitreous White (text on accent) */
 
-    --popover: 0 0% 9%; /* Slightly darker than card or same as card for popovers */
-    --popover-foreground: 0 0% 95%; /* Same as global foreground */
+    /* Patina Green (#3EB991) - Role: Secondary Accent, Success States */
+    --secondary: 160 48% 48%;     /* Patina Green */
+    --secondary-foreground: 150 100% 98%; /* Vitreous White (text on secondary) */
 
-    --secondary: 271 30% 35%; /* A muted, darker purple for secondary elements */
-    --secondary-foreground: 271 80% 90%; /* Light text on secondary */
+    /* Derived & Utility Colors */
+    --card: 247 35% 18%; /* Slightly lighter Obsidian Black */
+    --card-foreground: 150 100% 98%; /* Vitreous White */
 
-    --muted: 0 0% 18%; /* Darker gray for muted elements */
-    --muted-foreground: 0 0% 65%; /* Softer text for muted */
+    --popover: 247 35% 17%; /* Similar to card, for popovers */
+    --popover-foreground: 150 100% 98%; /* Vitreous White */
 
-    --destructive: 0 70% 55%; /* Red for destructive actions */
+    /* Conchoidal Gray (#8C94A8) - Role: Secondary Text, Borders, UI Elements */
+    --muted: 247 35% 25%; /* Darker gray derived from background for muted elements */
+    --muted-foreground: 223 16% 60%; /* Conchoidal Gray (for softer text) */
+
+    /* Destructive actions - standard red for high contrast error states */
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 15%; /* Subtle border */
-    --input: 0 0% 12%; /* Input background, distinct from card */
-    --ring: 271 80% 65%; /* Focus ring, related to primary */
+    /* Conchoidal Gray (#8C94A8) - Explicitly for Borders */
+    --border: 223 16% 60%;  /* Conchoidal Gray */
+    --input: 247 35% 22%;   /* Input background - distinct Obsidian Black variant */
+    --ring: 279 86% 55%;    /* Focus ring - Lighter Imperial Purple */
 
     --radius: 0.5rem;
 
-    /* Chart colors - harmonized with new palette */
-    --chart-1: 271 93% 75%; /* Primary */
-    --chart-2: 337 77% 48%; /* Accent */
-    --chart-3: 200 80% 60%;  /* Contrasting Blue */
-    --chart-4: 150 70% 50%;  /* Contrasting Green/Teal */
-    --chart-5: 50 85% 65%;   /* Contrasting Yellow/Gold */
+    /* Chart colors - using AXEVON palette */
+    /* --chart-1: Imperial Purple (Primary) */
+    --chart-1: 279 86% 37%;
+    /* --chart-2: Roman Aqua (Accent) */
+    --chart-2: 177 69% 41%;
+    /* --chart-3: Patina Green (Secondary) */
+    --chart-3: 160 48% 48%;
+    /* --chart-4: Gilded Accent (#FFD700) - Role: Rare Highlight */
+    --chart-4: 51 100% 50%;
+    /* --chart-5: Conchoidal Gray */
+    --chart-5: 223 16% 60%;
 
-    /* Sidebar variables themed for consistency */
-    --sidebar-background: 0 0% 10%; /* Using card color */
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 271 93% 75%;
-    --sidebar-primary-foreground: 270 50% 10%;
-    --sidebar-accent: 337 77% 48%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 271 80% 65%;
+    /* Sidebar variables themed for consistency - will use the above AXEVON tokens */
+    --sidebar-background: var(--card);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--accent);
+    --sidebar-accent-foreground: var(--accent-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
   }
 
-  .dark {
-    /* Dark theme is default, so .dark can mirror :root */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 95%;
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 271 93% 75%;
-    --primary-foreground: 270 50% 10%;
-    --secondary: 271 30% 35%;
-    --secondary-foreground: 271 80% 90%;
-    --muted: 0 0% 18%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 337 77% 48%;
-    --accent-foreground: 0 0% 98%;
+  .dark { /* Ensure .dark mirrors :root as app is dark-mode first */
+    --background: 247 35% 15%;
+    --foreground: 150 100% 98%;
+    --primary: 279 86% 37%;
+    --primary-foreground: 150 100% 98%;
+    --accent: 177 69% 41%;
+    --accent-foreground: 150 100% 98%;
+    --secondary: 160 48% 48%;
+    --secondary-foreground: 150 100% 98%;
+    --card: 247 35% 18%;
+    --card-foreground: 150 100% 98%;
+    --popover: 247 35% 17%;
+    --popover-foreground: 150 100% 98%;
+    --muted: 247 35% 25%;
+    --muted-foreground: 223 16% 60%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 15%;
-    --input: 0 0% 12%;
-    --ring: 271 80% 65%;
+    --border: 223 16% 60%;
+    --input: 247 35% 22%;
+    --ring: 279 86% 55%;
 
-    --chart-1: 271 93% 75%;
-    --chart-2: 337 77% 48%;
-    --chart-3: 200 80% 60%;
-    --chart-4: 150 70% 50%;
-    --chart-5: 337 70% 65%; /* Corrected one from above */
+    --chart-1: 279 86% 37%;
+    --chart-2: 177 69% 41%;
+    --chart-3: 160 48% 48%;
+    --chart-4: 51 100% 50%;
+    --chart-5: 223 16% 60%;
 
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 271 93% 75%;
-    --sidebar-primary-foreground: 270 50% 10%;
-    --sidebar-accent: 337 77% 48%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 271 80% 65%;
+    --sidebar-background: 247 35% 18%;
+    --sidebar-foreground: 150 100% 98%;
+    --sidebar-primary: 279 86% 37%;
+    --sidebar-primary-foreground: 150 100% 98%;
+    --sidebar-accent: 177 69% 41%;
+    --sidebar-accent-foreground: 150 100% 98%;
+    --sidebar-border: 223 16% 60%;
+    --sidebar-ring: 279 86% 55%;
   }
 }
 
@@ -99,7 +112,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Removed explicit font-family here to let tailwind.config.ts + font-body class rule */
   }
 }
 
