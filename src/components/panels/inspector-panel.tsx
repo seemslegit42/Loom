@@ -1,7 +1,7 @@
 
 // src/components/panels/inspector-panel.tsx
 import { BasePanel } from './base-panel';
-import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2, MessageSquare, Trash2, AlertCircle, FunctionSquare, Binary } from 'lucide-react'; // Added Binary
+import { Settings2, FileText, ShieldCheck, Tags, Type, Workflow, Save, Brain, Info, Fingerprint, Globe, Play, Loader2, MessageSquare, Trash2, AlertCircle, FunctionSquare, Binary } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// Using BackendSummarizeOutput and BackendExecutePromptOutput from page.tsx types for simulated output
 import type { BackendSummarizeOutput, BackendExecutePromptOutput } from '@/app/page';
 
 
@@ -27,7 +28,7 @@ interface InspectorPanelProps {
   onNodeUpdate?: (updatedNode: WorkflowNodeData) => void;
   onNodeDelete?: (nodeId: string) => void;
   isMobile?: boolean;
-  onRunNode?: (nodeId: string) => void; // Will now trigger simulated run
+  onRunNode?: (nodeId: string) => void;
   isNodeRunning?: (nodeId: string) => boolean;
 }
 
@@ -44,7 +45,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
       setEditableTitle(selectedNode.title);
       setEditableDescription(selectedNode.description);
       setEditableStatus(selectedNode.status || 'unknown');
-      setEditableConfig(selectedNode.config || {}); 
+      setEditableConfig(selectedNode.config || {});
     } else {
       setEditableTitle('');
       setEditableDescription('');
@@ -93,11 +94,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
     selectedNode.type === 'conditional'
   );
 
-
   const output = selectedNode?.config?.output;
-  // Cast to appropriate backend types, knowing they might be simulations
-  const summarizerOutput = output as BackendSummarizeOutput | undefined; 
-  const promptOutput = output as BackendExecutePromptOutput | undefined;
 
 
   return (
@@ -181,6 +178,7 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
             />
           </div>
 
+          {/* Node Specific Configuration Inputs */}
           {selectedNode.type === 'web-summarizer' && (
             <div className="space-y-3 p-3 border border-dashed border-border/50 rounded-md bg-card/50">
               <h4 className="text-xs font-medium flex items-center gap-1.5 text-primary">
@@ -196,19 +194,6 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                   className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
                 />
               </div>
-              {summarizerOutput?.summary && (
-                <div className="space-y-1 pt-2">
-                  <Label className="text-xs">Summary Output (Simulated):</Label>
-                  <Textarea value={summarizerOutput.summary} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
-                </div>
-              )}
-              {summarizerOutput?.error && (
-                 <Alert variant="destructive" className="mt-2">
-                   <AlertCircle className="h-4 w-4" />
-                   <AlertTitle className="text-xs">Summarization Error (Simulated)</AlertTitle>
-                   <AlertDescription className="text-xs">{summarizerOutput.error}</AlertDescription>
-                 </Alert>
-              )}
             </div>
           )}
 
@@ -239,19 +224,6 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 />
                  <p className="text-xs text-muted-foreground">Backend (SuperAGI) will determine use.</p>
               </div>
-              {promptOutput?.responseText && (
-                <div className="space-y-1 pt-2">
-                  <Label className="text-xs">LLM Response (Simulated):</Label>
-                  <Textarea value={promptOutput.responseText} readOnly rows={4} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
-                </div>
-              )}
-              {promptOutput?.error && (
-                 <Alert variant="destructive" className="mt-2">
-                   <AlertCircle className="h-4 w-4" />
-                   <AlertTitle className="text-xs">Prompt Execution Error (Simulated)</AlertTitle>
-                   <AlertDescription className="text-xs">{promptOutput.error}</AlertDescription>
-                 </Alert>
-              )}
             </div>
           )}
 
@@ -272,12 +244,6 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 />
                 <p className="text-xs text-muted-foreground">Describe the data transformation. SuperAGI backend will interpret and execute this.</p>
               </div>
-              {output && typeof output === 'object' && Object.keys(output).length > 0 && (
-                <div className="space-y-1 pt-2">
-                  <Label className="text-xs">Last Output (Simulated):</Label>
-                  <Textarea value={JSON.stringify(output, null, 2)} readOnly rows={3} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
-                </div>
-              )}
             </div>
           )}
 
@@ -298,33 +264,52 @@ export function InspectorPanel({ className, onClose, selectedNode, onNodeUpdate,
                 />
                 <p className="text-xs text-muted-foreground">Define the condition. Backend (SuperAGI) will interpret this. Output implies 'true'/'false' paths.</p>
               </div>
-              {/* Output display for conditional logic might be about which path was chosen */}
-               {output && typeof output === 'object' && Object.keys(output).length > 0 && (
-                <div className="space-y-1 pt-2">
-                    <Label className="text-xs">Last Result (Simulated):</Label>
-                    <Textarea value={JSON.stringify(output, null, 2)} readOnly rows={3} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
-                </div>
-              )}
             </div>
           )}
           
-          {/* Placeholder for other node type configurations */}
           {(selectedNode.type !== 'prompt' && selectedNode.type !== 'web-summarizer' && selectedNode.type !== 'data-transform' && selectedNode.type !== 'conditional') && (
             <div className="space-y-1 p-3 border border-dashed border-border/50 rounded-md bg-card/50">
               <h4 className="text-xs font-medium flex items-center gap-1.5 text-primary">
                  Generic Node Configuration
               </h4>
               <p className="text-xs text-muted-foreground">Configuration for '{formatDisplayValue(selectedNode.type)}' nodes will be handled by the SuperAGI backend.</p>
-              {output && typeof output === 'object' && Object.keys(output).length > 0 && (
-                <div className="space-y-1 pt-2">
-                    <Label className="text-xs">Last Output (Simulated):</Label>
-                    <Textarea value={JSON.stringify(output, null, 2)} readOnly rows={3} className="bg-input/50 backdrop-blur-sm border-input/50 text-xs" />
+            </div>
+          )}
+
+          {/* Centralized Output/Error Display Section */}
+          {output && (
+            <div className="mt-3 space-y-2 p-3 border border-dashed border-border/30 rounded-md bg-card/40">
+              <h4 className="text-xs font-medium text-primary flex items-center gap-1.5">
+                <FileText className="h-4 w-4" /> Last Simulated Output
+              </h4>
+              {(output as any).error ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle className="text-xs">Error During Simulation</AlertTitle>
+                  <AlertDescription className="text-xs whitespace-pre-wrap">
+                    {typeof (output as any).error === 'string' ? (output as any).error : JSON.stringify((output as any).error, null, 2)}
+                  </AlertDescription>
+                </Alert>
+              ) : selectedNode.type === 'web-summarizer' && typeof (output as BackendSummarizeOutput).summary === 'string' ? (
+                <div>
+                  <Label className="text-xs">Summary:</Label>
+                  <Textarea value={(output as BackendSummarizeOutput).summary!} readOnly rows={4} className="bg-input/50 text-xs" />
+                </div>
+              ) : selectedNode.type === 'prompt' && typeof (output as BackendExecutePromptOutput).responseText === 'string' ? (
+                <div>
+                  <Label className="text-xs">LLM Response:</Label>
+                  <Textarea value={(output as BackendExecutePromptOutput).responseText!} readOnly rows={4} className="bg-input/50 text-xs" />
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs">Output Data:</Label>
+                  <Textarea value={JSON.stringify(output, null, 2)} readOnly rows={4} className="bg-input/50 text-xs" />
                 </div>
               )}
             </div>
           )}
 
-
+          {/* Action Buttons */}
           {nodeCanRun && (
             <Button
               onClick={() => onRunNode!(selectedNode.id)}
