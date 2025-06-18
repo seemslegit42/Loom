@@ -141,15 +141,19 @@ const initialActionRequests: ActionRequest[] = [
     message: 'Agent "Task Execution Agent" requires a filename for the generated report. Please provide a name (e.g., "monthly_sales.pdf").',
     timestamp: new Date(Date.now() - 1000 * 60 * 2), // 2 minutes ago
     status: 'pending',
+    requiresInput: true,
+    inputPrompt: 'Enter filename:',
   },
-    {
+  {
     id: 'action-req-3',
     agentId: 'superagi-agent-3',
     agentName: 'Content Creation Agent',
     requestType: 'clarification',
-    message: 'Agent "Content Creation Agent" has generated two drafts for the blog post. Should it proceed with Draft A (focus on SEO) or Draft B (focus on engagement)?',
+    message: 'Agent "Content Creation Agent" has generated two drafts for the blog post. Should it proceed with Draft A (focus on SEO) or Draft B (focus on engagement)? Please specify "A" or "B".',
     timestamp: new Date(),
     status: 'pending',
+    requiresInput: true, // Clarification might sometimes require specific input
+    inputPrompt: 'Enter Draft (A/B):',
   },
 ];
 
@@ -245,14 +249,15 @@ export default function LoomStudioPage() {
     const request = actionRequests.find(r => r.id === requestId);
     if (!request) return;
 
-    setActionRequests(prev => prev.filter(r => r.id !== requestId)); // Remove from pending
+    setActionRequests(prev => prev.filter(r => r.id !== requestId)); 
     
-    const logMessage = `Agent Action: Request ID ${requestId} (${request.requestType} from ${request.agentName}) was ${responseStatus}. ${details ? `Details: ${details}` : ''}`;
+    const logMessage = `Agent Action: Request ID ${requestId} (${request.requestType} from ${request.agentName}) was ${responseStatus}. ${details ? `Details: "${details}"` : ''}`;
     addConsoleMessage(responseStatus === 'denied' ? 'warn' : 'info', logMessage);
-    addTimelineEvent({ type: 'info', message: `User responded to agent action: ${request.agentName} - ${responseStatus}` });
+    addTimelineEvent({ type: 'info', message: `User ${responseStatus} agent action: ${request.agentName}.` });
+    
     toast({
       title: `Agent Action ${responseStatus.charAt(0).toUpperCase() + responseStatus.slice(1)}`,
-      description: `Request from ${request.agentName} has been ${responseStatus}.`,
+      description: `Request from ${request.agentName} has been ${responseStatus}. ${details ? `Input: "${details.substring(0, 50)}${details.length > 50 ? "..." : ""}"` : ""}`,
     });
     // In a real system, this would also send the response back to the agent.
   }, [actionRequests, addConsoleMessage, addTimelineEvent, toast]);
@@ -901,3 +906,5 @@ export default function LoomStudioPage() {
     </div>
   );
 }
+
+    

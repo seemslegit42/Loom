@@ -52,8 +52,8 @@ export function ActionConsolePanel({
   requests,
   onRespond,
   isMobile,
-  addConsoleMessage, // To be used if panel actions generate console logs directly
-  addTimelineEvent,  // To be used if panel actions generate timeline events directly
+  addConsoleMessage, 
+  addTimelineEvent,  
 }: ActionConsolePanelProps) {
   const [inputValue, setInputValue] = useState<Record<string, string>>({});
 
@@ -64,7 +64,7 @@ export function ActionConsolePanel({
   const handleSubmitInput = (request: ActionRequest) => {
     const details = inputValue[request.id] || '';
     if (request.requiresInput && !details.trim()) {
-      addConsoleMessage('warn', `Input required for action request: ${request.id}`);
+      addConsoleMessage('warn', `Input required for action request: ${request.id} from ${request.agentName}.`);
       // Potentially show a toast or inline error here
       return;
     }
@@ -86,7 +86,7 @@ export function ActionConsolePanel({
       className={className}
       onClose={onClose}
       isMobile={isMobile}
-      initialSize={{ width: 'auto', height: 'auto' }} // Adjusted height
+      initialSize={{ width: 'auto', height: 'auto' }}
       contentClassName="flex flex-col"
     >
       <ScrollArea className="flex-grow pr-1">
@@ -109,7 +109,7 @@ export function ActionConsolePanel({
                 <p className="text-muted-foreground/90 mb-2 text-[0.78rem] leading-snug ml-6">{req.message}</p>
                 
                 <div className="ml-6 space-y-2">
-                  {req.requestType === 'input' && req.requiresInput && (
+                  {(req.requestType === 'input' || req.requestType === 'clarification') && req.requiresInput && (
                     <div className="flex items-center gap-2">
                       <Input
                         type="text"
@@ -130,8 +130,7 @@ export function ActionConsolePanel({
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2">
-                    {req.requestType !== 'input' || !req.requiresInput ? (
+                  {req.requestType === 'permission' && (
                       <>
                         <Button
                           size="sm"
@@ -150,22 +149,17 @@ export function ActionConsolePanel({
                           <X className="h-3.5 w-3.5 mr-1" /> Deny
                         </Button>
                       </>
-                    ) : null }
-                    {/* If it's an input request that doesn't strictly REQUIRE input to proceed (e.g. optional clarification)
-                        You might still want Approve/Deny type buttons, or rephrase to "Accept Suggestion / Reject Suggestion" etc.
-                        For now, if requiresInput is true, only the input field + submit is shown.
-                    */}
-                     {req.requestType === 'clarification' && ( // Example for clarification, might not need strict input
+                  )}
+                   {req.requestType === 'clarification' && !req.requiresInput && ( 
                        <Button
                         size="sm"
                         variant="secondary"
                         className="flex-1 h-7 text-xs"
-                        onClick={() => handleSubmitInput(req)} // Re-use submit, assumes input might be optional or prefilled
+                        onClick={() => handleSubmitInput(req)} 
                       >
                         Respond
                       </Button>
-                    )}
-                  </div>
+                  )}
                 </div>
               </li>
             ))}
@@ -175,3 +169,5 @@ export function ActionConsolePanel({
     </BasePanel>
   );
 }
+
+    
