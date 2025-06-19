@@ -1,16 +1,18 @@
 
 'use server';
 /**
- * @fileOverview A task for executing a given prompt by calling a backend API.
+ * @fileOverview A task for executing a given prompt.
+ * This task now simulates a direct backend interaction or an LLM call,
+ * as the /api/chat route has been removed in favor of /api/loom/* endpoints.
  *
- * - executePromptTask - A function that handles the LLM call via the backend API.
+ * - executePromptTask - A function that handles the LLM call.
  * - ExecutePromptInput - The input type for the executePromptTask function.
  * - ExecutePromptOutput - The return type for the executePromptTask function.
  */
 
 export interface ExecutePromptInput {
   promptText: string;
-  modelName?: string; // This can be used by the backend API if needed
+  modelName?: string; // This can be used by a backend API if needed
 }
 
 export interface ExecutePromptOutput {
@@ -19,58 +21,23 @@ export interface ExecutePromptOutput {
 }
 
 export async function executePromptTask(input: ExecutePromptInput): Promise<ExecutePromptOutput> {
-  console.log(`[TASK] executePromptTask calling backend API. Prompt: "${input.promptText.substring(0, 50)}..." Model: ${input.modelName || 'default'}`);
+  console.log(`[TASK_SIM] executePromptTask (simulating backend). Prompt: "${input.promptText.substring(0, 50)}..." Model: ${input.modelName || 'default'}`);
 
-  try {
-    const requestBody: any = {
-      messages: [{ role: 'user', content: input.promptText }],
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500));
+
+  if (input.promptText.toLowerCase().includes("error test")) {
+    return {
+      error: "Simulated error during prompt execution (backend task) as requested by 'error test'.",
     };
-
-    if (input.modelName) {
-      requestBody.modelName = input.modelName;
-    }
-
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        // If response is not JSON or other error
-        errorData = { error: `API request failed with status ${response.status}. Response not JSON.` };
-      }
-      console.error("[TASK] API Error Response:", errorData);
-      return { error: errorData.error || `API request failed: ${response.status} ${response.statusText}` };
-    }
-
-    // The /api/chat route returns a stream. We need to read it and accumulate the text.
-    const reader = response.body?.getReader();
-    if (!reader) {
-      return { error: 'Failed to get response reader from API.' };
-    }
-
-    const decoder = new TextDecoder();
-    let accumulatedResponse = "";
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      accumulatedResponse += decoder.decode(value, { stream: true });
-    }
-    // Append any final part of a multi-byte character
-    accumulatedResponse += decoder.decode(undefined, { stream: false });
-
-    return { responseText: accumulatedResponse };
-
-  } catch (error: any) {
-    console.error("[TASK] Error in executePromptTask calling API:", error);
-    return { error: error.message || "An unexpected error occurred calling the backend API." };
   }
+
+  if (!input.promptText.trim()) {
+    return { error: "Prompt text cannot be empty (simulated backend validation)." };
+  }
+
+  // Simulate a successful response
+  return {
+    responseText: `Simulated LLM response (from backend task) to: "${input.promptText}". Model/Agent ID specified: ${input.modelName || 'default/not specified'}. The actual response would come from the configured backend LLM or agent via /api/loom/start or similar.`,
+  };
 }

@@ -1,3 +1,4 @@
+
 // src/components/ai/ai-flow-generator-form.tsx
 'use client';
 
@@ -7,14 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Loader2 } from 'lucide-react';
-import type { AiGeneratedFlowData, WorkflowNodeData } from '@/app/page'; // Will receive updated AiGeneratedFlowData type
-// Updated import to use the new task function
-import { generateDataCleanupTask, type GenerateDataCleanupOutput, type GenerateDataCleanupInput } from '@/tasks/generate-data-cleanup-task';
+import type { AiGeneratedFlowData, WorkflowNodeData } from '@/app/page'; 
 import { generateNodeId } from '@/lib/utils';
 
 
 interface AiFlowGeneratorFormProps {
-  onFlowGenerated: (data: AiGeneratedFlowData) => void; // Type will be updated via import
+  onFlowGenerated: (data: AiGeneratedFlowData) => void;
 }
 
 export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProps) {
@@ -34,65 +33,115 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
     }
 
     setIsLoading(true);
-    console.log(`[AI_FLOW_FORM] Calling task 'generateDataCleanupTask' for input: "${userInput.substring(0, 50)}..."`);
-    
+    let accumulatedResponse = "";
+    let logs = "";
+
     try {
-      // Call the new task function
-      const taskInput: GenerateDataCleanupInput = { userInput };
-      const taskOutput: GenerateDataCleanupOutput = await generateDataCleanupTask(taskInput);
-
-      if (taskOutput.error) {
-        throw new Error(taskOutput.error);
-      }
-
-      const nodes: WorkflowNodeData[] = taskOutput.promptSequence.map((promptText, index) => {
-        let stepTitle = promptText.substring(0, 30);
-        if (stepTitle.length === 30 && promptText.length > 30) stepTitle += "...";
-        
-        const nodeTitle = `${taskOutput.workflowDescription} - ${stepTitle || `Step ${index + 1}`}`;
-        
-        return {
-          id: generateNodeId('ai', taskOutput.workflowDescription, index),
-          title: nodeTitle,
-          description: `AI Generated Step: ${promptText}`,
-          type: 'prompt', 
-          status: 'queued',
-          config: {
-            promptText: promptText,
-          },
-          position: { x: 50 + (index * 20), y: 100 + index * 100 }, 
-        };
+      console.log(`[AI_FLOW_FORM] Calling API /api/loom/start for input: "${userInput.substring(0, 50)}..."`);
+      const response = await fetch('/api/loom/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: userInput }),
       });
 
-      // This generatedData object already includes 'nodes' as a non-optional array
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to parse error response from API." }));
+        throw new Error(errorData.error || `API request failed with status ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error("Response body is empty.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          accumulatedResponse += chunk;
+        }
+      }
+      
+      // Simple parsing of the stream: separate logs from final output
+      const logMarker = "[LOG]";
+      const outputStartMarker = "[STREAMING_OUTPUT_START]";
+      let finalOutput = accumulatedResponse;
+
+      const lines = accumulatedResponse.split('\n');
+      const logLines: string[] = [];
+      const outputLines: string[] = [];
+      let outputStarted = false;
+
+      for (const line of lines) {
+        if (line.startsWith(outputStartMarker)) {
+          outputStarted = true;
+          continue; 
+        }
+        if (line.startsWith(logMarker) && !outputStarted) {
+          logLines.push(line.substring(logMarker.length).trim());
+        } else if (outputStarted) {
+          outputLines.push(line);
+        }
+      }
+      logs = logLines.join('\n');
+      finalOutput = outputLines.join('\n').trim();
+      
+      console.log("[AI_FLOW_FORM] API Response Logs:\n", logs);
+      console.log("[AI_FLOW_FORM] API Final Output:\n", finalOutput);
+
+
+      if (!finalOutput) {
+         throw new Error("No actionable output received from the AI flow generation API.");
+      }
+
+      const workflowName = `Flow for: ${userInput.substring(0, 30)}${userInput.length > 30 ? '...' : ''}`;
+      const nodeTitle = `AI Generated Step for: ${userInput.substring(0, 20)}${userInput.length > 20 ? '...' : ''}`;
+
+      const nodes: WorkflowNodeData[] = [{
+        id: generateNodeId('ai', workflowName, 0),
+        title: nodeTitle,
+        description: `AI Generated Step: ${finalOutput.substring(0, 100)}${finalOutput.length > 100 ? "..." : ""}`,
+        type: 'prompt', 
+        status: 'queued',
+        config: {
+          promptText: finalOutput,
+        },
+        position: { x: 50, y: 100 }, 
+      }];
+
       const generatedData: AiGeneratedFlowData = {
-        message: `Flow "${taskOutput.workflowDescription}" generated successfully with ${nodes.length} steps from AI (simulated task).`,
-        workflowName: taskOutput.workflowDescription,
-        nodes: nodes, // 'nodes' is always present here
+        message: `Flow "${workflowName}" generated successfully by backend AI with ${nodes.length} step(s). Logs: ${logs.substring(0,100)}...`,
+        workflowName: workflowName,
+        nodes: nodes,
         error: false,
         userInput: userInput,
       };
       
       toast({
-        title: "Flow Generated by AI (Simulated Task)",
+        title: "Flow Generated by Backend AI",
         description: generatedData.message,
       });
       onFlowGenerated(generatedData);
 
     } catch (e: any) {
-      console.error("[AI_FLOW_FORM] Error generating flow with task:", e);
-      const errorMessage = e.message || "AI (simulated task) failed to generate a flow from the provided input.";
+      console.error("[AI_FLOW_FORM] Error generating flow with API:", e);
+      const errorMessage = e.message || "AI backend failed to generate a flow from the provided input.";
       
-      // This generatedData object also includes 'nodes' as an empty non-optional array
       const generatedData: AiGeneratedFlowData = {
         message: errorMessage,
         error: true,
         userInput: userInput,
-        nodes: [], // 'nodes' is always present here, even if empty
+        nodes: [], 
       };
 
       toast({
-        title: "AI Flow Generation Failed (Simulated Task)",
+        title: "AI Flow Generation Failed (Backend API)",
         description: errorMessage,
         variant: "destructive",
       });

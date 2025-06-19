@@ -1,4 +1,3 @@
-// This file is intentionally left blank or can be deleted.
-// Server actions related to Genkit AI for flow generation are removed
-// as the application is transitioning to a frontend for a FastAPI SuperAGI backend.
-// Flow generation will be handled by calls to the SuperAGI backend in the future.
+// This file is intentionally left blank.
+// Server actions related to AI flow generation or direct LLM calls
+// will be handled by API routes (/api/loom/*) using the Vercel AI SDK.
