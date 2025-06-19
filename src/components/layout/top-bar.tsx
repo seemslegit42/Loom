@@ -122,7 +122,7 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
         </nav>
       </div>
 
-      <div className={`flex flex-1 items-center justify-center px-2 md:px-4 lg:px-8 transition-opacity duration-300 ${showAiForm ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`flex flex-1 items-center justify-center px-1 sm:px-2 md:px-4 transition-opacity duration-300 ${showAiForm ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="w-full max-w-xl">
          <AiFlowGeneratorForm onFlowGenerated={onFlowGenerated} addConsoleMessage={addConsoleMessage} />
         </div>
@@ -149,4 +149,3 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
     </header>
   );
 }
-

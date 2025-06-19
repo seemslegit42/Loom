@@ -192,7 +192,14 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
       </div>
       <Button type="submit" aria-disabled={isLoading} disabled={isLoading} size="sm">
         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" /> }
-        {isLoading ? 'Generating...' : 'Generate Flow'}
+        {isLoading ? (
+          'Generating...'
+        ) : (
+          <>
+            <span className="hidden sm:inline">Generate Flow</span>
+            <span className="sm:hidden">Generate</span>
+          </>
+        )}
       </Button>
     </form>
   );
