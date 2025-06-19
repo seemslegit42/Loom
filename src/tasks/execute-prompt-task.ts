@@ -19,21 +19,23 @@ export interface ExecutePromptOutput {
 }
 
 export async function executePromptTask(input: ExecutePromptInput): Promise<ExecutePromptOutput> {
-  console.log(`[TASK] executePromptTask calling backend API. Prompt: "${input.promptText.substring(0, 50)}..."`);
+  console.log(`[TASK] executePromptTask calling backend API. Prompt: "${input.promptText.substring(0, 50)}..." Model: ${input.modelName || 'default'}`);
 
   try {
+    const requestBody: any = {
+      messages: [{ role: 'user', content: input.promptText }],
+    };
+
+    if (input.modelName) {
+      requestBody.modelName = input.modelName;
+    }
+
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      // Vercel AI SDK typically expects a 'messages' array.
-      // We adapt our simple prompt to this structure for the API call.
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: input.promptText }],
-        // You could also pass input.modelName here if your API route is designed to use it
-        // model: input.modelName,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

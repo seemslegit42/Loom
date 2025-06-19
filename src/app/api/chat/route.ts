@@ -1,3 +1,4 @@
+
 // src/app/api/chat/route.ts
 import { Groq } from 'groq-sdk';
 import { StreamingTextResponse, LangchainStream, Message as VercelChatMessage } from 'ai';
@@ -12,6 +13,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const messages: VercelChatMessage[] = body.messages ?? [];
     const currentMessageContent = messages[messages.length - 1]?.content;
+    const requestedModelName = body.modelName;
 
     if (!currentMessageContent) {
       return new Response(JSON.stringify({ error: 'Prompt is required in messages' }), {
@@ -28,9 +30,11 @@ export async function POST(req: Request) {
       });
     }
 
+    const resolvedModelName = requestedModelName || process.env.GROQ_MODEL_NAME || "mixtral-8x7b-32768";
+
     const model = new ChatGroq({
       apiKey: groqApiKey,
-      modelName: "mixtral-8x7b-32768", // Or any other model you prefer from Groq
+      modelName: resolvedModelName,
       temperature: 0.7,
     });
 
