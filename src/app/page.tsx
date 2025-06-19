@@ -485,14 +485,18 @@ export default function LoomStudioPage() {
   };
 
   const handleNodeSelected = (node: WorkflowNodeData | null) => {
-    setSelectedNode(node);
     if (node) {
-      setConnectingState(null);
+      setSelectedNode(node);
+      setConnectingState(null); // Cancel any in-progress connection when a node is selected
       addConsoleMessage('log', `Node "${node.title}" (ID: ${node.id}) selected.`);
     } else {
-      if (!connectingState) { 
-        addConsoleMessage('log', `Canvas selected (no node).`);
+      // Canvas background was clicked
+      if (connectingState) {
+        addConsoleMessage('info', `Connection attempt cancelled by clicking canvas background.`);
       }
+      setSelectedNode(null);
+      setConnectingState(null); // Clear connection state
+      addConsoleMessage('log', `Canvas selected (no node).`);
     }
   };
 

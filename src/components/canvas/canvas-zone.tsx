@@ -171,10 +171,13 @@ export function CanvasZone({
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    if (target === e.currentTarget || target.classList.contains('scroll-area-viewport-content') || target.classList.contains('iridescent-aurora-bg')) {
-       if (!connectingState) { 
-        onNodeSelected(null);
-      }
+    // Check if the click is on the canvas background itself, not on a node or other interactive element within it.
+    if (target === canvasRef.current || 
+        target === canvasRef.current?.firstChild || // This usually targets the direct child of ScrollArea, which is the viewport
+        target.classList.contains('scroll-area-viewport-content') || // More specific content div
+        target.closest('.workflow-node-card') === null // Ensure click is not on a node card
+       ) {
+      onNodeSelected(null); // This will deselect any node and potentially cancel connection
     }
   };
 
@@ -207,7 +210,7 @@ export function CanvasZone({
       onMouseMove={handleMouseMove} 
       ref={canvasRef}
     >
-      <div className="p-8 min-h-full relative scroll-area-viewport-content">
+      <div className="p-8 min-h-full relative scroll-area-viewport-content"> {/* Ensure this class is on the direct child for click handling */}
         {workflowName && (
           <div className="mb-8 p-4 bg-card/80 rounded-lg shadow backdrop-blur-md sticky top-4 z-20">
             <h2 className="text-xl font-headline mb-2 text-primary">
@@ -231,6 +234,7 @@ export function CanvasZone({
                 onOutputPortClick={onOutputPortClick} 
                 isConnectingFrom={connectingState?.fromNodeId === node.id}
                 connectingState={connectingState}
+                className="workflow-node-card" // Add a class for more precise click detection
               />
             ))}
         </div>
