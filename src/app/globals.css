@@ -128,17 +128,18 @@
   .iridescent-aurora-bg {
     background: linear-gradient(
       -45deg,
-      hsl(var(--primary)), /* Light Purple */
-      hsl(var(--accent)),  /* Bright Pink - updated from Roman Aqua */
-      hsl(var(--secondary)), /* Patina Green */
-      hsl(var(--primary)) /* Loop back to purple for smoother transition */
+      #1C1934, /* Deep Background Purple */
+      #6A0DAD, /* Imperial Purple */
+      #20B2AA, /* Roman Aqua */
+      #3EB991, /* Patina Green */
+      #1C1934  /* Loop back to Deep Background Purple */
     );
-    background-size: 400% 400%;
-    animation: aurora-bg 20s ease infinite;
+    background-size: 200% 200%;
+    animation: aurora-flow 20s ease infinite;
   }
 }
 
-@keyframes aurora-bg {
+@keyframes aurora-flow {
   0% {
     background-position: 0% 50%;
   }
