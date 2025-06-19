@@ -78,14 +78,14 @@ export function ConsolePanel({
               variant={filters[type] ? "secondary" : "ghost"}
               size="sm"
               className={cn(
-                "text-xs h-6 px-1.5 py-0.5 flex items-center rounded-sm",
+                "text-xs h-6 px-1 py-0.5 flex items-center rounded-sm", // Adjusted padding
                 filters[type] && "border border-primary/50" 
               )}
               onClick={() => onToggleFilter(type)}
               title={`${filters[type] ? 'Hide' : 'Show'} ${type} messages`}
             >
               {getIconForType(type)}
-              <span className="ml-0.5">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+              {/* Text label removed to make buttons icon-only */}
             </Button>
           ))}
         </div>
@@ -124,7 +124,6 @@ export function ConsolePanel({
           <div className="flex items-start text-muted-foreground pt-1 mt-1 border-t border-border/20">
             {getIconForType('log')}
             <span>&gt; Listening for new events...</span>
-            {/* <span className="animate-ping ml-1">_</span> Removed animated underscore */}
           </div>
         )}
         </div>
