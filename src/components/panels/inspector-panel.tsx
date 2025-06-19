@@ -299,7 +299,7 @@ export function InspectorPanel({
               {typeof output === 'object' && output !== null && 'error' in output && typeof output.error === 'string' ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle className="text-xs">Task Error</AlertTitle>
+                  <AlertTitle className="text-sm">Task Error</AlertTitle>
                   <AlertDescription className="text-xs whitespace-pre-wrap">
                     {output.error}
                   </AlertDescription>
@@ -384,5 +384,3 @@ export function InspectorPanel({
     </BasePanel>
   );
 }
-
-
