@@ -5,7 +5,7 @@ import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot, BookMarked, Eye, ShieldQuestion } from 'lucide-react';
-import type { PanelVisibility, AiGeneratedFlowData } from '@/app/page'; // AiGeneratedFlowData type will be updated via import
+import type { PanelVisibility, AiGeneratedFlowData } from '@/app/page'; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +16,12 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
+import type { ConsoleMessage } from '@/components/panels/console-panel';
 
 
 interface TopBarProps {
-  onFlowGenerated: (data: AiGeneratedFlowData) => void; // Type will be updated via import
+  onFlowGenerated: (data: AiGeneratedFlowData) => void; 
+  addConsoleMessage: (type: ConsoleMessage['type'], text: string) => void;
   panelVisibility: PanelVisibility;
   togglePanel: (panel: keyof PanelVisibility) => void;
   isMobile: boolean;
@@ -27,7 +29,7 @@ interface TopBarProps {
   onOpenTemplateSelector: () => void; 
 }
 
-export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen, onOpenTemplateSelector }: TopBarProps) {
+export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen, onOpenTemplateSelector }: TopBarProps) {
   const showAiForm = !isMobile || !anyMobilePanelOpen; 
   const { toast } = useToast();
 
@@ -133,7 +135,7 @@ export function TopBar({ onFlowGenerated, panelVisibility, togglePanel, isMobile
 
       <div className={`flex flex-1 items-center justify-center px-2 md:px-4 lg:px-8 transition-opacity duration-300 ${showAiForm ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="w-full max-w-xl">
-         <AiFlowGeneratorForm onFlowGenerated={onFlowGenerated} />
+         <AiFlowGeneratorForm onFlowGenerated={onFlowGenerated} addConsoleMessage={addConsoleMessage} />
         </div>
       </div>
 

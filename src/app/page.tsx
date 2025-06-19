@@ -35,6 +35,7 @@ export interface AiGeneratedFlowData {
   nodes: WorkflowNodeData[]; 
   error?: boolean;
   userInput?: string;
+  swarmId?: string; // Added to store swarm ID
 }
 
 
@@ -204,6 +205,7 @@ export default function LoomStudioPage() {
   useEffect(() => {
     const fetchConsoleMessages = async () => {
       try {
+        // Querying general 'console_logs'
         const messagesCol = collection(db, 'console_logs');
         const q = query(messagesCol, orderBy('timestamp', 'desc'), limit(50));
         const querySnapshot = await getDocs(q);
@@ -216,7 +218,14 @@ export default function LoomStudioPage() {
             timestamp: (data.timestamp as Timestamp).toDate(),
           });
         });
+        
+        // Querying 'loom_swarms' for specific swarm logs - for general console view
+        // This might be too verbose for the main console, better for specific swarm log view.
+        // For now, let's keep the main console for user actions and top-level API logs.
+        // Swarm-specific logs are available via /api/loom/logs?swarmId=...
+
         setConsoleMessages(prev => [...fetchedMessages.reverse(), ...prev.filter(pm => !fetchedMessages.find(fm => fm.text === pm.text && fm.timestamp.getTime() === pm.timestamp.getTime()))]);
+
       } catch (error) {
         console.error("Error fetching console messages from Firestore:", error);
         const errorMsgText = 'Failed to load console history from Firestore.';
@@ -234,7 +243,9 @@ export default function LoomStudioPage() {
 
   const addConsoleMessage = useCallback(async (type: ConsoleMessage['type'], text: string) => {
     const newMessage: ConsoleMessage = { type, text, timestamp: new Date() };
-    setConsoleMessages(prev => [newMessage, ...prev.slice(0, 199)]);
+    setConsoleMessages(prev => [newMessage, ...prev.slice(0, 199)]); // Keep max 200 messages in local state
+
+    // Persist to general console_logs
     try {
       await addDoc(collection(db, 'console_logs'), {
         type: newMessage.type,
@@ -242,10 +253,11 @@ export default function LoomStudioPage() {
         timestamp: Timestamp.fromDate(newMessage.timestamp),
       });
     } catch (error) {
-      console.error("Error adding console message to Firestore:", error);
-      const errorMsgText = 'Failed to save message to cloud console.';
+      console.error("Error adding console message to Firestore 'console_logs':", error);
+      // Log error to local console, but don't try to save this error message to Firestore to avoid loops
+      const errorMsgText = 'Failed to save message to cloud console (console_logs).';
       const errorMsg: ConsoleMessage = {type: 'error', text: errorMsgText, timestamp: new Date()};
-      setConsoleMessages(prev => {
+        setConsoleMessages(prev => {
         if (!prev.find(pm => pm.text === errorMsgText)) {
           return [errorMsg, ...prev];
         }
@@ -408,6 +420,10 @@ export default function LoomStudioPage() {
     setGeneratedFlow(data); 
     setSelectedNode(null);
     
+    if (data.swarmId) {
+      addConsoleMessage('info', `Backend Swarm ID for this flow: ${data.swarmId}`);
+    }
+
     if (data.error) {
       addConsoleMessage('error', `Failed to generate flow: ${data.message || 'Unknown error'}`);
       setTimelineEvents([]);
@@ -487,15 +503,14 @@ export default function LoomStudioPage() {
   const handleNodeSelected = (node: WorkflowNodeData | null) => {
     if (node) {
       setSelectedNode(node);
-      setConnectingState(null); // Cancel any in-progress connection when a node is selected
+      setConnectingState(null); 
       addConsoleMessage('log', `Node "${node.title}" (ID: ${node.id}) selected.`);
     } else {
-      // Canvas background was clicked
       if (connectingState) {
         addConsoleMessage('info', `Connection attempt cancelled by clicking canvas background.`);
       }
       setSelectedNode(null);
-      setConnectingState(null); // Clear connection state
+      setConnectingState(null); 
       addConsoleMessage('log', `Canvas selected (no node).`);
     }
   };
@@ -577,7 +592,8 @@ export default function LoomStudioPage() {
     setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
     if (selectedNode?.id === nodeId) setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
 
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
+    // Simulate task execution delay
+    // await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
 
     try {
       if (nodeToRun.type === 'web-summarizer') {
@@ -590,6 +606,10 @@ export default function LoomStudioPage() {
           const taskInput: SummarizeWebpageInput = { url };
           nodeOutput = await summarizeWebpageTask(taskInput);
           if (nodeOutput.error) nodeError = nodeOutput.error;
+          // For web-summarizer, logs from the task might be interesting to show
+          if (nodeOutput.logs && nodeOutput.logs.length > 0) {
+             nodeOutput.logs.forEach(log => addConsoleMessage('log', `[Task: ${nodeToRun.title}] ${log}`));
+          }
         }
       } else if (nodeToRun.type === 'prompt') {
         const promptText = nodeToRun.config?.promptText;
@@ -604,21 +624,16 @@ export default function LoomStudioPage() {
           if (nodeOutput.error) nodeError = nodeOutput.error;
         }
       } else {
-        if (Math.random() > 0.2) { 
-            let simulatedResult: Record<string, any> = { simulatedOutput: `Output from simulated task for '${nodeToRun.type}' node. Title: ${nodeToRun.title}.`};
-            if (nodeToRun.type === 'data-transform' && nodeToRun.config?.transformationLogic) {
-                simulatedResult.appliedLogic = nodeToRun.config.transformationLogic;
-                simulatedResult.transformedData = { original: "some_input", new_format: "transformed_output_based_on_logic"};
-            } else if (nodeToRun.type === 'conditional' && nodeToRun.config?.condition) {
-                simulatedResult.conditionChecked = nodeToRun.config.condition;
-                simulatedResult.conditionResult = Math.random() > 0.5; 
-                simulatedResult.message = `Condition evaluated to ${simulatedResult.conditionResult}.`;
-            }
-            nodeOutput = simulatedResult;
-        } else { 
-            nodeError = `Simulated task error during execution of '${nodeToRun.type}' node: ${nodeToRun.title}.`;
-            nodeOutput = { error: nodeError };
-        }
+        // For other node types, we still simulate for now as their "real" tasks aren't built
+        // To align with "no simulation", this part should eventually call real backend agents/tools.
+        // For now, we log that it's a placeholder action.
+        addConsoleMessage('warn', `Execution for node type '${nodeToRun.type}' (${nodeToRun.title}) is currently a placeholder. No real backend task executed.`);
+        nodeOutput = { 
+            simulatedOutput: `Output from placeholder execution for '${nodeToRun.type}' node. Title: ${nodeToRun.title}.`,
+            message: "This node type's execution is not fully implemented with a real backend task yet."
+        };
+        // Simulate a successful completion for placeholder nodes for now
+        nodeError = undefined; 
       }
       finalStatus = nodeError ? 'failed' : 'completed';
     } catch (e: any) {
@@ -787,6 +802,7 @@ export default function LoomStudioPage() {
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <TopBar
         onFlowGenerated={handleFlowGenerated}
+        addConsoleMessage={addConsoleMessage} 
         panelVisibility={panelVisibility}
         togglePanel={togglePanel}
         isMobile={isMobile}

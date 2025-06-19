@@ -39,3 +39,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to process step in Loom swarm.' }, { status: 500 });
   }
 }
+

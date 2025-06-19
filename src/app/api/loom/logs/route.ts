@@ -48,3 +48,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to retrieve logs.' }, { status: 500 });
   }
 }
+

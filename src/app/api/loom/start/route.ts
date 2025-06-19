@@ -1,45 +1,63 @@
 
 import {NextRequest, NextResponse} from 'next/server';
-import { startSimpleSwarm } from '@/lib/loom/orchestrator';
+import { startGenericPromptSwarm, startWebSummarizationSwarm } from '@/lib/loom/orchestrator';
 import { toDataStreamResponse, type AIStreamCallbacksAndOptions } from '@ai-sdk/ui-utils';
 
 export const runtime = 'edge'; // Prefer edge runtime for streaming APIs
 
 export async function POST(req: NextRequest) {
   try {
-    const { topic, initialContent, prompt } = await req.json();
+    const { workflowType, inputData, prompt } = await req.json();
 
-    if (!topic && !initialContent && !prompt) {
+    // Fallback for older requests that might only send `prompt`
+    if (!workflowType && prompt) {
+      const streamCallbacks: AIStreamCallbacksAndOptions = {
+        onStart: async () => console.log('[API /loom/start] Generic prompt stream started (legacy path).'),
+        onCompletion: async () => console.log('[API /loom/start] Generic prompt stream completed (legacy path).'),
+        onFinal: async () => console.log('[API /loom/start] Generic prompt stream finalized (legacy path).'),
+      };
+      const aiStream = await startGenericPromptSwarm(prompt, prompt, streamCallbacks);
+      return toDataStreamResponse(aiStream);
+    }
+
+    if (!workflowType || !inputData) {
       return NextResponse.json(
-        { error: 'Either "topic" and "initialContent", or "prompt" must be provided.' },
+        { error: '"workflowType" and "inputData" must be provided.' },
         { status: 400 },
       );
     }
     
-    const currentTopic = topic || prompt;
-    // Ensure initialContent has a fallback if only prompt is given, or if topic is given but initialContent is not.
-    const currentInitialContent = initialContent || prompt || "Please process this request based on the topic.";
-
-
     const streamCallbacks: AIStreamCallbacksAndOptions = {
       onStart: async () => {
-        console.log('[API /loom/start] Stream started via orchestrator.');
+        console.log(`[API /loom/start] Stream started for workflow: ${workflowType}.`);
       },
-      onToken: async (token) => {
-        // console.log('[API /loom/start] Token received:', token); // Can be too verbose
+      onCompletion: async () => {
+        console.log(`[API /loom/start] Stream completed for workflow: ${workflowType}.`);
       },
-      onCompletion: async (completion) => {
-        console.log('[API /loom/start] Stream completed.');
-      },
-      onFinal: async (completion) => {
-        console.log('[API /loom/start] Stream finalized.');
+      onFinal: async () => {
+         console.log(`[API /loom/start] Stream finalized for workflow: ${workflowType}.`);
       }
     };
 
-    // startSimpleSwarm now returns an AIStream-compatible object
-    const aiStream = await startSimpleSwarm(currentTopic, currentInitialContent, streamCallbacks);
+    let aiStream;
+
+    switch (workflowType) {
+      case 'genericPrompt':
+        if (typeof inputData !== 'string') {
+          return NextResponse.json({ error: 'For "genericPrompt", inputData must be a string.' }, { status: 400 });
+        }
+        aiStream = await startGenericPromptSwarm(inputData, inputData, streamCallbacks);
+        break;
+      case 'webSummarization':
+        if (typeof inputData !== 'object' || !inputData.url || typeof inputData.url !== 'string') {
+          return NextResponse.json({ error: 'For "webSummarization", inputData must be an object with a "url" string property.' }, { status: 400 });
+        }
+        aiStream = await startWebSummarizationSwarm(inputData.url, streamCallbacks);
+        break;
+      default:
+        return NextResponse.json({ error: `Unsupported workflowType: ${workflowType}` }, { status: 400 });
+    }
     
-    // Use toDataStreamResponse to correctly handle the AIStream for the client
     return toDataStreamResponse(aiStream);
 
   } catch (error: any) {
@@ -50,4 +68,3 @@ export async function POST(req: NextRequest) {
     });
   }
 }
-

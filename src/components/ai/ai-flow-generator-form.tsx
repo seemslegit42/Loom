@@ -10,13 +10,15 @@ import { useToast } from '@/hooks/use-toast';
 import { Send, Loader2 } from 'lucide-react';
 import type { AiGeneratedFlowData, WorkflowNodeData } from '@/app/page'; 
 import { generateNodeId } from '@/lib/utils';
+import type { ConsoleMessage } from '@/components/panels/console-panel';
 
 
 interface AiFlowGeneratorFormProps {
   onFlowGenerated: (data: AiGeneratedFlowData) => void;
+  addConsoleMessage: (type: ConsoleMessage['type'], text: string) => void;
 }
 
-export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProps) {
+export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFlowGeneratorFormProps) {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -33,17 +35,23 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
     }
 
     setIsLoading(true);
-    let accumulatedResponse = "";
-    let accumulatedLogs = "";
+    let finalOutput = "";
+    let partialChunk = ""; // To store incomplete lines between chunks
+
+    const logMarker = "[LOG]";
+    const outputStartMarker = "[STREAMING_OUTPUT_START]";
+    const errorMarker = "[ERROR]";
+    let outputStarted = false;
+    let apiErrorFound = "";
 
     try {
-      console.log(`[AI_FLOW_FORM] Calling API /api/loom/start for input: "${userInput.substring(0, 50)}..."`);
+      addConsoleMessage('log', `[AI_FLOW_FORM] Calling API /api/loom/start for input: "${userInput.substring(0, 50)}..."`);
       const response = await fetch('/api/loom/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: userInput }), // Sending as a general prompt
+        body: JSON.stringify({ prompt: userInput }),
       });
 
       if (!response.ok) {
@@ -63,69 +71,72 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
         if (value) {
-          const chunk = decoder.decode(value, { stream: true });
-          accumulatedResponse += chunk;
-        }
-      }
-      
-      // Parse the stream: separate logs from final output
-      const logMarker = "[LOG]";
-      const outputStartMarker = "[STREAMING_OUTPUT_START]";
-      const errorMarker = "[ERROR]";
-      let finalOutput = "";
-      const logLines: string[] = [];
-      let outputStarted = false;
-      let apiErrorFound = "";
+          const decodedChunk = decoder.decode(value, { stream: true });
+          const currentBuffer = partialChunk + decodedChunk;
+          const lines = currentBuffer.split('\n');
+          
+          // The last line might be incomplete, so keep it for the next chunk
+          partialChunk = lines.pop() || ""; 
 
-      const lines = accumulatedResponse.split('\n');
-      for (const line of lines) {
-        if (line.startsWith(errorMarker)) {
-          apiErrorFound = line.substring(errorMarker.length).trim();
-          break; 
-        }
-        if (line.startsWith(outputStartMarker)) {
-          outputStarted = true;
-          const contentAfterMarker = line.substring(outputStartMarker.length);
-          if(contentAfterMarker.trim()) finalOutput += contentAfterMarker + '\n'; // Add content on the same line
-          continue; 
-        }
-        if (line.startsWith(logMarker) && !outputStarted) {
-          logLines.push(line.substring(logMarker.length).trim());
-        } else if (outputStarted) {
-          finalOutput += line + '\n';
+          for (const line of lines) {
+            if (line.startsWith(errorMarker)) {
+              apiErrorFound = line.substring(errorMarker.length).trim();
+              addConsoleMessage('error', `API Error: ${apiErrorFound}`);
+              break; 
+            }
+            if (line.startsWith(outputStartMarker)) {
+              outputStarted = true;
+              addConsoleMessage('log', 'Backend AI stream started.');
+              const contentAfterMarker = line.substring(outputStartMarker.length);
+              if(contentAfterMarker.trim()) finalOutput += contentAfterMarker + '\n';
+              continue; 
+            }
+            if (line.startsWith(logMarker) && !outputStarted) {
+              const logMsg = line.substring(logMarker.length).trim();
+              addConsoleMessage('log', `Backend: ${logMsg}`);
+            } else if (outputStarted) {
+              finalOutput += line + '\n';
+            }
+          }
+          if (apiErrorFound) break;
         }
       }
-      accumulatedLogs = logLines.join('\n');
-      finalOutput = finalOutput.trim();
       
-      console.log("[AI_FLOW_FORM] API Response Logs:\n", accumulatedLogs);
-      console.log("[AI_FLOW_FORM] API Final Output:\n", finalOutput);
+      // Process any remaining partial chunk if it's the end of the stream
+      if (partialChunk && outputStarted && !apiErrorFound) {
+        finalOutput += partialChunk + '\n';
+      } else if (partialChunk && partialChunk.startsWith(logMarker) && !outputStarted && !apiErrorFound) {
+         const logMsg = partialChunk.substring(logMarker.length).trim();
+         if (logMsg) addConsoleMessage('log', `Backend: ${logMsg}`);
+      }
+
 
       if (apiErrorFound) {
         throw new Error(`API returned an error: ${apiErrorFound}`);
       }
 
-      if (!finalOutput && !apiErrorFound) { // If no error marker, but also no output
-         throw new Error("No actionable output received from the AI flow generation API. Logs: " + accumulatedLogs.substring(0, 200) + "...");
+      if (!finalOutput && !apiErrorFound) {
+         addConsoleMessage('warn', "No actionable output received from the AI flow generation API.");
+         // No longer throwing an error, allow empty flow generation if backend just sends logs.
       }
 
       const workflowName = `Flow for: ${userInput.substring(0, 30)}${userInput.length > 30 ? '...' : ''}`;
       const nodeTitle = `AI Generated Step for: ${userInput.substring(0, 20)}${userInput.length > 20 ? '...' : ''}`;
 
-      const nodes: WorkflowNodeData[] = [{
+      const nodes: WorkflowNodeData[] = finalOutput.trim() ? [{ // Only create node if there's final output
         id: generateNodeId('ai', workflowName, 0),
         title: nodeTitle,
         description: `AI Generated Step: ${finalOutput.substring(0, 100)}${finalOutput.length > 100 ? "..." : ""}`,
         type: 'prompt', 
         status: 'queued',
         config: {
-          promptText: finalOutput,
+          promptText: finalOutput.trim(),
         },
         position: { x: 50, y: 100 }, 
-      }];
+      }] : [];
 
       const generatedData: AiGeneratedFlowData = {
-        message: `Flow "${workflowName}" generated successfully by backend AI. Logs: ${accumulatedLogs.substring(0,100)}...`,
+        message: `Flow "${workflowName}" generation process completed. ${nodes.length > 0 ? 'Node created.' : 'No node created from output.'}`,
         workflowName: workflowName,
         nodes: nodes,
         error: false,
@@ -133,7 +144,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
       };
       
       toast({
-        title: "Flow Generated by Backend AI",
+        title: "Flow Generation Complete",
         description: generatedData.message,
       });
       onFlowGenerated(generatedData);
@@ -141,6 +152,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
     } catch (e: any) {
       console.error("[AI_FLOW_FORM] Error generating flow with API:", e);
       const errorMessage = e.message || "AI backend failed to generate a flow from the provided input.";
+      addConsoleMessage('error', `Flow Generation Error: ${errorMessage}`);
       
       const generatedData: AiGeneratedFlowData = {
         message: errorMessage,
