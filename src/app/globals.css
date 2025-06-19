@@ -4,20 +4,20 @@
 
 @layer base {
   :root {
-    /* Loom Studio Core Color Tokens - Dark Theme */
+    /* Loom Studio Core Color Tokens - Updated Brand Palette */
 
-    /* Background: Dark Gray (#121212) */
-    --background: 0 0% 7%;
+    /* Background: Obsidian Black (#1C1934) */
+    --background: 247 35% 15%;
     /* Foreground: Vitreous White (#F5FFFA) */
     --foreground: 150 100% 98%;
 
-    /* Primary: Light Purple (#BB86FC) */
-    --primary: 266 95% 79%;
-    /* Primary Foreground: Obsidian Black (#1C1934) - for text on light purple */
-    --primary-foreground: 247 35% 15%;
+    /* Primary: Imperial Purple (#6A0DAD) */
+    --primary: 275 50% 42%;
+    /* Primary Foreground: Vitreous White (#F5FFFA) - for text on Imperial Purple */
+    --primary-foreground: 150 100% 98%;
 
-    /* Accent: Bright Pink (#D81B60) */
-    --accent: 340 76% 49%;
+    /* Accent: Roman Aqua (#20B2AA) */
+    --accent: 175 69% 42%;
     /* Accent Foreground: Vitreous White (#F5FFFA) */
     --accent-foreground: 150 100% 98%;
 
@@ -33,8 +33,8 @@
     --popover: 247 35% 15%; /* Obsidian Black */
     --popover-foreground: 150 100% 98%; /* Vitreous White */
 
-    /* Muted elements background: Slightly lighter than main background */
-    --muted: 0 0% 12%; /* e.g., #1F1F1F */
+    /* Muted elements background: Slightly lighter than main background for subtle differentiation if needed */
+    --muted: 247 35% 20%; /* e.g., a slightly lighter Obsidian Black */
     /* Muted Foreground: Conchoidal Gray (#8C94A8) */
     --muted-foreground: 223 16% 60%;
 
@@ -46,14 +46,14 @@
     --border: 223 16% 60%;
     /* Input Background: Obsidian Black (#1C1934) */
     --input: 247 35% 15%;
-    /* Ring: Lighter Light Purple */
-    --ring: 266 95% 85%;
+    /* Ring: Imperial Purple (#6A0DAD) */
+    --ring: 275 50% 42%;
 
     --radius: 0.5rem;
 
     /* Chart colors */
-    --chart-1: 266 95% 79%; /* Primary - Light Purple */
-    --chart-2: 340 76% 49%; /* Accent - Bright Pink */
+    --chart-1: 275 50% 42%; /* Primary - Imperial Purple */
+    --chart-2: 175 69% 42%; /* Accent - Roman Aqua */
     --chart-3: 160 48% 48%; /* Secondary - Patina Green */
     --chart-4: 51 100% 50%; /* Gilded Accent - #FFD700 */
     --chart-5: 223 16% 60%; /* Conchoidal Gray */
@@ -61,20 +61,20 @@
     /* Sidebar variables - using the new Loom Studio tokens */
     --sidebar-background: var(--card); /* Obsidian Black */
     --sidebar-foreground: var(--foreground); /* Vitreous White */
-    --sidebar-primary: var(--primary); /* Light Purple */
-    --sidebar-primary-foreground: var(--primary-foreground); /* Obsidian Black */
-    --sidebar-accent: var(--accent); /* Bright Pink */
+    --sidebar-primary: var(--primary); /* Imperial Purple */
+    --sidebar-primary-foreground: var(--primary-foreground); /* Vitreous White */
+    --sidebar-accent: var(--accent); /* Roman Aqua */
     --sidebar-accent-foreground: var(--accent-foreground); /* Vitreous White */
     --sidebar-border: var(--border); /* Conchoidal Gray */
-    --sidebar-ring: var(--ring); /* Lighter Light Purple */
+    --sidebar-ring: var(--ring); /* Imperial Purple */
   }
 
   .dark { /* Ensure .dark mirrors :root as app is dark-mode first */
-    --background: 0 0% 7%;
+    --background: 247 35% 15%;
     --foreground: 150 100% 98%;
-    --primary: 266 95% 79%;
-    --primary-foreground: 247 35% 15%;
-    --accent: 340 76% 49%;
+    --primary: 275 50% 42%;
+    --primary-foreground: 150 100% 98%;
+    --accent: 175 69% 42%;
     --accent-foreground: 150 100% 98%;
     --secondary: 160 48% 48%;
     --secondary-foreground: 150 100% 98%;
@@ -82,28 +82,28 @@
     --card-foreground: 150 100% 98%;
     --popover: 247 35% 15%;
     --popover-foreground: 150 100% 98%;
-    --muted: 0 0% 12%;
+    --muted: 247 35% 20%;
     --muted-foreground: 223 16% 60%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
     --border: 223 16% 60%;
     --input: 247 35% 15%;
-    --ring: 266 95% 85%;
+    --ring: 275 50% 42%;
 
-    --chart-1: 266 95% 79%;
-    --chart-2: 340 76% 49%;
+    --chart-1: 275 50% 42%;
+    --chart-2: 175 69% 42%;
     --chart-3: 160 48% 48%;
     --chart-4: 51 100% 50%;
     --chart-5: 223 16% 60%;
 
     --sidebar-background: 247 35% 15%;
     --sidebar-foreground: 150 100% 98%;
-    --sidebar-primary: 266 95% 79%;
-    --sidebar-primary-foreground: 247 35% 15%;
-    --sidebar-accent: 340 76% 49%;
+    --sidebar-primary: 275 50% 42%;
+    --sidebar-primary-foreground: 150 100% 98%;
+    --sidebar-accent: 175 69% 42%;
     --sidebar-accent-foreground: 150 100% 98%;
     --sidebar-border: 223 16% 60%;
-    --sidebar-ring: 266 95% 85%;
+    --sidebar-ring: 275 50% 42%;
   }
 }
 
@@ -128,7 +128,7 @@
   .iridescent-aurora-bg {
     background: linear-gradient(
       -45deg,
-      #1C1934, /* Deep Background Purple */
+      #1C1934, /* Deep Background Purple (Obsidian Black) */
       #6A0DAD, /* Imperial Purple */
       #20B2AA, /* Roman Aqua */
       #3EB991, /* Patina Green */
