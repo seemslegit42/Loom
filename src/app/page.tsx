@@ -18,7 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
 import { ResizableHorizontalPanes } from '@/components/layout/resizable-horizontal-panes';
-import { ResizableVerticalPanes } from '@/components/layout/resizable-vertical-panes'; 
+import { ResizableVerticalPanes } from '@/components/layout/resizable-vertical-panes';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 
@@ -32,10 +32,10 @@ export interface BackendExecutePromptOutput extends ExecutePromptOutput {}
 export interface AiGeneratedFlowData {
   message: string | null;
   workflowName?: string;
-  nodes: WorkflowNodeData[]; 
+  nodes: WorkflowNodeData[];
   error?: boolean;
   userInput?: string;
-  swarmId?: string; 
+  swarmId?: string;
 }
 
 
@@ -53,7 +53,7 @@ export interface PanelVisibility {
 
 export interface ConnectingState {
   fromNodeId: string;
-  fromPortElement: HTMLDivElement | null; 
+  fromPortElement: HTMLDivElement | null;
 }
 
 const exampleTemplates: WorkflowTemplate[] = [];
@@ -71,7 +71,7 @@ export default function LoomStudioPage() {
     timeline: true,
     console: true,
     agentHub: true,
-    actionConsole: true, 
+    actionConsole: true,
   });
   const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
@@ -93,7 +93,7 @@ export default function LoomStudioPage() {
     const fetchConsoleMessages = async () => {
       try {
         const generalMessagesCol = collection(db, 'console_logs');
-        const generalQuery = query(generalMessagesCol, orderBy('timestamp', 'desc'), limit(25)); 
+        const generalQuery = query(generalMessagesCol, orderBy('timestamp', 'desc'), limit(25));
         const generalSnapshot = await getDocs(generalQuery);
         let fetchedMessages: ConsoleMessage[] = [];
         generalSnapshot.forEach((doc) => {
@@ -114,7 +114,7 @@ export default function LoomStudioPage() {
                  swarmData.logStream.forEach((logEntry: any) => {
                     if (logEntry.message && logEntry.timestamp) {
                         fetchedMessages.push({
-                            type: 'log', 
+                            type: 'log',
                             text: `[Swarm: ${generatedFlow.swarmId?.substring(0,8)}] ${logEntry.message}`,
                             timestamp: (logEntry.timestamp as Timestamp).toDate(),
                         });
@@ -122,9 +122,9 @@ export default function LoomStudioPage() {
                  });
              }
           }
-          
+
           const swarmSubLogsCol = collection(db, 'loom_swarms', generatedFlow.swarmId, 'logs');
-          const swarmSubQuery = query(swarmSubLogsCol, orderBy('timestamp', 'asc'), limit(25)); 
+          const swarmSubQuery = query(swarmSubLogsCol, orderBy('timestamp', 'asc'), limit(25));
           const swarmSubSnapshot = await getDocs(swarmSubQuery);
           swarmSubSnapshot.forEach((doc) => {
             const data = doc.data();
@@ -135,9 +135,9 @@ export default function LoomStudioPage() {
             });
           });
         }
-        
+
         fetchedMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-        fetchedMessages = fetchedMessages.slice(0, 50); 
+        fetchedMessages = fetchedMessages.slice(0, 50);
 
         setConsoleMessages(prev => [...fetchedMessages.reverse(), ...prev.filter(pm => !fetchedMessages.find(fm => fm.text === pm.text && fm.timestamp.getTime() === pm.timestamp.getTime()))]);
 
@@ -146,7 +146,7 @@ export default function LoomStudioPage() {
         const errorMsgText = 'Failed to load console history from Firestore.';
         const errorMsg: ConsoleMessage = {type: 'error', text: errorMsgText, timestamp: new Date()};
         setConsoleMessages(prev => {
-           if (!prev.find(pm => pm.text === errorMsgText)) { 
+           if (!prev.find(pm => pm.text === errorMsgText)) {
             return [errorMsg, ...prev];
           }
           return prev;
@@ -164,7 +164,7 @@ export default function LoomStudioPage() {
       if (swarmIdForLog) {
         await addDoc(collection(db, 'loom_swarms', swarmIdForLog, 'logs'), {
           type: newMessage.type,
-          text: newMessage.text, 
+          text: newMessage.text,
           timestamp: Timestamp.fromDate(newMessage.timestamp),
         });
       } else {
@@ -196,64 +196,64 @@ export default function LoomStudioPage() {
     const request = actionRequests.find(r => r.id === requestId);
     if (!request) return;
 
-    setActionRequests(prev => prev.filter(r => r.id !== requestId)); 
-    
-    const logMessage = `Agent Action: Request ID ${requestId} (${request.requestType} from ${request.agentName}) was ${responseStatus}. ${details ? `Details: "${details}"` : ''}`;
+    // No local state update for actionRequests as it's not real data
+    // setActionRequests(prev => prev.filter(r => r.id !== requestId));
+
+    const logMessage = `Agent Action: Request ID ${requestId} (${request.requestType} from ${request.agentName}) was ${responseStatus}. ${details ? `Details: "${details}"` : ''}. (Local UI - backend interaction pending)`;
     addConsoleMessage('info', logMessage);
-    addTimelineEvent({ type: 'info', message: `User ${responseStatus} agent action: ${request.agentName}.` });
-    
+    addTimelineEvent({ type: 'info', message: `User ${responseStatus} agent action: ${request.agentName}. (Local UI)` });
+
     toast({
-      title: `Agent Action ${responseStatus.charAt(0).toUpperCase() + responseStatus.slice(1)}`,
-      description: `Request from ${request.agentName} has been ${responseStatus}. ${details ? `Input: "${details.substring(0, 50)}${details.length > 50 ? "..." : ""}"` : ""}`,
+      title: `Agent Action ${responseStatus.charAt(0).toUpperCase() + responseStatus.slice(1)} (Local UI)`,
+      description: `Request from ${request.agentName} (ID: ${requestId.substring(0,8)}) has been marked ${responseStatus}. ${details ? `Input: "${details.substring(0, 50)}${details.length > 50 ? "..." : ""}"` : ""} Backend processing pending.`,
     });
   }, [actionRequests, addConsoleMessage, addTimelineEvent, toast]);
 
 
-  useEffect(() => {
-    if (isMobile) {
-      setPanelVisibility({ palette: false, inspector: false, timeline: false, console: false, agentHub: false, actionConsole: false });
-    } else {
-      setPanelVisibility({ palette: true, inspector: true, timeline: true, console: true, agentHub: true, actionConsole: true });
-    }
+ useEffect(() => {
+    // No automatic panel visibility changes based on isMobile anymore
+    // Keep current visibility unless explicitly changed by user
+    // This avoids resetting panel visibility when window is resized.
   }, [isMobile]);
+
 
   const visualizeWorkflowExecution = useCallback(async () => {
     if (!generatedFlow || generatedFlow.nodes.length === 0 || !generatedFlow.workflowName) {
-        addConsoleMessage('warn', 'No workflow or nodes available to visualize (or visualization simplified).');
+        addConsoleMessage('warn', 'No workflow or nodes available to visualize.');
         return;
     }
-    
+
     const currentNodes = generatedFlow.nodes;
     const workflowName = generatedFlow.workflowName;
 
-    addConsoleMessage('info', `Initializing node statuses for workflow: "${workflowName}".`);
-    addTimelineEvent({ type: 'workflow_start', message: `Workflow "${workflowName}" initialized on canvas.` });
+    addConsoleMessage('info', `Workflow "${workflowName}" initialized for display on canvas.`);
+    addTimelineEvent({ type: 'workflow_start', message: `Workflow "${workflowName}" displayed.` });
 
     const initialStatuses: Record<string, NodeStatus> = {};
     currentNodes.forEach(node => {
-      initialStatuses[node.id] = 'queued'; 
-      addTimelineEvent({ nodeId: node.id, nodeTitle: node.title, type: 'node_queued', message: `Node "${node.title}" initialized to queued.` });
+      initialStatuses[node.id] = 'queued'; // All nodes start as queued
+      addTimelineEvent({ nodeId: node.id, nodeTitle: node.title, type: 'node_queued', message: `Node "${node.title}" set to 'queued'.` });
     });
     setNodeExecutionStatus(initialStatuses);
 
-    addConsoleMessage('info', `Workflow "${workflowName}" node statuses set to 'queued'. Awaiting user action or full workflow execution.`);
+    addConsoleMessage('info', `Workflow "${workflowName}" node statuses initialized to 'queued'. Awaiting user action or further backend execution signals.`);
 
   }, [generatedFlow, addConsoleMessage, addTimelineEvent, setNodeExecutionStatus]);
 
 
   const handleFlowGenerated = useCallback((data: AiGeneratedFlowData) => {
-    setGeneratedFlow(data); 
+    setGeneratedFlow(data);
     setSelectedNode(null);
-    
+
     if (data.swarmId) {
       addConsoleMessage('info', `Backend Swarm ID for this flow: ${data.swarmId}`);
     }
 
     if (data.error) {
       addConsoleMessage('error', `Failed to generate flow: ${data.message || 'Unknown error'}`);
-      setTimelineEvents([]);
-      setNodeExecutionStatus({});
-      setConnections([]); 
+      setTimelineEvents([]); // Clear timeline for error state
+      setNodeExecutionStatus({}); // Clear statuses
+      setConnections([]); // Clear connections
     } else {
       if (data.nodes.length > 0 && data.workflowName) {
         addConsoleMessage('info', `Flow "${data.workflowName}" generated with ${data.nodes.length} steps. Preparing for display...`);
@@ -268,14 +268,15 @@ export default function LoomStudioPage() {
         }
         setConnections(newConnections);
         addConsoleMessage('info', `Auto-created ${newConnections.length} connections for the generated flow.`);
-        
+
+        // Call visualizeWorkflowExecution without artificial delays
         Promise.resolve().then(() => visualizeWorkflowExecution());
 
       } else {
          addConsoleMessage('info', `Flow "${data.workflowName || 'Untitled Flow'}" generated but contained no actionable steps.`);
          setTimelineEvents([]);
          setNodeExecutionStatus({});
-         setConnections([]); 
+         setConnections([]);
       }
     }
   }, [addConsoleMessage, visualizeWorkflowExecution]);
@@ -290,7 +291,7 @@ export default function LoomStudioPage() {
       id: nodeId,
       title: nodeTitleBase,
       description: newNodeData.description || `Manually added ${nodeTitleBase} node. Configure in Inspector.`,
-      status: 'queued', 
+      status: 'queued',
       config: newNodeData.config || {},
     };
 
@@ -306,9 +307,9 @@ export default function LoomStudioPage() {
 
       const updatedNodes = [...currentNodes, nodeWithIdAndStatus];
       return {
-        message: prevFlow?.message || "Node added to canvas.", 
-        userInput: prevFlow?.userInput || "Custom flow", 
-        error: prevFlow?.error || false, 
+        message: prevFlow?.message || "Node added to canvas.",
+        userInput: prevFlow?.userInput || "Custom flow",
+        error: prevFlow?.error || false,
         nodes: updatedNodes,
         workflowName: newWorkflowName,
       };
@@ -328,32 +329,32 @@ export default function LoomStudioPage() {
   const handleNodeSelected = (node: WorkflowNodeData | null) => {
     if (node) {
       setSelectedNode(node);
-      setConnectingState(null); 
+      setConnectingState(null);
       addConsoleMessage('log', `Node "${node.title}" (ID: ${node.id}) selected.`);
     } else {
       if (connectingState) {
         addConsoleMessage('info', `Connection attempt cancelled by clicking canvas background.`);
       }
       setSelectedNode(null);
-      setConnectingState(null); 
+      setConnectingState(null);
       addConsoleMessage('log', `Canvas selected (no node).`);
     }
   };
 
   const handleNodeUpdate = (updatedNode: WorkflowNodeData) => {
      setGeneratedFlow(prevFlow => {
-      if (!prevFlow) return prevFlow; 
+      if (!prevFlow) return prevFlow;
       const newNodes = prevFlow.nodes.map(n => (n.id === updatedNode.id ? updatedNode : n));
       return { ...prevFlow, nodes: newNodes };
     });
-    setSelectedNode(updatedNode); 
+    setSelectedNode(updatedNode);
     toast({ title: "Node Updated", description: `Node "${updatedNode.title}" has been saved.` });
     addConsoleMessage('info', `Node "${updatedNode.title}" (ID: ${updatedNode.id}) updated.`);
-    
+
     const oldStatus = nodeExecutionStatus[updatedNode.id];
     if (updatedNode.status && oldStatus !== updatedNode.status) {
       setNodeExecutionStatus(prev => ({...prev, [updatedNode.id]: updatedNode.status! }));
-      
+
       const statusToEventTypeMap: Partial<Record<NodeStatus, TimelineEvent['type']>> = {
         completed: 'node_completed',
         running: 'node_running',
@@ -361,7 +362,7 @@ export default function LoomStudioPage() {
         queued: 'node_queued',
       };
       const eventType: TimelineEvent['type'] = statusToEventTypeMap[updatedNode.status!] || 'info';
-      
+
       addTimelineEvent({
         nodeId: updatedNode.id,
         nodeTitle: updatedNode.title,
@@ -379,7 +380,7 @@ export default function LoomStudioPage() {
     }
 
     setGeneratedFlow(prevFlow => {
-      if (!prevFlow) return prevFlow; 
+      if (!prevFlow) return prevFlow;
       const newNodes = prevFlow.nodes.filter(n => n.id !== nodeId);
       return { ...prevFlow, nodes: newNodes };
     });
@@ -406,12 +407,12 @@ export default function LoomStudioPage() {
       addConsoleMessage('error', `Attempted to run non-existent node ID: ${nodeId}`);
       return;
     }
-    
+
     let nodeOutput: SummarizeWebpageOutput | ExecutePromptOutput | Record<string, any> | null = null;
     let nodeError: string | undefined = undefined;
-    
+
     const runType = nodeToRun.type === 'web-summarizer' ? 'Web Summarizer' : nodeToRun.type === 'prompt' ? 'Prompt Node' : 'Node';
-    
+
     setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
     if (selectedNode?.id === nodeId) {
       setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
@@ -429,14 +430,14 @@ export default function LoomStudioPage() {
           const taskInput: SummarizeWebpageInput = { url };
           nodeOutput = await summarizeWebpageTask(taskInput);
           if (nodeOutput.error) nodeError = nodeOutput.error;
-          
+
           if (nodeOutput.logs && nodeOutput.logs.length > 0) {
              nodeOutput.logs.forEach(log => addConsoleMessage('log', `[Task: ${nodeToRun.title}] ${log}`, generatedFlow?.swarmId));
           }
         }
       } else if (nodeToRun.type === 'prompt') {
         const promptText = nodeToRun.config?.promptText;
-        const modelName = nodeToRun.config?.modelName; 
+        const modelName = nodeToRun.config?.modelName;
         if (!promptText) {
           nodeError = "Prompt text is missing for Prompt Node.";
           nodeOutput = { error: nodeError };
@@ -452,7 +453,7 @@ export default function LoomStudioPage() {
       }
     } catch (e: any) {
       nodeError = e.message || `An unexpected error occurred during ${runType} task execution.`;
-      nodeOutput = { error: nodeError }; 
+      nodeOutput = { error: nodeError };
     }
 
     const finalStatus: NodeStatus = nodeError ? 'failed' : 'completed';
@@ -463,7 +464,7 @@ export default function LoomStudioPage() {
     };
 
     setGeneratedFlow(prevFlow => {
-      if (!prevFlow) return null; 
+      if (!prevFlow) return null;
       return {
         ...(prevFlow),
         nodes: prevFlow.nodes.map(n => n.id === nodeId ? updatedNodeData : n),
@@ -475,16 +476,16 @@ export default function LoomStudioPage() {
     if (nodeError) {
       addConsoleMessage('error', `Individual ${runType} "${updatedNodeData.title}" (task) failed: ${nodeError}`);
       addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Individual execution (task) failed: ${nodeError.substring(0,100)}...` });
-      toast({ 
-        title: "Node Execution Failed", 
+      toast({
+        title: "Node Execution Failed",
         description: `Task for "${updatedNodeData.title}" (${runType}) failed: ${nodeError}`,
         variant: "destructive"
       });
     } else {
       addConsoleMessage('info', `Individual ${runType} "${updatedNodeData.title}" (task) completed.`);
       addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: `Individual ${runType} execution (task) completed.` });
-      toast({ 
-        title: "Node Executed", 
+      toast({
+        title: "Node Executed",
         description: `Task for "${updatedNodeData.title}" (${runType}) completed successfully.`
       });
     }
@@ -586,7 +587,7 @@ export default function LoomStudioPage() {
         ...nodeDef,
         id: newNodeId,
         status: 'queued' as NodeStatus,
-        position: nodeDef.position || { x: 50 + index * 50, y: 100 + index * 50 }, 
+        position: nodeDef.position || { x: 50 + index * 50, y: 100 + index * 50 },
       };
     });
 
@@ -608,19 +609,19 @@ export default function LoomStudioPage() {
 
     toast({ title: "Template Loaded", description: `Workflow "${template.name}" is ready.` });
     addTimelineEvent({ type: 'info', message: `Workflow template "${template.name}" loaded onto canvas.` });
-    
+
     Promise.resolve().then(() => visualizeWorkflowExecution());
     setIsTemplateSelectorOpen(false);
   }, [addConsoleMessage, addTimelineEvent, toast, visualizeWorkflowExecution]);
 
 
   const anyMobilePanelOpen = isMobile && Object.values(panelVisibility).some(v => v);
-  
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <TopBar
         onFlowGenerated={handleFlowGenerated}
-        addConsoleMessage={addConsoleMessage} 
+        addConsoleMessage={addConsoleMessage}
         panelVisibility={panelVisibility}
         togglePanel={togglePanel}
         isMobile={isMobile}
@@ -650,16 +651,16 @@ export default function LoomStudioPage() {
               <PalettePanel className="absolute top-4 left-4 z-10" onClose={() => togglePanel('palette')} isMobile={isMobile} />
             )}
             <div className="absolute top-4 right-4 bottom-4 w-[360px] z-10 flex flex-col gap-4">
-               <ResizableVerticalPanes 
+               <ResizableVerticalPanes
                   storageKey="right-panels-split-v1"
-                  initialDividerPosition={60} 
+                  initialDividerPosition={60}
                   minPaneHeight={150}
                 >
                   {panelVisibility.inspector && (
                     <TooltipProvider delayDuration={300}>
                       <InspectorPanel
                         key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'}
-                        className="h-full" 
+                        className="h-full"
                         onClose={() => togglePanel('inspector')}
                         selectedNode={selectedNode}
                         onNodeUpdate={handleNodeUpdate}
@@ -667,26 +668,26 @@ export default function LoomStudioPage() {
                         isMobile={isMobile}
                         onRunNode={handleRunNode}
                         isNodeRunning={isNodeRunning}
-                        isResizable={true} 
-                        initialSize={{ width: '100%', height: '100%' }} 
+                        isResizable={true}
+                        initialSize={{ width: '100%', height: '100%' }}
                       />
                     </TooltipProvider>
                   )}
-                  <div className="flex flex-col gap-4 h-full overflow-hidden"> 
+                  <div className="flex flex-col gap-4 h-full overflow-hidden">
                     {panelVisibility.agentHub && (
                        <AgentHubPanel
-                        className="flex-1 min-h-0" 
+                        className="flex-1 min-h-0"
                         onClose={() => togglePanel('agentHub')}
                         isMobile={isMobile}
                         addConsoleMessage={addConsoleMessage}
                         addTimelineEvent={addTimelineEvent}
                         isResizable={true}
-                        initialSize={{ width: '100%', height: 'auto' }} 
+                        initialSize={{ width: '100%', height: 'auto' }}
                       />
                     )}
                     {panelVisibility.actionConsole && (
                        <ActionConsolePanel
-                        className="flex-1 min-h-0" 
+                        className="flex-1 min-h-0"
                         onClose={() => togglePanel('actionConsole')}
                         requests={actionRequests}
                         onRespond={handleAgentActionResponse}
@@ -700,8 +701,8 @@ export default function LoomStudioPage() {
                   </div>
               </ResizableVerticalPanes>
             </div>
-            
-            <div className="absolute bottom-4 left-4 right-[calc(360px+theme(spacing.4)+theme(spacing.4))] h-[240px] z-10"> 
+
+            <div className="absolute bottom-4 left-4 right-[calc(360px+2rem)] h-[240px] z-10">
               <ResizableHorizontalPanes storageKey="bottom-panels-split-v1" minPaneWidth={200}>
                 {panelVisibility.timeline && (
                   <TimelinePanel
@@ -771,7 +772,7 @@ export default function LoomStudioPage() {
         <TemplateSelectorDialog
           isOpen={isTemplateSelectorOpen}
           onClose={handleCloseTemplateSelector}
-          templates={exampleTemplates} 
+          templates={exampleTemplates}
           onLoadTemplate={handleLoadTemplate}
         />
       </main>
@@ -779,4 +780,3 @@ export default function LoomStudioPage() {
     </div>
   );
 }
-
