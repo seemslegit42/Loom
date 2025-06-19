@@ -21,15 +21,16 @@ import type { ConsoleMessage } from '@/components/panels/console-panel';
 
 interface TopBarProps {
   onFlowGenerated: (data: AiGeneratedFlowData) => void; 
-  addConsoleMessage: (type: ConsoleMessage['type'], text: string) => void;
+  addConsoleMessage: (type: ConsoleMessage['type'], text: string, swarmId?: string) => void;
   panelVisibility: PanelVisibility;
   togglePanel: (panel: keyof PanelVisibility) => void;
   isMobile: boolean;
   anyMobilePanelOpen: boolean;
   onOpenTemplateSelector: () => void; 
+  swarmId?: string | null; // Added swarmId prop
 }
 
-export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen, onOpenTemplateSelector }: TopBarProps) {
+export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen, onOpenTemplateSelector, swarmId }: TopBarProps) {
   const showAiForm = !isMobile || !anyMobilePanelOpen; 
   const { toast } = useToast();
 
@@ -38,6 +39,7 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
       title: "Coming Soon!",
       description: `${featureName} feature is under development.`,
     });
+    addConsoleMessage('info', `User clicked on coming soon feature: ${featureName}`);
   };
 
   const panelToggleItems = [
@@ -99,15 +101,15 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
         </h1>
         <Separator orientation="vertical" className={`h-8 ${isMobile ? 'hidden' : 'block'}`} />
         <nav className={`items-center gap-1 ${isMobile ? 'hidden' : 'flex md:flex'}`}>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => handleComingSoon("Projects")}>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-accent" onClick={() => handleComingSoon("Projects")}>
             Projects
           </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={onOpenTemplateSelector}>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-accent-foreground hover:bg-accent/20" onClick={onOpenTemplateSelector}>
             <BookMarked className="mr-1.5 h-4 w-4"/> Templates
           </Button>
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-accent-foreground hover:bg-accent/20">
                 <Eye className="mr-1.5 h-4 w-4" />
                 View
               </Button>
@@ -127,7 +129,7 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => handleComingSoon("Documentation")}>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-accent" onClick={() => handleComingSoon("Documentation")}>
             Docs
           </Button>
         </nav>
@@ -140,17 +142,17 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
       </div>
 
       <div className="flex items-center gap-1 md:gap-3">
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" title="Command Palette" onClick={() => handleComingSoon("Command Palette")}>
+        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-accent" title="Command Palette" onClick={() => handleComingSoon("Command Palette")}>
           <Search className="h-5 w-5" />
           <span className="sr-only">Command Palette</span>
         </Button>
         {!isMobile && (
           <>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" title="Agent Context" onClick={() => handleComingSoon("Agent Context")}>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-accent" title="Agent Context" onClick={() => handleComingSoon("Agent Context")}>
               <UserCircle className="h-5 w-5" />
               <span className="sr-only">Agent Context</span>
             </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" title="Settings" onClick={() => handleComingSoon("Settings")}>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-accent" title="Settings" onClick={() => handleComingSoon("Settings")}>
               <Settings className="h-5 w-5" />
               <span className="sr-only">Settings</span>
             </Button>
@@ -160,3 +162,4 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
     </header>
   );
 }
+
