@@ -15,7 +15,7 @@ interface BasePanelProps {
   children: React.ReactNode;
   className?: string;
   contentClassName?: string;
-  initialSize?: { width?: string; height?: string };
+  initialSize?: { width?: string | 'auto'; height?: string | 'auto' };
   onClose?: () => void;
   isMobile?: boolean;
   isResizable?: boolean; 
@@ -23,6 +23,8 @@ interface BasePanelProps {
 
 const MIN_WIDTH = 200;
 const MIN_HEIGHT = 150;
+const DEFAULT_WIDTH = 300;
+const DEFAULT_HEIGHT = 200;
 
 const getStorageKey = (panelTitle: string) => `panel-size-${panelTitle.replace(/\s+/g, '-').toLowerCase()}`;
 
@@ -40,9 +42,9 @@ export function BasePanel({
   const { toast } = useToast();
   const [isMinimized, setIsMinimized] = useState(false);
 
-  const [currentSize, setCurrentSize] = useState<{ width: number; height: number }>(() => {
-    let initialW = 300; 
-    let initialH = 200; 
+  const [currentSize, setCurrentSize] = useState<{ width: number | null; height: number | null }>(() => {
+    let parsedWidth: number | null = DEFAULT_WIDTH;
+    let parsedHeight: number | null = DEFAULT_HEIGHT;
 
     if (typeof window !== 'undefined' && isResizable && !isMobile) {
       const storageKey = getStorageKey(title);
@@ -50,25 +52,60 @@ export function BasePanel({
       if (savedSize) {
         try {
           const parsed = JSON.parse(savedSize);
-          if (parsed && typeof parsed.width === 'number' && typeof parsed.height === 'number') {
-            return {
-              width: Math.max(parsed.width, MIN_WIDTH),
-              height: Math.max(parsed.height, MIN_HEIGHT),
-            };
+          if (parsed) {
+            if (typeof parsed.width === 'number' && parsed.width >= MIN_WIDTH) {
+              parsedWidth = parsed.width;
+            }
+            if (typeof parsed.height === 'number' && parsed.height >= MIN_HEIGHT) {
+              parsedHeight = parsed.height;
+            }
           }
         } catch (e) {
           console.warn(`Failed to parse saved size for panel "${title}" from localStorage.`, e);
         }
       }
     }
-
-    const propW = parseInt(initialSizeProp.width || '', 10);
-    const propH = parseInt(initialSizeProp.height || '', 10);
-
-    initialW = !isNaN(propW) && propW > 0 ? Math.max(propW, MIN_WIDTH) : initialW;
-    initialH = !isNaN(propH) && propH > 0 ? Math.max(propH, MIN_HEIGHT) : initialH;
     
-    return { width: initialW, height: initialH };
+    // Override with initialSizeProp if provided and valid
+    if (initialSizeProp.width === 'auto') {
+      parsedWidth = null; // Indicates CSS should control it
+    } else if (typeof initialSizeProp.width === 'string') {
+      const propW = parseInt(initialSizeProp.width, 10);
+      if (!isNaN(propW) && propW >= MIN_WIDTH) {
+        parsedWidth = propW;
+      } else if (parsedWidth === DEFAULT_WIDTH && isNaN(propW)) { // Only use default if prop was invalid and no localStorage
+         // Keep localStorage or default if prop is invalid
+      }
+    } else if (initialSizeProp.width === undefined && parsedWidth === DEFAULT_WIDTH) {
+       // keep default or localstorage
+    }
+
+
+    if (initialSizeProp.height === 'auto') {
+      parsedHeight = null; // Indicates CSS should control it
+    } else if (typeof initialSizeProp.height === 'string') {
+      const propH = parseInt(initialSizeProp.height, 10);
+      if (!isNaN(propH) && propH >= MIN_HEIGHT) {
+        parsedHeight = propH;
+      } else if (parsedHeight === DEFAULT_HEIGHT && isNaN(propH)) {
+        // Keep localStorage or default if prop is invalid
+      }
+    } else if (initialSizeProp.height === undefined && parsedHeight === DEFAULT_HEIGHT) {
+      // keep default or localstorage
+    }
+    
+    // Ensure defaults if still at initial default and no valid prop/localStorage
+    if (initialSizeProp.width === undefined && parsedWidth === DEFAULT_WIDTH && !localStorage.getItem(getStorageKey(title))?.includes('"width"')) {
+        // If initialSizeProp.width is undefined, and we haven't overridden default with localStorage, it remains default.
+        // If isResizable is true, it should be a number unless 'auto' was specified.
+        // So, if parsedWidth is still default and width was not 'auto', ensure it's the number.
+    }
+     if (initialSizeProp.height === undefined && parsedHeight === DEFAULT_HEIGHT && !localStorage.getItem(getStorageKey(title))?.includes('"height"')) {
+        // Same for height.
+    }
+
+
+    return { width: parsedWidth, height: parsedHeight };
   });
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -76,7 +113,6 @@ export function BasePanel({
   const isResizing = useRef(false);
   const initialResizeState = useRef({ mouseX: 0, mouseY: 0, width: 0, height: 0 });
 
-  // Define handleMouseMoveResize first as it has no dependencies on other resize handlers
   const handleMouseMoveResize = useCallback((e: MouseEvent) => {
     if (!isResizing.current || !isResizable || isMobile) return;
     const dx = e.clientX - initialResizeState.current.mouseX;
@@ -85,35 +121,40 @@ export function BasePanel({
     let newWidth = initialResizeState.current.width + dx;
     let newHeight = initialResizeState.current.height + dy;
 
-    newWidth = Math.max(newWidth, MIN_WIDTH);
-    newHeight = Math.max(newHeight, MIN_HEIGHT);
-    
-    setCurrentSize({ width: newWidth, height: newHeight });
-  }, [isResizable, isMobile]); // Dependencies: isResizable, isMobile
+    setCurrentSize(prevSize => ({
+      width: Math.max(newWidth, MIN_WIDTH), // Becomes number here
+      height: Math.max(newHeight, MIN_HEIGHT) // Becomes number here
+    }));
+  }, [isResizable, isMobile]); 
 
-  // Define handleMouseUpResize next, it depends on handleMouseMoveResize
   const handleMouseUpResize = useCallback(() => {
     if (!isResizing.current || !isResizable || isMobile) return;
     isResizing.current = false;
     document.removeEventListener('mousemove', handleMouseMoveResize);
-    document.removeEventListener('mouseup', handleMouseUpResize); // Pass itself to remove
+    document.removeEventListener('mouseup', handleMouseUpResize); 
 
     if (typeof window !== 'undefined') {
       const storageKey = getStorageKey(title);
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(currentSize));
-      } catch (e) {
-        console.error(`Failed to save size for panel "${title}" to localStorage.`, e);
-        toast({
-          title: "Storage Error",
-          description: "Could not save panel size. Local storage might be full or disabled.",
-          variant: "destructive",
-        });
+      // Only save if currentSize dimensions are numbers (i.e., pixel values)
+      const sizeToSave: Partial<{width: number, height: number}> = {};
+      if (typeof currentSize.width === 'number') sizeToSave.width = currentSize.width;
+      if (typeof currentSize.height === 'number') sizeToSave.height = currentSize.height;
+
+      if (Object.keys(sizeToSave).length > 0) {
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(sizeToSave));
+        } catch (e) {
+            console.error(`Failed to save size for panel "${title}" to localStorage.`, e);
+            toast({
+            title: "Storage Error",
+            description: "Could not save panel size. Local storage might be full or disabled.",
+            variant: "destructive",
+            });
+        }
       }
     }
-  }, [isResizable, isMobile, handleMouseMoveResize, title, currentSize, toast]); // Dependencies: isResizable, isMobile, handleMouseMoveResize, title, currentSize, toast
+  }, [isResizable, isMobile, handleMouseMoveResize, title, currentSize, toast]); 
 
-  // Define handleMouseDownResize last, as it depends on the others
   const handleMouseDownResize = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isResizable || isMobile) return;
     e.preventDefault();
@@ -121,8 +162,8 @@ export function BasePanel({
     initialResizeState.current = {
       mouseX: e.clientX,
       mouseY: e.clientY,
-      width: panelRef.current?.offsetWidth || currentSize.width,
-      height: panelRef.current?.offsetHeight || currentSize.height,
+      width: panelRef.current?.offsetWidth || (typeof currentSize.width === 'number' ? currentSize.width : DEFAULT_WIDTH),
+      height: panelRef.current?.offsetHeight || (typeof currentSize.height === 'number' ? currentSize.height : DEFAULT_HEIGHT),
     };
     document.addEventListener('mousemove', handleMouseMoveResize);
     document.addEventListener('mouseup', handleMouseUpResize);
@@ -152,7 +193,10 @@ export function BasePanel({
   };
   
   const sizeStyles: React.CSSProperties = isResizable && !isMobile
-    ? { width: `${currentSize.width}px`, height: `${currentSize.height}px` }
+    ? { 
+        width: typeof currentSize.width === 'number' ? `${currentSize.width}px` : undefined, 
+        height: typeof currentSize.height === 'number' ? `${currentSize.height}px` : undefined 
+      }
     : {};
 
 
@@ -192,7 +236,7 @@ export function BasePanel({
       <CardContent className={cn(
         "p-3 overflow-auto flex-grow", 
         contentClassName,
-        isMinimized && !isMobile && "hidden"
+        (isMinimized && !isMobile) && "hidden"
       )}>
         {children}
       </CardContent>

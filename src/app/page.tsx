@@ -17,6 +17,8 @@ import type { WorkflowNodeData, NodeStatus, NodeType } from '@/components/workfl
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
+import { ResizableHorizontalPanes } from '@/components/layout/resizable-horizontal-panes';
+
 
 // Import task functions and their types
 import { summarizeWebpageTask, type SummarizeWebpageOutput, type SummarizeWebpageInput } from '@/tasks/summarize-webpage-task';
@@ -823,30 +825,32 @@ export default function LoomStudioPage() {
                 initialSize={{ width: '360px', height: 'calc(100vh - 280px)' }} 
               />
             )}
-            <div className="absolute bottom-4 left-4 right-4 flex gap-4 z-10">
-              {panelVisibility.timeline && (
-                <TimelinePanel
-                  className="flex-1 min-w-[300px]"
-                  onClose={() => togglePanel('timeline')}
-                  events={timelineEvents}
-                  isMobile={isMobile}
-                  isResizable={true}
-                  initialSize={{ height: '220px' }}
-                />
-              )}
-              {panelVisibility.console && (
-                <ConsolePanel
-                  className="flex-1 min-w-[300px]"
-                  onClose={() => togglePanel('console')}
-                  messages={consoleMessages.filter(msg => consoleFilters[msg.type])}
-                  filters={consoleFilters}
-                  onToggleFilter={toggleConsoleFilter}
-                  onClearConsole={handleClearConsole}
-                  isMobile={isMobile}
-                  isResizable={true}
-                  initialSize={{ height: '220px' }}
-                />
-              )}
+            <div className="absolute bottom-4 left-4 right-4 h-[240px] z-10">
+              <ResizableHorizontalPanes storageKey="bottom-panels-split-v1" minPaneWidth={200}>
+                {panelVisibility.timeline && (
+                  <TimelinePanel
+                    onClose={() => togglePanel('timeline')}
+                    events={timelineEvents}
+                    isMobile={isMobile}
+                    isResizable={true}
+                    initialSize={{ width: 'auto', height: 'auto' }}
+                    className="h-full w-full"
+                  />
+                )}
+                {panelVisibility.console && (
+                  <ConsolePanel
+                    onClose={() => togglePanel('console')}
+                    messages={consoleMessages.filter(msg => consoleFilters[msg.type])}
+                    filters={consoleFilters}
+                    onToggleFilter={toggleConsoleFilter}
+                    onClearConsole={handleClearConsole}
+                    isMobile={isMobile}
+                    isResizable={true}
+                    initialSize={{ width: 'auto', height: 'auto' }}
+                    className="h-full w-full"
+                  />
+                )}
+              </ResizableHorizontalPanes>
             </div>
             <div className="absolute top-[calc(theme(spacing.16)_+_theme(spacing.4))] right-4 z-10 flex flex-col gap-4">
               {panelVisibility.agentHub && (
