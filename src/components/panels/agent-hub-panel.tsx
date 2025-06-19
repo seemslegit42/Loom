@@ -1,4 +1,3 @@
-
 // src/components/panels/agent-hub-panel.tsx
 'use client';
 
@@ -214,7 +213,7 @@ export function AgentHubPanel({
             Pause All Agents
           </Button>
         </div>
-        <ScrollArea className="pr-2 max-h-40">
+        <ScrollArea className="pr-2"> {/* Removed max-h-40 to allow flex growth */}
           {agents.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">No agents connected. Provision one to get started.</p>
           ) : (
