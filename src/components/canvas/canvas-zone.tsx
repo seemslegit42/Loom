@@ -48,6 +48,7 @@ export function CanvasZone({
   const [linePathData, setLinePathData] = useState<string[]>([]);
   const [tempLinePath, setTempLinePath] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false); // For palette item drag over canvas
 
   useEffect(() => {
     nodeRefs.current = nodes.reduce((acc, node) => {
@@ -121,12 +122,28 @@ export function CanvasZone({
   }, [connectingState, mousePosition, getPortPosition]);
 
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragEnterCanvas = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+    const isPaletteItem = event.dataTransfer.types.includes('application/json');
+    if (isPaletteItem) {
+      setIsDragActive(true);
+    }
+  };
+
+  const handleDragLeaveCanvas = (event: React.DragEvent<HTMLDivElement>) => {
+    if (event.currentTarget.contains(event.relatedTarget as Node)) {
+      return;
+    }
+    setIsDragActive(false);
+  };
+
+  const handleDragOverCanvas = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault(); // Essential for allowing drop
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+    setIsDragActive(false); // Reset drag active state
     const nodeInfo = event.dataTransfer.getData('application/json');
     if (nodeInfo) {
       try {
@@ -154,7 +171,7 @@ export function CanvasZone({
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    if (target === e.currentTarget || target.classList.contains('scroll-area-viewport-content') || target.classList.contains('iridescent-aurora-bg')) { // Updated to check new background class if needed
+    if (target === e.currentTarget || target.classList.contains('scroll-area-viewport-content') || target.classList.contains('iridescent-aurora-bg')) {
        if (!connectingState) { 
         onNodeSelected(null);
       }
@@ -178,8 +195,13 @@ export function CanvasZone({
 
   return (
     <ScrollArea
-      className="h-full w-full rounded-lg border border-dashed border-border/50 iridescent-aurora-bg relative"
-      onDragOver={handleDragOver}
+      className={cn(
+        "h-full w-full rounded-lg border border-dashed border-border/50 iridescent-aurora-bg relative transition-all duration-150",
+        isDragActive && "ring-2 ring-accent ring-offset-2 ring-offset-background"
+        )}
+      onDragEnter={handleDragEnterCanvas}
+      onDragLeave={handleDragLeaveCanvas}
+      onDragOver={handleDragOverCanvas}
       onDrop={handleDrop}
       onClick={handleCanvasClick}
       onMouseMove={handleMouseMove} 
@@ -208,7 +230,7 @@ export function CanvasZone({
                 onInputPortClick={(nodeId, _e) => onInputPortClick(nodeId)} 
                 onOutputPortClick={onOutputPortClick} 
                 isConnectingFrom={connectingState?.fromNodeId === node.id}
-                connectingState={connectingState} // Pass connectingState down
+                connectingState={connectingState}
               />
             ))}
         </div>
@@ -246,4 +268,3 @@ export function CanvasZone({
     </ScrollArea>
   );
 }
-
