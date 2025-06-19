@@ -18,6 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
 import { ResizableHorizontalPanes } from '@/components/layout/resizable-horizontal-panes';
+import { ResizableVerticalPanes } from '@/components/layout/resizable-vertical-panes'; // Import new component
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 
@@ -866,24 +867,59 @@ export default function LoomStudioPage() {
             {panelVisibility.palette && (
               <PalettePanel className="absolute top-4 left-4 z-10" onClose={() => togglePanel('palette')} isMobile={isMobile} />
             )}
-            {panelVisibility.inspector && (
-              <TooltipProvider delayDuration={300}>
-                <InspectorPanel
-                  key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'}
-                  className="absolute top-4 right-4 z-10"
-                  onClose={() => togglePanel('inspector')}
-                  selectedNode={selectedNode}
-                  onNodeUpdate={handleNodeUpdate}
-                  onNodeDelete={handleDeleteNode}
-                  isMobile={isMobile}
-                  onRunNode={handleRunNode}
-                  isNodeRunning={isNodeRunning}
-                  isResizable={true} 
-                  initialSize={{ width: '360px', height: 'calc(100vh - 280px)' }} 
-                />
-              </TooltipProvider>
-            )}
-            <div className="absolute bottom-4 left-4 right-4 h-[240px] z-10">
+            <div className="absolute top-4 right-4 bottom-4 w-[360px] z-10 flex flex-col gap-4">
+               <ResizableVerticalPanes 
+                  storageKey="right-panels-split-v1"
+                  initialDividerPosition={60} // Inspector gets 60% initially
+                  minPaneHeight={150}
+                >
+                  {panelVisibility.inspector && (
+                    <TooltipProvider delayDuration={300}>
+                      <InspectorPanel
+                        key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'}
+                        className="h-full" // Take full height of its pane
+                        onClose={() => togglePanel('inspector')}
+                        selectedNode={selectedNode}
+                        onNodeUpdate={handleNodeUpdate}
+                        onNodeDelete={handleDeleteNode}
+                        isMobile={isMobile}
+                        onRunNode={handleRunNode}
+                        isNodeRunning={isNodeRunning}
+                        isResizable={true} 
+                        initialSize={{ width: '100%', height: '100%' }} 
+                      />
+                    </TooltipProvider>
+                  )}
+                  <div className="flex flex-col gap-4 h-full overflow-hidden"> {/* Container for bottom two panels */}
+                    {panelVisibility.agentHub && (
+                       <AgentHubPanel
+                        className="flex-1 min-h-0" // Allow shrinking and take available space
+                        onClose={() => togglePanel('agentHub')}
+                        isMobile={isMobile}
+                        addConsoleMessage={addConsoleMessage}
+                        addTimelineEvent={addTimelineEvent}
+                        isResizable={true}
+                        initialSize={{ width: '100%', height: 'auto' }} // Auto height, resizable by parent
+                      />
+                    )}
+                    {panelVisibility.actionConsole && (
+                       <ActionConsolePanel
+                        className="flex-1 min-h-0" // Allow shrinking
+                        onClose={() => togglePanel('actionConsole')}
+                        requests={actionRequests}
+                        onRespond={handleAgentActionResponse}
+                        isMobile={isMobile}
+                        addConsoleMessage={addConsoleMessage}
+                        addTimelineEvent={addTimelineEvent}
+                        isResizable={true}
+                        initialSize={{ width: '100%', height: 'auto' }}
+                      />
+                    )}
+                  </div>
+              </ResizableVerticalPanes>
+            </div>
+            
+            <div className="absolute bottom-4 left-4 right-[calc(360px+theme(spacing.4)+theme(spacing.4))] h-[240px] z-10"> {/* Adjust right offset for new right panel group */}
               <ResizableHorizontalPanes storageKey="bottom-panels-split-v1" minPaneWidth={200}>
                 {panelVisibility.timeline && (
                   <TimelinePanel
@@ -909,32 +945,6 @@ export default function LoomStudioPage() {
                   />
                 )}
               </ResizableHorizontalPanes>
-            </div>
-            <div className="absolute top-[calc(theme(spacing.16)_+_theme(spacing.4))] right-4 z-10 flex flex-col gap-4">
-              {panelVisibility.agentHub && (
-                 <AgentHubPanel
-                  className="" 
-                  onClose={() => togglePanel('agentHub')}
-                  isMobile={isMobile}
-                  addConsoleMessage={addConsoleMessage}
-                  addTimelineEvent={addTimelineEvent}
-                  isResizable={true}
-                  initialSize={{ width: '360px', height: '45%' }} 
-                />
-              )}
-              {panelVisibility.actionConsole && (
-                 <ActionConsolePanel
-                  className="" 
-                  onClose={() => togglePanel('actionConsole')}
-                  requests={actionRequests}
-                  onRespond={handleAgentActionResponse}
-                  isMobile={isMobile}
-                  addConsoleMessage={addConsoleMessage}
-                  addTimelineEvent={addTimelineEvent}
-                  isResizable={true}
-                  initialSize={{ width: '360px', height: '35%'}} 
-                />
-              )}
             </div>
           </>
         ) : (
@@ -987,3 +997,4 @@ export default function LoomStudioPage() {
     </div>
   );
 }
+
