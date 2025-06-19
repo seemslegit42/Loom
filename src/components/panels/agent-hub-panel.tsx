@@ -1,3 +1,4 @@
+
 // src/components/panels/agent-hub-panel.tsx
 'use client';
 
@@ -26,11 +27,8 @@ interface Agent {
   workload: string;
 }
 
-const initialAgents: Agent[] = [
-  { id: 'agent-1', name: "Web Research Agent", status: "active", tasks: 3, permissions: "Web Search, Summarization", workload: "60%" },
-  { id: 'agent-2', name: "Task Execution Agent", status: "idle", tasks: 0, permissions: "Code Execution, API Calls", workload: "5%" },
-  { id: 'agent-3', name: "Content Creation Agent", status: "paused", tasks: 1, permissions: "Text Generation, Image Generation", workload: "N/A" },
-];
+// Removed initialAgents. Agent list will be populated from a real backend or remain empty.
+const initialAgents: Agent[] = [];
 
 const agentProfiles = [
   { namePrefix: "Web Intellect Agent", permissions: "Web Search, Summarization, Fact Checking", baseWorkload: "10%" },
@@ -80,6 +78,11 @@ export function AgentHubPanel({
   const [spawnProfileIndex, setSpawnProfileIndex] = useState(0);
 
   useEffect(() => {
+    // Fetch real agents from backend here if applicable
+    // For now, it remains empty as per "no mock data"
+  }, []);
+
+  useEffect(() => {
     if (selectedAgent) {
       setEditableAgentName(selectedAgent.name);
       setEditableAgentPermissions(selectedAgent.permissions);
@@ -96,18 +99,10 @@ export function AgentHubPanel({
 
   const handleUpdateAgent = () => {
     if (!selectedAgent) return;
-
-    const updatedAgents = agents.map(agent =>
-      agent.id === selectedAgent.id
-        ? { ...agent, name: editableAgentName, permissions: editableAgentPermissions }
-        : agent
-    );
-    setAgents(updatedAgents);
-    const updatedSelectedAgent = updatedAgents.find(a => a.id === selectedAgent.id) || null;
-    setSelectedAgent(updatedSelectedAgent);
-
-    toast({ title: "Agent Updated", description: `Agent "${editableAgentName}" details saved (backend interaction simulated).` });
-    addConsoleMessage('info', `Agent "${editableAgentName}" (ID: ${selectedAgent.id}) configuration updated (backend interaction simulated).`);
+    // Removed local state update: setAgents, setSelectedAgent
+    toast({ title: "Agent Update Requested", description: `Request to update agent "${editableAgentName}" sent to backend. (Backend interaction not yet fully implemented).` });
+    addConsoleMessage('info', `User requested update for agent "${editableAgentName}" (ID: ${selectedAgent.id}). Backend call pending implementation.`);
+    setSelectedAgent(null); // Clear selection as local state isn't authoritative
   };
 
   const handleCancelEdit = () => {
@@ -118,69 +113,40 @@ export function AgentHubPanel({
 
   const handleSpawnAgent = () => {
     const profile = agentProfiles[spawnProfileIndex];
-    const newAgentId = `agent-${Date.now()}`;
-    const agentCountForPrefix = agents.filter(a => a.name.startsWith(profile.namePrefix)).length + 1;
-    const newAgentName = `${profile.namePrefix} #${agentCountForPrefix}`;
-
-    const newAgent: Agent = {
-      id: newAgentId,
-      name: newAgentName,
-      status: 'idle',
-      tasks: 0,
-      permissions: profile.permissions,
-      workload: profile.baseWorkload,
-    };
-    setAgents(prev => [...prev, newAgent]);
+    const newAgentName = `${profile.namePrefix} #${Date.now().toString().slice(-4)}`; // Example name
+    // Removed local state update: setAgents
     setSpawnProfileIndex((prevIndex) => (prevIndex + 1) % agentProfiles.length);
 
-    toast({ title: "Agent Provisioned", description: `Agent "${newAgentName}" with capabilities "${profile.permissions}" is now available (backend provisioning simulated).` });
-    addConsoleMessage('info', `Agent "${newAgentName}" (type: ${profile.namePrefix}) provisioned (backend call simulated).`);
-    addTimelineEvent({ type: 'info', message: `Agent "${newAgentName}" provisioned.` });
+    toast({ title: "Agent Provisioning Requested", description: `Request to provision agent "${newAgentName}" with capabilities "${profile.permissions}" sent to backend. (Backend interaction not yet fully implemented).` });
+    addConsoleMessage('info', `User requested provisioning of new agent: "${newAgentName}" (type: ${profile.namePrefix}). Backend call pending implementation.`);
+    addTimelineEvent({ type: 'info', message: `Agent provisioning requested for "${newAgentName}".` });
   };
 
   const handleResumeAll = () => {
-    setAgents(prev =>
-      prev.map(agent =>
-        agent.status === 'paused' || agent.status === 'idle' ? { ...agent, status: 'active' } : agent
-      )
-    );
-    toast({ title: "Agent Hub Action", description: "Attempting to resume all eligible agents (backend interaction simulated)." });
-    addConsoleMessage('info', 'Agent Hub: Resume all agents action triggered (backend call simulated).');
-    addTimelineEvent({ type: 'info', message: 'All eligible agents resumed (simulated).' });
+    // Removed local state update: setAgents
+    toast({ title: "Agent Hub Action", description: "Request to resume all eligible agents sent to backend. (Backend interaction not yet fully implemented)." });
+    addConsoleMessage('info', 'Agent Hub: Request to resume all agents triggered. Backend call pending implementation.');
+    addTimelineEvent({ type: 'info', message: 'Resume all agents action requested.' });
   };
 
   const handlePauseAll = () => {
-    setAgents(prev =>
-      prev.map(agent =>
-        agent.status === 'active' ? { ...agent, status: 'paused' } : agent
-      )
-    );
-    toast({ title: "Agent Hub Action", description: "Activating Safe Mode: Pausing all active agents (backend interaction simulated).", variant: "secondary" });
-    addConsoleMessage('warn', 'Agent Hub: Pause all agents action triggered (backend call simulated).');
-    addTimelineEvent({ type: 'info', message: 'All active agents paused (simulated).' });
+    // Removed local state update: setAgents
+    toast({ title: "Agent Hub Action", description: "Request to pause all active agents (Safe Mode) sent to backend. (Backend interaction not yet fully implemented).", variant: "secondary" });
+    addConsoleMessage('warn', 'Agent Hub: Request to pause all agents triggered. Backend call pending implementation.');
+    addTimelineEvent({ type: 'info', message: 'Pause all agents action requested.' });
   };
 
   const handleToggleAgentStatus = (agentId: string) => {
-    let agentName = "";
-    let newStatus: Agent['status'] = 'idle';
-    let oldStatus: Agent['status'] = 'idle';
+    const agentToToggle = agents.find(a => a.id === agentId);
+    if (!agentToToggle) return;
+    const agentName = agentToToggle.name;
+    const currentStatus = agentToToggle.status;
+    const action = (currentStatus === 'active' || currentStatus === 'running') ? 'pause' : 'resume';
 
-    setAgents(prev =>
-      prev.map(agent => {
-        if (agent.id === agentId) {
-          agentName = agent.name;
-          oldStatus = agent.status;
-          newStatus = (agent.status === 'active') ? 'paused' : 'active';
-          return { ...agent, status: newStatus };
-        }
-        return agent;
-      })
-    );
-
-    const action = newStatus === 'active' ? 'Resumed' : 'Paused';
-    toast({ title: `Agent ${action}`, description: `Agent "${agentName}" has been ${action.toLowerCase()} (backend interaction simulated).` });
-    addConsoleMessage('info', `Agent "${agentName}" (ID: ${agentId}) ${action.toLowerCase()} (from ${oldStatus}). Backend interaction simulated.`);
-    addTimelineEvent({ type: 'info', message: `Agent "${agentName}" ${action.toLowerCase()} (simulated).` });
+    // Removed local state update: setAgents
+    toast({ title: `Agent Status Change Requested`, description: `Request to ${action} agent "${agentName}" sent to backend. (Backend interaction not yet fully implemented).` });
+    addConsoleMessage('info', `User requested to ${action} agent "${agentName}" (ID: ${agentId}). From status: ${currentStatus}. Backend call pending implementation.`);
+    addTimelineEvent({ type: 'info', message: `Request to ${action} agent "${agentName}".` });
   };
 
 
@@ -213,9 +179,9 @@ export function AgentHubPanel({
             Pause All Agents
           </Button>
         </div>
-        <ScrollArea className="pr-2"> {/* Removed max-h-40 to allow flex growth */}
+        <ScrollArea className="pr-2"> 
           {agents.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">No agents connected. Provision one to get started.</p>
+            <p className="text-xs text-muted-foreground text-center py-4">No agents currently provisioned or backend connection pending. Click "Provision New Agent" to request one.</p>
           ) : (
             <ul className="space-y-2">
               {agents.map((agent) => (
@@ -242,7 +208,7 @@ export function AgentHubPanel({
                           size="icon"
                           className="h-6 w-6 text-muted-foreground hover:text-primary"
                           onClick={() => handleToggleAgentStatus(agent.id)}
-                          title={agent.status === 'active' ? "Pause Agent" : "Resume Agent"}
+                          title={agent.status === 'active' ? "Request Pause Agent" : "Request Resume Agent"}
                         >
                           {agent.status === 'active' ? <Pause className="h-4 w-4"/> : <Play className="h-4 w-4"/>}
                        </Button>
@@ -253,7 +219,7 @@ export function AgentHubPanel({
                     className="text-xs text-muted-foreground space-y-0.5 cursor-pointer"
                     onClick={() => handleSelectAgent(agent)}
                     role="button"
-                    tabIndex={-1} // Not focusable on its own, card title handles focus
+                    tabIndex={-1} 
                   >
                     <p className="flex items-center gap-1"><ListChecks className="h-3 w-3 text-primary/70" /> Active Tasks: {agent.tasks} | Workload: {agent.workload}</p>
                     <p className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-primary/70" /> Capabilities: {agent.permissions}</p>
@@ -290,11 +256,11 @@ export function AgentHubPanel({
                 className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
                 placeholder="e.g., Web Search, File IO, Code Execution"
               />
-              <p className="text-xs text-muted-foreground">Simulates updating backend agent configuration.</p>
+              <p className="text-xs text-muted-foreground">Requests update to backend agent configuration.</p>
             </div>
             <div className="flex items-center gap-2 mt-2">
               <Button onClick={handleUpdateAgent} size="sm" className="flex-1">
-                <Save className="h-3.5 w-3.5 mr-1.5" /> Save Changes
+                <Save className="h-3.5 w-3.5 mr-1.5" /> Request Save
               </Button>
               <Button onClick={handleCancelEdit} variant="outline" size="sm" className="flex-1">
                 <XCircle className="h-3.5 w-3.5 mr-1.5" /> Cancel
@@ -333,3 +299,4 @@ export function AgentHubPanel({
     
 
     
+

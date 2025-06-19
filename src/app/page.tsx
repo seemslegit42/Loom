@@ -18,7 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
 import { ResizableHorizontalPanes } from '@/components/layout/resizable-horizontal-panes';
-import { ResizableVerticalPanes } from '@/components/layout/resizable-vertical-panes'; // Import new component
+import { ResizableVerticalPanes } from '@/components/layout/resizable-vertical-panes'; 
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 
@@ -26,8 +26,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { summarizeWebpageTask, type SummarizeWebpageOutput, type SummarizeWebpageInput } from '@/tasks/summarize-webpage-task';
 import { executePromptTask, type ExecutePromptOutput, type ExecutePromptInput } from '@/tasks/execute-prompt-task';
 
-// Placeholder types for backend interactions (to be defined based on FastAPI SuperAGI)
-// These can be slowly replaced by or mapped to the task output types
 export interface BackendSummarizeOutput extends SummarizeWebpageOutput {}
 export interface BackendExecutePromptOutput extends ExecutePromptOutput {}
 
@@ -37,7 +35,7 @@ export interface AiGeneratedFlowData {
   nodes: WorkflowNodeData[]; 
   error?: boolean;
   userInput?: string;
-  swarmId?: string; // Added to store swarm ID
+  swarmId?: string; 
 }
 
 
@@ -58,121 +56,11 @@ export interface ConnectingState {
   fromPortElement: HTMLDivElement | null; 
 }
 
-const exampleTemplates: WorkflowTemplate[] = [
-  {
-    name: "Basic Web Summarizer",
-    description: "Fetches content from a URL and then uses a prompt node to summarize it.",
-    nodes: [
-      { localId: "fetcher", title: "Fetch Webpage", type: 'web-summarizer', description: "Fetches content from a specific URL.", position: { x: 50, y: 100 }, config: { url: 'https://example.com/article' } },
-      { localId: "summarizer", title: "Summarize Content", type: 'prompt', description: "Summarizes the fetched content using an LLM.", position: { x: 350, y: 100 }, config: { promptText: 'Summarize the following text provided as input: {{input}}' } },
-    ],
-    connections: [
-      { fromLocalId: "fetcher", toLocalId: "summarizer" }
-    ]
-  },
-  {
-    name: "Simple Question & Answer",
-    description: "A single prompt node to ask a question to an LLM.",
-    nodes: [
-      { localId: "q_prompt", title: "Ask Question", type: 'prompt', description: "Provide a question to the LLM.", position: { x: 200, y: 100 }, config: { promptText: 'What is the capital of France?' } },
-    ],
-    connections: []
-  },
-  {
-    name: "Market Research & Content Pitch",
-    description: "Researches a topic from a URL, analyzes trends, generates a content pitch, and simulates submission.",
-    nodes: [
-      { localId: "research-url", title: "Research Topic URL", type: 'web-summarizer', description: "Fetch and summarize content from a provided URL.", position: { x: 50, y: 50 }, config: { url: 'https://example.com/market-trends' } },
-      { localId: "analyze-research", title: "Analyze Research", type: 'prompt', description: "Analyze the summarized research to identify key trends and insights. Input: {{input_from_research-url}}", position: { x: 300, y: 50 }, config: { promptText: 'Based on the following research summary, identify the top 3 key trends and insights:\n\n{{input}}' } },
-      { localId: "generate-pitch", title: "Generate Content Pitch", type: 'prompt', description: "Generate a content pitch or outline based on the identified trends. Input: {{input_from_analyze-research}}", position: { x: 550, y: 50 }, config: { promptText: 'Using the identified trends and insights below, draft a compelling content pitch (e.g., blog post outline, video script idea):\n\n{{input}}' } },
-      { localId: "submit-pitch", title: "Submit Pitch (Simulated)", type: 'agent-call', description: "Simulate sending the generated pitch to an editor or platform.", position: { x: 800, y: 50 }, config: { agent_id: 'pitch_submission_agent', task: 'Submit content pitch: {{input_from_generate-pitch}}' } },
-    ],
-    connections: [
-      { fromLocalId: "research-url", toLocalId: "analyze-research" },
-      { fromLocalId: "analyze-research", toLocalId: "generate-pitch" },
-      { fromLocalId: "generate-pitch", toLocalId: "submit-pitch" }
-    ]
-  },
-  {
-    name: "Automated Bug Report Analyzer",
-    description: "Fetches bug reports, standardizes data, analyzes for priority, and simulates routing.",
-    nodes: [
-      { localId: "fetch-bugs", title: "Fetch Bug Reports (API)", type: 'api-call', description: "Simulate fetching new bug reports from a bug tracking system API.", position: { x: 50, y: 200 }, config: { endpoint: '/api/bugs', method: 'GET' } },
-      { localId: "parse-bugs", title: "Parse & Standardize Bugs", type: 'data-transform', description: "Parse fetched bug data and standardize its format for consistent analysis. Input: {{input_from_fetch-bugs}}", position: { x: 300, y: 200 }, config: { transformationLogic: 'Ensure fields: id, title, description, severity, reporter. Convert to JSON.' } },
-      { localId: "analyze-bug", title: "Analyze & Prioritize Bug", type: 'prompt', description: "Use LLM to analyze bug details, determine severity/impact, and suggest a priority. Input: {{input_from_parse-bugs}}", position: { x: 550, y: 200 }, config: { promptText: 'Analyze the following standardized bug report. Determine its severity (Critical, High, Medium, Low), potential impact, and suggest a priority level. Explain your reasoning briefly:\n\n{{input}}' } },
-      { localId: "route-bug", title: "Route Bug Report (Sim.)", type: 'agent-call', description: "Simulate routing the analyzed bug report to the appropriate team or queue based on priority. Input: {{input_from_analyze-bug}}", position: { x: 800, y: 200 }, config: { agent_id: 'bug_routing_agent', task: 'Route bug based on analysis: {{input}}' } },
-    ],
-    connections: [
-      { fromLocalId: "fetch-bugs", toLocalId: "parse-bugs" },
-      { fromLocalId: "parse-bugs", toLocalId: "analyze-bug" },
-      { fromLocalId: "analyze-bug", toLocalId: "route-bug" }
-    ]
-  },
-  {
-    name: "Daily News Digest & Social Post Generator",
-    description: "Fetches top news, extracts key items, formats for social media, and simulates scheduling.",
-    nodes: [
-      { localId: "fetch-news", title: "Fetch Top News", type: 'web-summarizer', description: "Fetch content from a general news feed or site.", position: { x: 50, y: 350 }, config: { url: 'https://news.example.com/feed' } },
-      { localId: "extract-items", title: "Extract Key News Items", type: 'prompt', description: "Use LLM to extract 3 key headlines and their brief summaries from the fetched news content. Input: {{input_from_fetch-news}}", position: { x: 300, y: 350 }, config: { promptText: 'From the news content provided below, extract the top 3 most important headlines and provide a 1-2 sentence summary for each:\n\n{{input}}' } },
-      { localId: "format-social", title: "Format for Social Media", type: 'data-transform', description: "Format the extracted news items into a structure suitable for social media posts (e.g., character limits, hashtags). Input: {{input_from_extract-items}}", position: { x: 550, y: 350 }, config: { transformationLogic: 'For each item: {headline, summary}. Add #news #today. Ensure total length < 280 chars.' } },
-      { localId: "schedule-posts", title: "Schedule Social Posts (Sim.)", type: 'agent-call', description: "Simulate scheduling the formatted news items for posting on social media platforms. Input: {{input_from_format-social}}", position: { x: 800, y: 350 }, config: { agent_id: 'social_media_scheduler', task: 'Schedule posts: {{input}}' } },
-    ],
-    connections: [
-      { fromLocalId: "fetch-news", toLocalId: "extract-items" },
-      { fromLocalId: "extract-items", toLocalId: "format-social" },
-      { fromLocalId: "format-social", toLocalId: "schedule-posts" }
-    ]
-  },
-  {
-    name: "Conditional Content Processing",
-    description: "Fetches web content, then processes it differently based on a simulated condition (e.g., summary length).",
-    nodes: [
-      { localId: "fetch-content-conditional", title: "Fetch Web Content", type: 'web-summarizer', description: "Fetches content from a URL for conditional processing.", position: { x: 50, y: 500 }, config: { url: 'https://example.com/some/content' } },
-      { localId: "check-condition", title: "Check Content Condition", type: 'conditional', description: "Simulates checking if content summary is 'long' (e.g., >100 chars). Outputs to 'Long Content Processor' if true, 'Short Content Analyzer' if false. Visualization shows both paths.", position: { x: 350, y: 500 }, config: { condition: "summary.length > 100" } },
-      { localId: "process-long", title: "Long Content Processor", type: 'prompt', description: "Handles long content. Input: {{input_from_check-condition}}", position: { x: 600, y: 450 }, config: { promptText: 'The content summary is long. Generate an extended analysis: {{input}}' } },
-      { localId: "process-short", title: "Short Content Analyzer", type: 'prompt', description: "Handles short content. Input: {{input_from_check-condition}}", position: { x: 600, y: 550 }, config: { promptText: 'The content summary is short. Provide a brief overview and key tags: {{input}}' } },
-    ],
-    connections: [
-      { fromLocalId: "fetch-content-conditional", toLocalId: "check-condition" },
-      { fromLocalId: "check-condition", toLocalId: "process-long" }, 
-      { fromLocalId: "check-condition", toLocalId: "process-short" }  
-    ]
-  }
-];
+// Removed exampleTemplates - templates should come from a real source or be user-created.
+const exampleTemplates: WorkflowTemplate[] = [];
 
-const initialActionRequests: ActionRequest[] = [
-  {
-    id: 'action-req-1',
-    agentId: 'superagi-agent-1',
-    agentName: 'Web Research Agent',
-    requestType: 'permission',
-    message: 'Agent "Web Research Agent" requests permission to access external URL: https://api.example.com/data. This action might incur costs or have security implications. Proceed?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5), 
-    status: 'pending',
-  },
-  {
-    id: 'action-req-2',
-    agentId: 'superagi-agent-2',
-    agentName: 'Task Execution Agent',
-    requestType: 'input',
-    message: 'Agent "Task Execution Agent" requires a filename for the generated report. Please provide a name (e.g., "monthly_sales.pdf").',
-    timestamp: new Date(Date.now() - 1000 * 60 * 2), 
-    status: 'pending',
-    requiresInput: true,
-    inputPrompt: 'Enter filename:',
-  },
-  {
-    id: 'action-req-3',
-    agentId: 'superagi-agent-3',
-    agentName: 'Content Creation Agent',
-    requestType: 'clarification',
-    message: 'Agent "Content Creation Agent" has generated two drafts for the blog post. Should it proceed with Draft A (focus on SEO) or Draft B (focus on engagement)? Please specify "A" or "B".',
-    timestamp: new Date(),
-    status: 'pending',
-    requiresInput: true, 
-    inputPrompt: 'Enter Draft (A/B):',
-  },
-];
+// Removed initialActionRequests - action requests should come from real agent interactions.
+const initialActionRequests: ActionRequest[] = [];
 
 
 export default function LoomStudioPage() {
@@ -207,9 +95,8 @@ export default function LoomStudioPage() {
   useEffect(() => {
     const fetchConsoleMessages = async () => {
       try {
-        // Querying general 'console_logs'
         const generalMessagesCol = collection(db, 'console_logs');
-        const generalQuery = query(generalMessagesCol, orderBy('timestamp', 'desc'), limit(25)); // Fetch fewer general logs
+        const generalQuery = query(generalMessagesCol, orderBy('timestamp', 'desc'), limit(25)); 
         const generalSnapshot = await getDocs(generalQuery);
         let fetchedMessages: ConsoleMessage[] = [];
         generalSnapshot.forEach((doc) => {
@@ -221,7 +108,6 @@ export default function LoomStudioPage() {
           });
         });
 
-        // If there's an active swarmId from generatedFlow, fetch its specific logs
         if (generatedFlow?.swarmId) {
           const swarmDocRef = doc(db, 'loom_swarms', generatedFlow.swarmId);
           const swarmDocSnap = await getDoc(swarmDocRef);
@@ -231,7 +117,7 @@ export default function LoomStudioPage() {
                  swarmData.logStream.forEach((logEntry: any) => {
                     if (logEntry.message && logEntry.timestamp) {
                         fetchedMessages.push({
-                            type: 'log', // Assuming swarm logs are 'log' type for now
+                            type: 'log', 
                             text: `[Swarm: ${generatedFlow.swarmId?.substring(0,8)}] ${logEntry.message}`,
                             timestamp: (logEntry.timestamp as Timestamp).toDate(),
                         });
@@ -240,9 +126,8 @@ export default function LoomStudioPage() {
              }
           }
           
-          // Also fetch from loom_swarms/{swarmId}/logs subcollection
           const swarmSubLogsCol = collection(db, 'loom_swarms', generatedFlow.swarmId, 'logs');
-          const swarmSubQuery = query(swarmSubLogsCol, orderBy('timestamp', 'asc'), limit(25)); // Fetch specific swarm logs
+          const swarmSubQuery = query(swarmSubLogsCol, orderBy('timestamp', 'asc'), limit(25)); 
           const swarmSubSnapshot = await getDocs(swarmSubQuery);
           swarmSubSnapshot.forEach((doc) => {
             const data = doc.data();
@@ -254,9 +139,8 @@ export default function LoomStudioPage() {
           });
         }
         
-        // Sort all fetched messages by timestamp descending before slicing and setting
         fetchedMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-        fetchedMessages = fetchedMessages.slice(0, 50); // Limit combined total
+        fetchedMessages = fetchedMessages.slice(0, 50); 
 
         setConsoleMessages(prev => [...fetchedMessages.reverse(), ...prev.filter(pm => !fetchedMessages.find(fm => fm.text === pm.text && fm.timestamp.getTime() === pm.timestamp.getTime()))]);
 
@@ -281,14 +165,12 @@ export default function LoomStudioPage() {
 
     try {
       if (swarmIdForLog) {
-        // Log to specific swarm's subcollection
         await addDoc(collection(db, 'loom_swarms', swarmIdForLog, 'logs'), {
           type: newMessage.type,
-          text: newMessage.text, // or message: newText if schema is different
+          text: newMessage.text, 
           timestamp: Timestamp.fromDate(newMessage.timestamp),
         });
       } else {
-        // Persist to general console_logs
         await addDoc(collection(db, 'console_logs'), {
           type: newMessage.type,
           text: newMessage.text,
@@ -341,117 +223,28 @@ export default function LoomStudioPage() {
 
   const visualizeWorkflowExecution = useCallback(async () => {
     if (!generatedFlow || generatedFlow.nodes.length === 0 || !generatedFlow.workflowName) {
-        addConsoleMessage('warn', 'No workflow or nodes available to visualize.');
+        addConsoleMessage('warn', 'No workflow or nodes available to visualize (or visualization simplified).');
         return;
     }
     
     const currentNodes = generatedFlow.nodes;
-    const currentConnections = connections;
     const workflowName = generatedFlow.workflowName;
 
-    addConsoleMessage('info', `Visualizing workflow: "${workflowName}" based on connections.`);
-    addTimelineEvent({ type: 'workflow_start', message: `Workflow "${workflowName}" visualization started.` });
+    addConsoleMessage('info', `Initializing node statuses for workflow: "${workflowName}".`);
+    addTimelineEvent({ type: 'workflow_start', message: `Workflow "${workflowName}" initialized on canvas.` });
 
     const initialStatuses: Record<string, NodeStatus> = {};
-    currentNodes.forEach(node => initialStatuses[node.id] = 'pending');
+    currentNodes.forEach(node => {
+      initialStatuses[node.id] = 'queued'; // Set all nodes to 'queued' initially
+      addTimelineEvent({ nodeId: node.id, nodeTitle: node.title, type: 'node_queued', message: `Node "${node.title}" initialized to queued.` });
+    });
     setNodeExecutionStatus(initialStatuses);
 
-    const adj: Record<string, string[]> = {};
-    const inDegree: Record<string, number> = {};
-    const nodeLookup: Record<string, WorkflowNodeData> = {};
+    // Removed: Simulation of execution flow (success/failure, delays, topological sort based execution)
+    // Actual execution will be triggered by "Run Node" or a future "Run Workflow" feature.
+    addConsoleMessage('info', `Workflow "${workflowName}" node statuses set to 'queued'. Awaiting user action or full workflow execution.`);
 
-    currentNodes.forEach(node => {
-        adj[node.id] = [];
-        inDegree[node.id] = 0;
-        nodeLookup[node.id] = node;
-    });
-
-    currentConnections.forEach(conn => {
-        if (adj[conn.from] && nodeLookup[conn.to]) {
-            adj[conn.from].push(conn.to);
-            inDegree[conn.to]++;
-        }
-    });
-
-    const queue: string[] = currentNodes.filter(node => inDegree[node.id] === 0).map(node => node.id);
-    let activeSimulations = 0;
-    const completedNodes = new Set<string>();
-    const failedNodes = new Set<string>();
-
-    const processNode = async (nodeId: string) => {
-      if (failedNodes.has(nodeId) || completedNodes.has(nodeId)) return;
-
-      activeSimulations++;
-      const node = nodeLookup[nodeId];
-      if (!node) {
-        addConsoleMessage('error', `Node ID ${nodeId} not found during visualization.`);
-        activeSimulations--;
-        failedNodes.add(nodeId);
-        return;
-      }
-      const nodeTitle = node.title;
-
-      setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'queued' }));
-      addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) queued for visualization.`);
-      addTimelineEvent({ nodeId, nodeTitle, type: 'node_queued', message: `Node "${nodeTitle}" queued (visualization).` });
-
-      setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
-      addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) running (visualization).`);
-      addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" running (visualization).` });
-      
-      const success = Math.random() > 0.1; 
-
-      if (success) {
-        setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'completed' }));
-        addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) completed (visualization).`);
-        addTimelineEvent({ nodeId, nodeTitle, type: 'node_completed', message: `Node "${nodeTitle}" completed (visualization).` });
-        completedNodes.add(nodeId);
-
-        adj[nodeId]?.forEach(neighborId => {
-          if (nodeLookup[neighborId]) {
-            inDegree[neighborId]--;
-            if (inDegree[neighborId] === 0 && !failedNodes.has(neighborId)) {
-              queue.push(neighborId);
-            }
-          }
-        });
-      } else {
-        setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'failed' }));
-        addConsoleMessage('error', `Node "${nodeTitle}" (ID: ${nodeId}) failed (visualization).`);
-        addTimelineEvent({ nodeId, nodeTitle, type: 'node_failed', message: `Node "${nodeTitle}" failed (visualization).` });
-        failedNodes.add(nodeId);
-      }
-      activeSimulations--;
-
-      if (queue.length > 0) {
-          const nextNodeId = queue.shift();
-          if (nextNodeId) processNode(nextNodeId);
-      } else if (activeSimulations === 0) {
-          if (failedNodes.size > 0) {
-              addConsoleMessage('error', `Workflow "${workflowName}" visualization finished with errors.`);
-              addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" visualization finished with errors.` });
-          } else if (completedNodes.size === currentNodes.length) {
-              addConsoleMessage('info', `Workflow "${workflowName}" visualization completed successfully.`);
-              addTimelineEvent({ type: 'workflow_completed', message: `Workflow "${workflowName}" visualization completed.` });
-          } else {
-              addConsoleMessage('warn', `Workflow "${workflowName}" visualization completed with some nodes not reached.`);
-              addTimelineEvent({ type: 'info', message: `Workflow "${workflowName}" visualization completed with some nodes not reached.` });
-          }
-      }
-    };
-
-    if (queue.length === 0 && currentNodes.length > 0) {
-        addConsoleMessage('error', `Workflow "${workflowName}" has no starting nodes for visualization (check connections).`);
-        addTimelineEvent({ type: 'workflow_failed', message: `Workflow "${workflowName}" visualization errors (e.g., no start nodes).` });
-        currentNodes.forEach(node => setNodeExecutionStatus(prev => ({...prev, [node.id]: 'failed'})));
-        return;
-    }
-    
-    while(queue.length > 0 && activeSimulations < 3) { 
-        const nodeIdToProcess = queue.shift();
-        if (nodeIdToProcess) processNode(nodeIdToProcess);
-    }
-  }, [generatedFlow, connections, addConsoleMessage, addTimelineEvent, setNodeExecutionStatus]);
+  }, [generatedFlow, addConsoleMessage, addTimelineEvent, setNodeExecutionStatus]);
 
 
   const handleFlowGenerated = useCallback((data: AiGeneratedFlowData) => {
@@ -469,7 +262,7 @@ export default function LoomStudioPage() {
       setConnections([]); 
     } else {
       if (data.nodes.length > 0 && data.workflowName) {
-        addConsoleMessage('info', `Flow "${data.workflowName}" generated with ${data.nodes.length} steps. Preparing visualization...`);
+        addConsoleMessage('info', `Flow "${data.workflowName}" generated with ${data.nodes.length} steps. Preparing for display...`);
 
         const newConnections: Connection[] = [];
         for (let i = 0; i < data.nodes.length - 1; i++) {
@@ -503,7 +296,7 @@ export default function LoomStudioPage() {
       id: nodeId,
       title: nodeTitleBase,
       description: newNodeData.description || `Manually added ${nodeTitleBase} node. Configure in Inspector.`,
-      status: newNodeData.status || 'queued',
+      status: 'queued', // All new nodes start as 'queued'
       config: newNodeData.config || {},
     };
 
@@ -625,7 +418,6 @@ export default function LoomStudioPage() {
     
     const runType = nodeToRun.type === 'web-summarizer' ? 'Web Summarizer' : nodeToRun.type === 'prompt' ? 'Prompt Node' : 'Node';
     
-    // Immediate UI update to "running"
     setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
     if (selectedNode?.id === nodeId) {
       setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
@@ -660,12 +452,10 @@ export default function LoomStudioPage() {
           if (nodeOutput.error) nodeError = nodeOutput.error;
         }
       } else {
-        addConsoleMessage('warn', `Execution for node type '${nodeToRun.type}' (${nodeToRun.title}) is currently a placeholder. No real backend task executed.`);
-        nodeOutput = { 
-            simulatedOutput: `Output from placeholder execution for '${nodeToRun.type}' node. Title: ${nodeToRun.title}.`,
-            message: "This node type's execution is not fully implemented with a real backend task yet."
-        };
-        nodeError = undefined; 
+        // For other node types, no simulated success. They will effectively fail or show 'not implemented'.
+        nodeError = `Execution for node type '${nodeToRun.type}' (${nodeToRun.title}) is not implemented with a real backend task.`;
+        nodeOutput = { error: nodeError };
+        addConsoleMessage('warn', nodeError);
       }
     } catch (e: any) {
       nodeError = e.message || `An unexpected error occurred during ${runType} task execution.`;
@@ -822,7 +612,7 @@ export default function LoomStudioPage() {
     setConnections(newConnections);
     setSelectedNode(null);
     setConnectingState(null);
-    setNodeExecutionStatus({}); 
+    // setNodeExecutionStatus({}); // Keep existing statuses if any, visualize will update relevant ones
 
     toast({ title: "Template Loaded", description: `Workflow "${template.name}" is ready.` });
     addTimelineEvent({ type: 'info', message: `Workflow template "${template.name}" loaded onto canvas.` });
@@ -873,14 +663,14 @@ export default function LoomStudioPage() {
             <div className="absolute top-4 right-4 bottom-4 w-[360px] z-10 flex flex-col gap-4">
                <ResizableVerticalPanes 
                   storageKey="right-panels-split-v1"
-                  initialDividerPosition={60} // Inspector gets 60% initially
+                  initialDividerPosition={60} 
                   minPaneHeight={150}
                 >
                   {panelVisibility.inspector && (
                     <TooltipProvider delayDuration={300}>
                       <InspectorPanel
                         key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'}
-                        className="h-full" // Take full height of its pane
+                        className="h-full" 
                         onClose={() => togglePanel('inspector')}
                         selectedNode={selectedNode}
                         onNodeUpdate={handleNodeUpdate}
@@ -893,21 +683,21 @@ export default function LoomStudioPage() {
                       />
                     </TooltipProvider>
                   )}
-                  <div className="flex flex-col gap-4 h-full overflow-hidden"> {/* Container for bottom two panels */}
+                  <div className="flex flex-col gap-4 h-full overflow-hidden"> 
                     {panelVisibility.agentHub && (
                        <AgentHubPanel
-                        className="flex-1 min-h-0" // Allow shrinking and take available space
+                        className="flex-1 min-h-0" 
                         onClose={() => togglePanel('agentHub')}
                         isMobile={isMobile}
                         addConsoleMessage={addConsoleMessage}
                         addTimelineEvent={addTimelineEvent}
                         isResizable={true}
-                        initialSize={{ width: '100%', height: 'auto' }} // Auto height, resizable by parent
+                        initialSize={{ width: '100%', height: 'auto' }} 
                       />
                     )}
                     {panelVisibility.actionConsole && (
                        <ActionConsolePanel
-                        className="flex-1 min-h-0" // Allow shrinking
+                        className="flex-1 min-h-0" 
                         onClose={() => togglePanel('actionConsole')}
                         requests={actionRequests}
                         onRespond={handleAgentActionResponse}
@@ -922,7 +712,7 @@ export default function LoomStudioPage() {
               </ResizableVerticalPanes>
             </div>
             
-            <div className="absolute bottom-4 left-4 right-[calc(360px+theme(spacing.4)+theme(spacing.4))] h-[240px] z-10"> {/* Adjust right offset for new right panel group */}
+            <div className="absolute bottom-4 left-4 right-[calc(360px+theme(spacing.4)+theme(spacing.4))] h-[240px] z-10"> 
               <ResizableHorizontalPanes storageKey="bottom-panels-split-v1" minPaneWidth={200}>
                 {panelVisibility.timeline && (
                   <TimelinePanel
@@ -992,7 +782,7 @@ export default function LoomStudioPage() {
         <TemplateSelectorDialog
           isOpen={isTemplateSelectorOpen}
           onClose={handleCloseTemplateSelector}
-          templates={exampleTemplates}
+          templates={exampleTemplates} // This will now be an empty array
           onLoadTemplate={handleLoadTemplate}
         />
       </main>
