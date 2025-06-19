@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A task for summarizing the content of a webpage by calling the backend /api/loom/start endpoint.
+ * @fileOverview A task for summarizing the content of a webpage by calling the backend /api/loom/summarize-url endpoint.
  *
  * - summarizeWebpageTask - A function that handles the webpage summarization via the backend.
  * - SummarizeWebpageInput - The input type for the summarizeWebpageTask function.
@@ -16,102 +16,57 @@ export interface SummarizeWebpageOutput {
   summary?: string;
   originalUrl: string;
   error?: string;
-  logs?: string[];
+  logs?: string[]; // Logs from the task itself, e.g., API call status
 }
 
 export async function summarizeWebpageTask(input: SummarizeWebpageInput): Promise<SummarizeWebpageOutput> {
-  console.log(`[TASK_SUMMARIZE_WEBPAGE] Calling backend API /api/loom/start for URL: "${input.url}"`);
+  const logs: string[] = [];
+  const log = (message: string) => {
+    console.log(`[TASK_SUMMARIZE_WEBPAGE] ${message}`);
+    logs.push(message);
+  };
+
+  log(`Calling backend API /api/loom/summarize-url for URL: "${input.url}"`);
 
   if (!input.url || !(input.url.startsWith('http://') || input.url.startsWith('https://'))) {
+    const errorMsg = 'Invalid URL provided for summarization.';
+    log(`Error: ${errorMsg}`);
     return {
       originalUrl: input.url || 'invalid_url',
-      error: 'Invalid URL provided for summarization.',
+      error: errorMsg,
+      logs,
     };
   }
 
-  let accumulatedResponse = "";
-  const logs: string[] = [];
-
   try {
-    const response = await fetch('/api/loom/start', {
+    const response = await fetch('/api/loom/summarize-url', { // Changed from /api/loom/start
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        topic: `Summarize content from URL: ${input.url.substring(0, 50)}...`,
-        initialContent: input.url, // The URL itself is the initial content for the summarizer agent
-      }),
+      body: JSON.stringify({ url: input.url }),
     });
 
+    const responseData = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: "Failed to parse error response from API." }));
-      const errorMessage = errorData.error || `API request failed with status ${response.status}`;
-      console.error(`[TASK_SUMMARIZE_WEBPAGE] API error: ${errorMessage}`);
+      const errorMessage = responseData.error || `API request failed with status ${response.status}`;
+      log(`API Error: ${errorMessage}`);
       return { originalUrl: input.url, error: errorMessage, logs };
     }
-
-    if (!response.body) {
-      return { originalUrl: input.url, error: "Response body is empty from API /api/loom/start.", logs };
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
-    let finalOutputStarted = false;
-    let finalSummary = "";
-
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value) {
-        const chunk = decoder.decode(value, { stream: true });
-        accumulatedResponse += chunk;
-        
-        // Process line by line for logs and final output marker
-        const lines = accumulatedResponse.split('\n');
-        accumulatedResponse = lines.pop() || ""; // Keep incomplete line for next chunk
-
-        for (const line of lines) {
-          if (line.startsWith("[LOG]")) {
-            logs.push(line.substring(5).trim());
-          } else if (line.startsWith("[STREAMING_OUTPUT_START]")) {
-            finalOutputStarted = true;
-            const contentAfterMarker = line.substring("[STREAMING_OUTPUT_START]".length);
-            if(contentAfterMarker.trim()) finalSummary += contentAfterMarker + '\n';
-          } else if (line.startsWith("[ERROR]")) {
-            const apiError = line.substring("[ERROR]".length).trim();
-            console.error(`[TASK_SUMMARIZE_WEBPAGE] API returned an error in stream: ${apiError}`);
-            return { originalUrl: input.url, error: `API Error: ${apiError}`, logs };
-          } else if (finalOutputStarted) {
-            finalSummary += line + '\n';
-          }
-        }
-      }
-    }
-     // Process any remaining accumulatedResponse
-    if (accumulatedResponse.trim()) {
-        if (accumulatedResponse.startsWith("[LOG]")) {
-            logs.push(accumulatedResponse.substring(5).trim());
-        } else if (accumulatedResponse.startsWith("[STREAMING_OUTPUT_START]")) {
-            finalOutputStarted = true;
-             const contentAfterMarker = accumulatedResponse.substring("[STREAMING_OUTPUT_START]".length);
-            if(contentAfterMarker.trim()) finalSummary += contentAfterMarker + '\n';
-        } else if (finalOutputStarted) {
-            finalSummary += accumulatedResponse + '\n';
-        }
-    }
-
-
-    if (!finalSummary.trim() && !logs.some(l => l.toLowerCase().includes('error'))) {
-       return { originalUrl: input.url, error: "No summary content received from the API, but no explicit error.", logs };
-    }
     
-    console.log(`[TASK_SUMMARIZE_WEBPAGE] Successfully processed stream. Summary length: ${finalSummary.trim().length}. Logs collected: ${logs.length}`);
-    return { summary: finalSummary.trim(), originalUrl: input.url, logs };
+    log(`Successfully received summary from API for URL: ${input.url}. Summary length: ${responseData.summary?.length || 0}`);
+    return { 
+      summary: responseData.summary, 
+      originalUrl: responseData.originalUrl || input.url, 
+      error: responseData.error, // Pass through error if API explicitly returned one with 200 OK
+      logs 
+    };
 
   } catch (e: any) {
-    console.error("[TASK_SUMMARIZE_WEBPAGE] Fetch/stream processing error:", e);
-    return { originalUrl: input.url, error: e.message || "An unexpected error occurred while summarizing the webpage.", logs };
+    const errorMsg = e.message || "An unexpected error occurred while calling the summarization API.";
+    log(`Fetch/Processing Error: ${errorMsg}`);
+    return { originalUrl: input.url, error: errorMsg, logs };
   }
 }
+
