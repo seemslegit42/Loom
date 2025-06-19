@@ -34,7 +34,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
 
     setIsLoading(true);
     let accumulatedResponse = "";
-    let logs = "";
+    let accumulatedLogs = "";
 
     try {
       console.log(`[AI_FLOW_FORM] Calling API /api/loom/start for input: "${userInput.substring(0, 50)}..."`);
@@ -43,7 +43,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: userInput }),
+        body: JSON.stringify({ prompt: userInput }), // Sending as a general prompt
       });
 
       if (!response.ok) {
@@ -68,36 +68,45 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
         }
       }
       
-      // Simple parsing of the stream: separate logs from final output
+      // Parse the stream: separate logs from final output
       const logMarker = "[LOG]";
       const outputStartMarker = "[STREAMING_OUTPUT_START]";
-      let finalOutput = accumulatedResponse;
+      const errorMarker = "[ERROR]";
+      let finalOutput = "";
+      const logLines: string[] = [];
+      let outputStarted = false;
+      let apiErrorFound = "";
 
       const lines = accumulatedResponse.split('\n');
-      const logLines: string[] = [];
-      const outputLines: string[] = [];
-      let outputStarted = false;
-
       for (const line of lines) {
+        if (line.startsWith(errorMarker)) {
+          apiErrorFound = line.substring(errorMarker.length).trim();
+          break; 
+        }
         if (line.startsWith(outputStartMarker)) {
           outputStarted = true;
+          const contentAfterMarker = line.substring(outputStartMarker.length);
+          if(contentAfterMarker.trim()) finalOutput += contentAfterMarker + '\n'; // Add content on the same line
           continue; 
         }
         if (line.startsWith(logMarker) && !outputStarted) {
           logLines.push(line.substring(logMarker.length).trim());
         } else if (outputStarted) {
-          outputLines.push(line);
+          finalOutput += line + '\n';
         }
       }
-      logs = logLines.join('\n');
-      finalOutput = outputLines.join('\n').trim();
+      accumulatedLogs = logLines.join('\n');
+      finalOutput = finalOutput.trim();
       
-      console.log("[AI_FLOW_FORM] API Response Logs:\n", logs);
+      console.log("[AI_FLOW_FORM] API Response Logs:\n", accumulatedLogs);
       console.log("[AI_FLOW_FORM] API Final Output:\n", finalOutput);
 
+      if (apiErrorFound) {
+        throw new Error(`API returned an error: ${apiErrorFound}`);
+      }
 
-      if (!finalOutput) {
-         throw new Error("No actionable output received from the AI flow generation API.");
+      if (!finalOutput && !apiErrorFound) { // If no error marker, but also no output
+         throw new Error("No actionable output received from the AI flow generation API. Logs: " + accumulatedLogs.substring(0, 200) + "...");
       }
 
       const workflowName = `Flow for: ${userInput.substring(0, 30)}${userInput.length > 30 ? '...' : ''}`;
@@ -116,7 +125,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated }: AiFlowGeneratorFormProp
       }];
 
       const generatedData: AiGeneratedFlowData = {
-        message: `Flow "${workflowName}" generated successfully by backend AI with ${nodes.length} step(s). Logs: ${logs.substring(0,100)}...`,
+        message: `Flow "${workflowName}" generated successfully by backend AI. Logs: ${accumulatedLogs.substring(0,100)}...`,
         workflowName: workflowName,
         nodes: nodes,
         error: false,

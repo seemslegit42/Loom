@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     const { topic, initialContent, prompt } = await req.json();
 
-    if (!topic && !prompt) {
+    if (!topic && !initialContent && !prompt) {
       return NextResponse.json(
         { error: 'Either "topic" and "initialContent", or "prompt" must be provided.' },
         { status: 400 },
@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
     }
     
     const currentTopic = topic || prompt;
-    const currentInitialContent = initialContent || prompt || "Please process this request.";
+    // Ensure initialContent has a fallback if only prompt is given, or if topic is given but initialContent is not.
+    const currentInitialContent = initialContent || prompt || "Please process this request based on the topic.";
 
 
     const streamCallbacks: AIStreamCallbacksAndOptions = {
@@ -25,11 +26,14 @@ export async function POST(req: NextRequest) {
         console.log('[API /loom/start] Stream started via orchestrator.');
       },
       onToken: async (token) => {
-        // console.log('[API /loom/start] Token received:', token);
+        // console.log('[API /loom/start] Token received:', token); // Can be too verbose
       },
       onCompletion: async (completion) => {
         console.log('[API /loom/start] Stream completed.');
       },
+      onFinal: async (completion) => {
+        console.log('[API /loom/start] Stream finalized.');
+      }
     };
 
     // startSimpleSwarm now returns an AIStream-compatible object
@@ -46,3 +50,4 @@ export async function POST(req: NextRequest) {
     });
   }
 }
+
