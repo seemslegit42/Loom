@@ -18,6 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { generateNodeId } from '@/lib/utils';
 import { ResizableHorizontalPanes } from '@/components/layout/resizable-horizontal-panes';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 
 // Import task functions and their types
@@ -40,7 +41,7 @@ export interface AiGeneratedFlowData {
 
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, limit, getDocs, Timestamp, where, writeBatch, getDoc, doc } from 'firebase/firestore';
 
 export interface PanelVisibility {
   palette: boolean;
@@ -206,11 +207,11 @@ export default function LoomStudioPage() {
     const fetchConsoleMessages = async () => {
       try {
         // Querying general 'console_logs'
-        const messagesCol = collection(db, 'console_logs');
-        const q = query(messagesCol, orderBy('timestamp', 'desc'), limit(50));
-        const querySnapshot = await getDocs(q);
-        const fetchedMessages: ConsoleMessage[] = [];
-        querySnapshot.forEach((doc) => {
+        const generalMessagesCol = collection(db, 'console_logs');
+        const generalQuery = query(generalMessagesCol, orderBy('timestamp', 'desc'), limit(25)); // Fetch fewer general logs
+        const generalSnapshot = await getDocs(generalQuery);
+        let fetchedMessages: ConsoleMessage[] = [];
+        generalSnapshot.forEach((doc) => {
           const data = doc.data();
           fetchedMessages.push({
             type: data.type as ConsoleMessage['type'],
@@ -218,11 +219,43 @@ export default function LoomStudioPage() {
             timestamp: (data.timestamp as Timestamp).toDate(),
           });
         });
+
+        // If there's an active swarmId from generatedFlow, fetch its specific logs
+        if (generatedFlow?.swarmId) {
+          const swarmDocRef = doc(db, 'loom_swarms', generatedFlow.swarmId);
+          const swarmDocSnap = await getDoc(swarmDocRef);
+          if (swarmDocSnap.exists()) {
+             const swarmData = swarmDocSnap.data();
+             if (swarmData && swarmData.logStream && Array.isArray(swarmData.logStream)) {
+                 swarmData.logStream.forEach((logEntry: any) => {
+                    if (logEntry.message && logEntry.timestamp) {
+                        fetchedMessages.push({
+                            type: 'log', // Assuming swarm logs are 'log' type for now
+                            text: `[Swarm: ${generatedFlow.swarmId?.substring(0,8)}] ${logEntry.message}`,
+                            timestamp: (logEntry.timestamp as Timestamp).toDate(),
+                        });
+                    }
+                 });
+             }
+          }
+          
+          // Also fetch from loom_swarms/{swarmId}/logs subcollection
+          const swarmSubLogsCol = collection(db, 'loom_swarms', generatedFlow.swarmId, 'logs');
+          const swarmSubQuery = query(swarmSubLogsCol, orderBy('timestamp', 'asc'), limit(25)); // Fetch specific swarm logs
+          const swarmSubSnapshot = await getDocs(swarmSubQuery);
+          swarmSubSnapshot.forEach((doc) => {
+            const data = doc.data();
+            fetchedMessages.push({
+              type: data.type as ConsoleMessage['type'] || 'log',
+              text: `[Swarm: ${generatedFlow.swarmId?.substring(0,8)}] ${data.message || data.text}`,
+              timestamp: (data.timestamp as Timestamp).toDate(),
+            });
+          });
+        }
         
-        // Querying 'loom_swarms' for specific swarm logs - for general console view
-        // This might be too verbose for the main console, better for specific swarm log view.
-        // For now, let's keep the main console for user actions and top-level API logs.
-        // Swarm-specific logs are available via /api/loom/logs?swarmId=...
+        // Sort all fetched messages by timestamp descending before slicing and setting
+        fetchedMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        fetchedMessages = fetchedMessages.slice(0, 50); // Limit combined total
 
         setConsoleMessages(prev => [...fetchedMessages.reverse(), ...prev.filter(pm => !fetchedMessages.find(fm => fm.text === pm.text && fm.timestamp.getTime() === pm.timestamp.getTime()))]);
 
@@ -239,25 +272,33 @@ export default function LoomStudioPage() {
       }
     };
     fetchConsoleMessages();
-  }, []);
+  }, [generatedFlow?.swarmId]);
 
-  const addConsoleMessage = useCallback(async (type: ConsoleMessage['type'], text: string) => {
+  const addConsoleMessage = useCallback(async (type: ConsoleMessage['type'], text: string, swarmIdForLog?: string) => {
     const newMessage: ConsoleMessage = { type, text, timestamp: new Date() };
-    setConsoleMessages(prev => [newMessage, ...prev.slice(0, 199)]); // Keep max 200 messages in local state
+    setConsoleMessages(prev => [newMessage, ...prev.slice(0, 199)]);
 
-    // Persist to general console_logs
     try {
-      await addDoc(collection(db, 'console_logs'), {
-        type: newMessage.type,
-        text: newMessage.text,
-        timestamp: Timestamp.fromDate(newMessage.timestamp),
-      });
+      if (swarmIdForLog) {
+        // Log to specific swarm's subcollection
+        await addDoc(collection(db, 'loom_swarms', swarmIdForLog, 'logs'), {
+          type: newMessage.type,
+          text: newMessage.text, // or message: newText if schema is different
+          timestamp: Timestamp.fromDate(newMessage.timestamp),
+        });
+      } else {
+        // Persist to general console_logs
+        await addDoc(collection(db, 'console_logs'), {
+          type: newMessage.type,
+          text: newMessage.text,
+          timestamp: Timestamp.fromDate(newMessage.timestamp),
+        });
+      }
     } catch (error) {
-      console.error("Error adding console message to Firestore 'console_logs':", error);
-      // Log error to local console, but don't try to save this error message to Firestore to avoid loops
-      const errorMsgText = 'Failed to save message to cloud console (console_logs).';
+      console.error("Error adding console message to Firestore:", error);
+      const errorMsgText = `Failed to save message to cloud console (${swarmIdForLog ? `swarm ${swarmIdForLog}` : 'console_logs'}).`;
       const errorMsg: ConsoleMessage = {type: 'error', text: errorMsgText, timestamp: new Date()};
-        setConsoleMessages(prev => {
+      setConsoleMessages(prev => {
         if (!prev.find(pm => pm.text === errorMsgText)) {
           return [errorMsg, ...prev];
         }
@@ -278,7 +319,7 @@ export default function LoomStudioPage() {
     setActionRequests(prev => prev.filter(r => r.id !== requestId)); 
     
     const logMessage = `Agent Action: Request ID ${requestId} (${request.requestType} from ${request.agentName}) was ${responseStatus}. ${details ? `Details: "${details}"` : ''}`;
-    addConsoleMessage(responseStatus === 'denied' ? 'warn' : 'info', logMessage);
+    addConsoleMessage('info', logMessage);
     addTimelineEvent({ type: 'info', message: `User ${responseStatus} agent action: ${request.agentName}.` });
     
     toast({
@@ -592,8 +633,6 @@ export default function LoomStudioPage() {
     setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
     if (selectedNode?.id === nodeId) setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
 
-    // Simulate task execution delay
-    // await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
 
     try {
       if (nodeToRun.type === 'web-summarizer') {
@@ -606,9 +645,9 @@ export default function LoomStudioPage() {
           const taskInput: SummarizeWebpageInput = { url };
           nodeOutput = await summarizeWebpageTask(taskInput);
           if (nodeOutput.error) nodeError = nodeOutput.error;
-          // For web-summarizer, logs from the task might be interesting to show
+          
           if (nodeOutput.logs && nodeOutput.logs.length > 0) {
-             nodeOutput.logs.forEach(log => addConsoleMessage('log', `[Task: ${nodeToRun.title}] ${log}`));
+             nodeOutput.logs.forEach(log => addConsoleMessage('log', `[Task: ${nodeToRun.title}] ${log}`, generatedFlow?.swarmId));
           }
         }
       } else if (nodeToRun.type === 'prompt') {
@@ -624,15 +663,11 @@ export default function LoomStudioPage() {
           if (nodeOutput.error) nodeError = nodeOutput.error;
         }
       } else {
-        // For other node types, we still simulate for now as their "real" tasks aren't built
-        // To align with "no simulation", this part should eventually call real backend agents/tools.
-        // For now, we log that it's a placeholder action.
         addConsoleMessage('warn', `Execution for node type '${nodeToRun.type}' (${nodeToRun.title}) is currently a placeholder. No real backend task executed.`);
         nodeOutput = { 
             simulatedOutput: `Output from placeholder execution for '${nodeToRun.type}' node. Title: ${nodeToRun.title}.`,
             message: "This node type's execution is not fully implemented with a real backend task yet."
         };
-        // Simulate a successful completion for placeholder nodes for now
         nodeError = undefined; 
       }
       finalStatus = nodeError ? 'failed' : 'completed';
@@ -808,6 +843,7 @@ export default function LoomStudioPage() {
         isMobile={isMobile}
         anyMobilePanelOpen={anyMobilePanelOpen}
         onOpenTemplateSelector={handleOpenTemplateSelector}
+        swarmId={generatedFlow?.swarmId}
       />
       <main className={`flex-1 relative flex overflow-hidden ${isMobile ? 'p-0' : 'p-4 gap-4'} ${isMobile ? 'pb-16' : ''}`}>
         <div className={`flex-1 h-full transition-opacity duration-300 ${anyMobilePanelOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
@@ -831,19 +867,21 @@ export default function LoomStudioPage() {
               <PalettePanel className="absolute top-4 left-4 z-10" onClose={() => togglePanel('palette')} isMobile={isMobile} />
             )}
             {panelVisibility.inspector && (
-              <InspectorPanel
-                key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'}
-                className="absolute top-4 right-4 z-10"
-                onClose={() => togglePanel('inspector')}
-                selectedNode={selectedNode}
-                onNodeUpdate={handleNodeUpdate}
-                onNodeDelete={handleDeleteNode}
-                isMobile={isMobile}
-                onRunNode={handleRunNode}
-                isNodeRunning={isNodeRunning}
-                isResizable={true} 
-                initialSize={{ width: '360px', height: 'calc(100vh - 280px)' }} 
-              />
+              <TooltipProvider delayDuration={300}>
+                <InspectorPanel
+                  key={selectedNode ? `inspector-desktop-${selectedNode.id}` : 'inspector-desktop-no-node'}
+                  className="absolute top-4 right-4 z-10"
+                  onClose={() => togglePanel('inspector')}
+                  selectedNode={selectedNode}
+                  onNodeUpdate={handleNodeUpdate}
+                  onNodeDelete={handleDeleteNode}
+                  isMobile={isMobile}
+                  onRunNode={handleRunNode}
+                  isNodeRunning={isNodeRunning}
+                  isResizable={true} 
+                  initialSize={{ width: '360px', height: 'calc(100vh - 280px)' }} 
+                />
+              </TooltipProvider>
             )}
             <div className="absolute bottom-4 left-4 right-4 h-[240px] z-10">
               <ResizableHorizontalPanes storageKey="bottom-panels-split-v1" minPaneWidth={200}>
@@ -906,17 +944,20 @@ export default function LoomStudioPage() {
             </div>
             <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.inspector ? 'translate-x-0' : 'translate-x-full'}`}>
               {panelVisibility.inspector &&
-                <InspectorPanel
-                  key={selectedNode ? `inspector-mobile-${selectedNode.id}` : 'inspector-mobile-no-node'}
-                  className="h-full overflow-y-auto"
-                  onClose={() => togglePanel('inspector')}
-                  selectedNode={selectedNode}
-                  onNodeUpdate={handleNodeUpdate}
-                  onNodeDelete={handleDeleteNode}
-                  isMobile={isMobile}
-                  onRunNode={handleRunNode}
-                  isNodeRunning={isNodeRunning}
-                />}
+                <TooltipProvider delayDuration={300}>
+                  <InspectorPanel
+                    key={selectedNode ? `inspector-mobile-${selectedNode.id}` : 'inspector-mobile-no-node'}
+                    className="h-full overflow-y-auto"
+                    onClose={() => togglePanel('inspector')}
+                    selectedNode={selectedNode}
+                    onNodeUpdate={handleNodeUpdate}
+                    onNodeDelete={handleDeleteNode}
+                    isMobile={isMobile}
+                    onRunNode={handleRunNode}
+                    isNodeRunning={isNodeRunning}
+                  />
+                </TooltipProvider>
+              }
             </div>
              <div className={`fixed inset-y-0 right-0 z-40 w-4/5 max-w-sm bg-card/90 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out ${panelVisibility.agentHub ? 'translate-x-0' : 'translate-x-full'}`}>
               {panelVisibility.agentHub && <AgentHubPanel className="h-full" onClose={() => togglePanel('agentHub')} isMobile={isMobile} addConsoleMessage={addConsoleMessage} addTimelineEvent={addTimelineEvent} />}

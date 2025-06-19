@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 // Using BackendSummarizeOutput and BackendExecutePromptOutput from page.tsx types for simulated output
 import type { BackendSummarizeOutput, BackendExecutePromptOutput } from '@/app/page';
 
@@ -108,6 +109,21 @@ export function InspectorPanel({
   );
 
   const output = selectedNode?.config?.output;
+
+  let runDisabledReason = '';
+  if (selectedNode) {
+      if (selectedNode.type === 'web-summarizer' && !editableConfig?.url) {
+          runDisabledReason = "URL is required for Web Summarizer.";
+      } else if (selectedNode.type === 'prompt' && !editableConfig?.promptText) {
+          runDisabledReason = "Prompt Text is required for Prompt Node.";
+      } else if (selectedNode.type === 'data-transform' && !editableConfig?.transformationLogic) {
+          runDisabledReason = "Transformation Logic is required for Data Transform node.";
+      } else if (selectedNode.type === 'conditional' && !editableConfig?.condition) {
+          runDisabledReason = "Condition expression is required for Conditional Logic node.";
+      }
+  }
+  const isRunDisabledByConfig = Boolean(runDisabledReason);
+  const isRunButtonDisabled = nodeIsCurrentlyRunning || isRunDisabledByConfig;
 
 
   return (
@@ -325,21 +341,27 @@ export function InspectorPanel({
 
           {/* Action Buttons */}
           {nodeCanRun && (
-            <Button
-              onClick={() => onRunNode!(selectedNode.id)}
-              className="w-full mt-1"
-              size="sm"
-              disabled={
-                nodeIsCurrentlyRunning ||
-                (selectedNode.type === 'web-summarizer' && !editableConfig?.url) ||
-                (selectedNode.type === 'prompt' && !editableConfig?.promptText) ||
-                (selectedNode.type === 'data-transform' && !editableConfig?.transformationLogic) ||
-                (selectedNode.type === 'conditional' && !editableConfig?.condition)
-              }
-            >
-              {nodeIsCurrentlyRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-              {nodeIsCurrentlyRunning ? 'Running...' : `Run ${formatDisplayValue(selectedNode.type)} Node`}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {/* Wrap the button in a span if it's conditionally disabled, for Tooltip to work reliably on disabled elements */}
+                <span tabIndex={isRunButtonDisabled ? 0 : undefined}>
+                  <Button
+                    onClick={() => onRunNode!(selectedNode.id)}
+                    className="w-full mt-1"
+                    size="sm"
+                    disabled={isRunButtonDisabled}
+                  >
+                    {nodeIsCurrentlyRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                    {nodeIsCurrentlyRunning ? 'Running...' : `Run ${formatDisplayValue(selectedNode.type)} Node`}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {isRunDisabledByConfig && !nodeIsCurrentlyRunning && (
+                <TooltipContent>
+                  <p>{runDisabledReason}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
           )}
 
           <div className="flex items-center justify-between pt-2">
