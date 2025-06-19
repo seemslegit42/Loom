@@ -1,4 +1,3 @@
-
 // src/components/panels/console-panel.tsx
 import { BasePanel } from './base-panel';
 import { Terminal, AlertCircle, Info, Filter, Trash2 } from 'lucide-react';
@@ -125,7 +124,7 @@ export function ConsolePanel({
           <div className="flex items-start text-muted-foreground pt-1 mt-1 border-t border-border/20">
             {getIconForType('log')}
             <span>&gt; Listening for new events...</span>
-            <span className="animate-ping ml-1">_</span>
+            {/* <span className="animate-ping ml-1">_</span> Removed animated underscore */}
           </div>
         )}
         </div>

@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { WorkflowNode, type WorkflowNodeData, type NodeType, type NodeStatus } from '@/components/workflow/workflow-node';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BrainCircuit, MousePointer2 } from 'lucide-react';
+import { Sparkles, MousePointer2 } from 'lucide-react'; // Changed BrainCircuit to Sparkles
 import { cn } from '@/lib/utils';
 import type { ConnectingState } from '@/app/page';
 
@@ -240,11 +240,11 @@ export function CanvasZone({
         </div>
         {!workflowName && displayedNodes.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-muted-foreground py-20 pointer-events-none">
-            <BrainCircuit className="h-16 w-16 mb-4 text-primary/50" />
-            <h2 className="text-2xl font-headline mb-2">Agent Orchestration Canvas</h2>
-            <p className="max-w-md">
-              Visually build and manage your AI agents here.
-              Generate a flow or drag components from Palette. Click a node's output port, then another's input port to connect.
+            <Sparkles className="h-16 w-16 mb-4 text-primary/50" /> 
+            <h2 className="text-2xl font-headline mb-2 text-foreground/90">Your Creative Canvas Awaits</h2>
+            <p className="max-w-md text-sm">
+              Drag elements from the Palette or use AI to generate a new workflow.
+              Connect nodes to bring your ideas to life.
             </p>
           </div>
         )}
