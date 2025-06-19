@@ -4,7 +4,7 @@ import type { GenerateFlowFormState } from '@/lib/actions/ai'; // This type migh
 import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BrainCircuit, Search, Settings, UserCircle, Menu, Terminal, FolderKanban, FileText, ListOrdered, LayoutGrid, Settings2, Bot, BookMarked, Eye, ShieldQuestion } from 'lucide-react';
+import { BrainCircuit, Search, Settings, UserCircle, Menu, FolderKanban, FileText, BookMarked, Eye, ShieldQuestion, LayoutGrid, Settings2, Bot, ListOrdered, Terminal } from 'lucide-react';
 import type { PanelVisibility, AiGeneratedFlowData } from '@/app/page'; 
 import {
   DropdownMenu,
@@ -27,7 +27,7 @@ interface TopBarProps {
   isMobile: boolean;
   anyMobilePanelOpen: boolean;
   onOpenTemplateSelector: () => void; 
-  swarmId?: string | null; // Added swarmId prop
+  swarmId?: string | null; 
 }
 
 export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, togglePanel, isMobile, anyMobilePanelOpen, onOpenTemplateSelector, swarmId }: TopBarProps) {
@@ -42,7 +42,7 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
     addConsoleMessage('info', `User clicked on coming soon feature: ${featureName}`);
   };
 
-  const panelToggleItems = [
+  const desktopPanelToggleItems = [
     { panel: 'palette' as keyof PanelVisibility, label: 'Palette', icon: <LayoutGrid className="mr-2 h-4 w-4" /> },
     { panel: 'inspector' as keyof PanelVisibility, label: 'Inspector', icon: <Settings2 className="mr-2 h-4 w-4" /> },
     { panel: 'agentHub' as keyof PanelVisibility, label: 'Agent Hub', icon: <Bot className="mr-2 h-4 w-4" /> },
@@ -72,19 +72,6 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
               <DropdownMenuItem onClick={() => handleComingSoon("Documentation")} className="cursor-pointer">
                  <FileText className="mr-2 h-4 w-4" /> Docs
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Toggle Panels</DropdownMenuLabel>
-              {panelToggleItems.map(item => (
-                 <DropdownMenuCheckboxItem
-                    key={item.panel}
-                    checked={panelVisibility[item.panel]}
-                    onCheckedChange={() => togglePanel(item.panel)}
-                    className="cursor-pointer"
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </DropdownMenuCheckboxItem>
-              ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleComingSoon("Agent Context")} className="cursor-pointer">
                  <UserCircle className="mr-2 h-4 w-4" /> Agent Context
@@ -116,7 +103,7 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuLabel>Toggle Panels</DropdownMenuLabel>
-              {panelToggleItems.map(item => (
+              {desktopPanelToggleItems.map(item => (
                  <DropdownMenuCheckboxItem
                     key={item.panel}
                     checked={panelVisibility[item.panel]}

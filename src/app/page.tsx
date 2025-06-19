@@ -210,7 +210,6 @@ export default function LoomStudioPage() {
 
 
   useEffect(() => {
-    // No longer check for isMobile === undefined
     if (isMobile) {
       setPanelVisibility({ palette: false, inspector: false, timeline: false, console: false, agentHub: false, actionConsole: false });
     } else {
@@ -617,8 +616,6 @@ export default function LoomStudioPage() {
 
   const anyMobilePanelOpen = isMobile && Object.values(panelVisibility).some(v => v);
   
-  // Removed: if (isMobile === undefined) { ... } block
-
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <TopBar
