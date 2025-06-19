@@ -136,6 +136,7 @@ export function AgentHubPanel({
 
     toast({ title: "Agent Provisioned", description: `Agent "${newAgentName}" with capabilities "${profile.permissions}" is now available (backend provisioning simulated).` });
     addConsoleMessage('info', `Agent "${newAgentName}" (type: ${profile.namePrefix}) provisioned (backend call simulated).`);
+    addTimelineEvent({ type: 'info', message: `Agent "${newAgentName}" provisioned.` });
   };
 
   const handleResumeAll = () => {
@@ -163,11 +164,13 @@ export function AgentHubPanel({
   const handleToggleAgentStatus = (agentId: string) => {
     let agentName = "";
     let newStatus: Agent['status'] = 'idle';
+    let oldStatus: Agent['status'] = 'idle';
 
     setAgents(prev =>
       prev.map(agent => {
         if (agent.id === agentId) {
           agentName = agent.name;
+          oldStatus = agent.status;
           newStatus = (agent.status === 'active') ? 'paused' : 'active';
           return { ...agent, status: newStatus };
         }
@@ -177,14 +180,14 @@ export function AgentHubPanel({
 
     const action = newStatus === 'active' ? 'Resumed' : 'Paused';
     toast({ title: `Agent ${action}`, description: `Agent "${agentName}" has been ${action.toLowerCase()} (backend interaction simulated).` });
-    addConsoleMessage('info', `Agent "${agentName}" (ID: ${agentId}) ${action.toLowerCase()} (backend interaction simulated).`);
+    addConsoleMessage('info', `Agent "${agentName}" (ID: ${agentId}) ${action.toLowerCase()} (from ${oldStatus}). Backend interaction simulated.`);
     addTimelineEvent({ type: 'info', message: `Agent "${agentName}" ${action.toLowerCase()} (simulated).` });
   };
 
 
   return (
     <BasePanel
-      title="Agent Hub"
+      title="Agent Hub (Managed)"
       icon={<Bot className="h-4 w-4" />}
       className={className}
       onClose={onClose}
@@ -195,7 +198,7 @@ export function AgentHubPanel({
     >
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Managed Agents ({agents.length})</h3>
+          <h3 className="text-sm font-medium">Connected Agents ({agents.length})</h3>
           <Button variant="outline" size="sm" className="text-xs" onClick={handleSpawnAgent}>
             <UserPlus className="h-3 w-3 mr-1.5" />
             Provision New Agent
@@ -221,14 +224,16 @@ export function AgentHubPanel({
                   key={agent.id}
                   className={cn(
                     "p-2.5 rounded-md bg-card/60 border border-border/40 hover:border-primary/50 transition-colors group",
-                    selectedAgent?.id === agent.id && "border-primary ring-1 ring-primary bg-primary/5"
+                    selectedAgent?.id === agent.id && "border-primary ring-1 ring-primary bg-primary/5 shadow-md"
                   )}
-
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span
                       className="text-sm font-medium text-foreground/90 group-hover:text-primary cursor-pointer"
                       onClick={() => handleSelectAgent(agent)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelectAgent(agent)}
                     >
                       {agent.name}
                     </span>
@@ -245,7 +250,12 @@ export function AgentHubPanel({
                        <Badge className={`text-[0.65rem] px-1.5 py-0.5 ${statusColors[agent.status] || 'bg-muted border-muted-foreground/30'}`}>{formatStatusText(agent.status)}</Badge>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground space-y-0.5" onClick={() => handleSelectAgent(agent)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleSelectAgent(agent)}>
+                  <div
+                    className="text-xs text-muted-foreground space-y-0.5 cursor-pointer"
+                    onClick={() => handleSelectAgent(agent)}
+                    role="button"
+                    tabIndex={-1} // Not focusable on its own, card title handles focus
+                  >
                     <p className="flex items-center gap-1"><ListChecks className="h-3 w-3 text-primary/70" /> Active Tasks: {agent.tasks} | Workload: {agent.workload}</p>
                     <p className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-primary/70" /> Capabilities: {agent.permissions}</p>
                   </div>
@@ -281,6 +291,7 @@ export function AgentHubPanel({
                 className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
                 placeholder="e.g., Web Search, File IO, Code Execution"
               />
+              <p className="text-xs text-muted-foreground">Simulates updating backend agent configuration.</p>
             </div>
             <div className="flex items-center gap-2 mt-2">
               <Button onClick={handleUpdateAgent} size="sm" className="flex-1">
@@ -320,4 +331,6 @@ export function AgentHubPanel({
     </BasePanel>
   );
 }
+    
+
     
