@@ -626,21 +626,22 @@ export default function LoomStudioPage() {
     
     let nodeOutput: SummarizeWebpageOutput | ExecutePromptOutput | Record<string, any> | null = null;
     let nodeError: string | undefined = undefined;
-    let finalStatus: NodeStatus = 'failed';
     
     const runType = nodeToRun.type === 'web-summarizer' ? 'Web Summarizer' : nodeToRun.type === 'prompt' ? 'Prompt Node' : 'Node';
+    
+    // Immediate UI update to "running"
+    setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
+    if (selectedNode?.id === nodeId) {
+      setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
+    }
     addConsoleMessage('info', `Executing individual ${runType}: "${nodeToRun.title}" (ID: ${nodeId}) - Calling task.`);
     addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_running', message: `Executing individual ${runType}: ${nodeToRun.title} (task)` });
-    setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
-    if (selectedNode?.id === nodeId) setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
-
 
     try {
       if (nodeToRun.type === 'web-summarizer') {
         const url = nodeToRun.config?.url;
         if (!url) {
           nodeError = "URL is missing for Web Summarizer.";
-          toast({ title: "Missing Configuration", description: nodeError, variant: "destructive" });
           nodeOutput = { error: nodeError, originalUrl: url || '' };
         } else {
           const taskInput: SummarizeWebpageInput = { url };
@@ -656,7 +657,6 @@ export default function LoomStudioPage() {
         const modelName = nodeToRun.config?.modelName; 
         if (!promptText) {
           nodeError = "Prompt text is missing for Prompt Node.";
-          toast({ title: "Missing Configuration", description: nodeError, variant: "destructive" });
           nodeOutput = { error: nodeError };
         } else {
           const taskInput: ExecutePromptInput = { promptText, modelName };
@@ -671,13 +671,12 @@ export default function LoomStudioPage() {
         };
         nodeError = undefined; 
       }
-      finalStatus = nodeError ? 'failed' : 'completed';
     } catch (e: any) {
       nodeError = e.message || `An unexpected error occurred during ${runType} task execution.`;
-      finalStatus = 'failed';
       nodeOutput = { error: nodeError }; 
     }
 
+    const finalStatus: NodeStatus = nodeError ? 'failed' : 'completed';
     const updatedNodeData: WorkflowNodeData = {
       ...nodeToRun,
       config: { ...nodeToRun.config, output: nodeOutput || { error: nodeError || "Unknown error during task execution" } },
@@ -697,10 +696,18 @@ export default function LoomStudioPage() {
     if (nodeError) {
       addConsoleMessage('error', `Individual ${runType} "${updatedNodeData.title}" (task) failed: ${nodeError}`);
       addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Individual execution (task) failed: ${nodeError.substring(0,100)}...` });
+      toast({ 
+        title: "Node Execution Failed", 
+        description: `Task for "${updatedNodeData.title}" (${runType}) failed: ${nodeError}`,
+        variant: "destructive"
+      });
     } else {
       addConsoleMessage('info', `Individual ${runType} "${updatedNodeData.title}" (task) completed.`);
       addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: `Individual ${runType} execution (task) completed.` });
-      toast({ title: "Node Executed (Task)", description: `${updatedNodeData.title} (${runType}) completed its task.` });
+      toast({ 
+        title: "Node Executed", 
+        description: `Task for "${updatedNodeData.title}" (${runType}) completed successfully.`
+      });
     }
   };
 
