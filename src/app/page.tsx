@@ -56,10 +56,7 @@ export interface ConnectingState {
   fromPortElement: HTMLDivElement | null; 
 }
 
-// Removed exampleTemplates - templates should come from a real source or be user-created.
 const exampleTemplates: WorkflowTemplate[] = [];
-
-// Removed initialActionRequests - action requests should come from real agent interactions.
 const initialActionRequests: ActionRequest[] = [];
 
 
@@ -213,7 +210,7 @@ export default function LoomStudioPage() {
 
 
   useEffect(() => {
-    if (isMobile === undefined) return;
+    // No longer check for isMobile === undefined
     if (isMobile) {
       setPanelVisibility({ palette: false, inspector: false, timeline: false, console: false, agentHub: false, actionConsole: false });
     } else {
@@ -235,13 +232,11 @@ export default function LoomStudioPage() {
 
     const initialStatuses: Record<string, NodeStatus> = {};
     currentNodes.forEach(node => {
-      initialStatuses[node.id] = 'queued'; // Set all nodes to 'queued' initially
+      initialStatuses[node.id] = 'queued'; 
       addTimelineEvent({ nodeId: node.id, nodeTitle: node.title, type: 'node_queued', message: `Node "${node.title}" initialized to queued.` });
     });
     setNodeExecutionStatus(initialStatuses);
 
-    // Removed: Simulation of execution flow (success/failure, delays, topological sort based execution)
-    // Actual execution will be triggered by "Run Node" or a future "Run Workflow" feature.
     addConsoleMessage('info', `Workflow "${workflowName}" node statuses set to 'queued'. Awaiting user action or full workflow execution.`);
 
   }, [generatedFlow, addConsoleMessage, addTimelineEvent, setNodeExecutionStatus]);
@@ -296,7 +291,7 @@ export default function LoomStudioPage() {
       id: nodeId,
       title: nodeTitleBase,
       description: newNodeData.description || `Manually added ${nodeTitleBase} node. Configure in Inspector.`,
-      status: 'queued', // All new nodes start as 'queued'
+      status: 'queued', 
       config: newNodeData.config || {},
     };
 
@@ -452,7 +447,6 @@ export default function LoomStudioPage() {
           if (nodeOutput.error) nodeError = nodeOutput.error;
         }
       } else {
-        // For other node types, no simulated success. They will effectively fail or show 'not implemented'.
         nodeError = `Execution for node type '${nodeToRun.type}' (${nodeToRun.title}) is not implemented with a real backend task.`;
         nodeOutput = { error: nodeError };
         addConsoleMessage('warn', nodeError);
@@ -612,7 +606,6 @@ export default function LoomStudioPage() {
     setConnections(newConnections);
     setSelectedNode(null);
     setConnectingState(null);
-    // setNodeExecutionStatus({}); // Keep existing statuses if any, visualize will update relevant ones
 
     toast({ title: "Template Loaded", description: `Workflow "${template.name}" is ready.` });
     addTimelineEvent({ type: 'info', message: `Workflow template "${template.name}" loaded onto canvas.` });
@@ -623,9 +616,8 @@ export default function LoomStudioPage() {
 
 
   const anyMobilePanelOpen = isMobile && Object.values(panelVisibility).some(v => v);
-  if (isMobile === undefined) {
-    return <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden items-center justify-center text-lg">Loading UI...</div>;
-  }
+  
+  // Removed: if (isMobile === undefined) { ... } block
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
@@ -782,7 +774,7 @@ export default function LoomStudioPage() {
         <TemplateSelectorDialog
           isOpen={isTemplateSelectorOpen}
           onClose={handleCloseTemplateSelector}
-          templates={exampleTemplates} // This will now be an empty array
+          templates={exampleTemplates} 
           onLoadTemplate={handleLoadTemplate}
         />
       </main>
