@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { WorkflowNode, type WorkflowNodeData, type NodeType, type NodeStatus } from '@/components/workflow/workflow-node';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sparkles, MousePointer2 } from 'lucide-react'; // Changed BrainCircuit to Sparkles
+import { Sparkles, MousePointer2 } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 import type { ConnectingState } from '@/app/page';
 
@@ -199,7 +199,7 @@ export function CanvasZone({
   return (
     <ScrollArea
       className={cn(
-        "h-full w-full rounded-lg border border-dashed border-border/50 iridescent-aurora-bg relative transition-all duration-150",
+        "h-full w-full rounded-lg border border-border/30 iridescent-aurora-bg relative transition-all duration-150",
         isDragActive && "ring-2 ring-accent ring-offset-2 ring-offset-background"
         )}
       onDragEnter={handleDragEnterCanvas}

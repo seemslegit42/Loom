@@ -1,18 +1,17 @@
-
 // src/components/workflow/workflow-node.tsx
 import React, { useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe, FunctionSquare, Binary } from 'lucide-react'; // Added Binary
+import { Bot, CheckCircle, AlertTriangle, Clock, HelpCircle, MessageSquare, GitMerge, Zap, Timer, Webhook, SlidersHorizontal, Cog, Globe, FunctionSquare, Binary } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 // Use Backend types for output as Genkit is removed
 import type { BackendSummarizeOutput, BackendExecutePromptOutput } from '@/app/page';
-import type { ConnectingState } from '@/app/page'; // Import ConnectingState
+import type { ConnectingState } from '@/app/page'; 
 
 
 export type NodeStatus = 'queued' | 'running' | 'failed' | 'completed' | 'unknown' | 'pending';
 // Node types can remain somewhat abstract, as SuperAGI will handle the specifics
-export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer' | 'data-transform' | 'conditional'; // Added 'conditional'
+export type NodeType = 'prompt' | 'decision' | 'agent-call' | 'wait' | 'api-call' | 'trigger' | 'custom' | 'web-summarizer' | 'data-transform' | 'conditional'; 
 
 export interface WorkflowNodeData {
   id: string;
@@ -47,7 +46,7 @@ interface WorkflowNodeProps {
   onInputPortClick?: (nodeId: string, e: React.MouseEvent<HTMLDivElement>) => void;
   onOutputPortClick?: (nodeId: string, portElement: HTMLDivElement) => void; 
   isConnectingFrom?: boolean;
-  connectingState: ConnectingState | null; // Added connectingState prop
+  connectingState: ConnectingState | null; 
 }
 
 const statusIcons: Record<NodeStatus, React.ReactNode> = {
@@ -62,14 +61,14 @@ const statusIcons: Record<NodeStatus, React.ReactNode> = {
 const typeIcons: Record<NodeType, React.ReactNode> = {
   prompt: <MessageSquare className="h-4 w-4 text-purple-400" />,
   decision: <GitMerge className="h-4 w-4 text-orange-400" />,
-  'agent-call': <Zap className="h-4 w-4 text-yellow-400" />, // Represents calling a SuperAGI agent/tool
+  'agent-call': <Zap className="h-4 w-4 text-yellow-400" />, 
   wait: <Timer className="h-4 w-4 text-cyan-400" />,
-  'api-call': <Webhook className="h-4 w-4 text-indigo-400" />, // Could be a generic API tool in SuperAGI
-  trigger: <Cog className="h-4 w-4 text-pink-400" />, // Represents a SuperAGI trigger
-  custom: <SlidersHorizontal className="h-4 w-4 text-teal-400" />, // For custom SuperAGI tools/logic
-  'web-summarizer': <Globe className="h-4 w-4 text-sky-400" />, // A specific SuperAGI capability
+  'api-call': <Webhook className="h-4 w-4 text-indigo-400" />, 
+  trigger: <Cog className="h-4 w-4 text-pink-400" />, 
+  custom: <SlidersHorizontal className="h-4 w-4 text-teal-400" />, 
+  'web-summarizer': <Globe className="h-4 w-4 text-sky-400" />, 
   'data-transform': <FunctionSquare className="h-4 w-4 text-lime-400" />,
-  conditional: <Binary className="h-4 w-4 text-orange-500" />, // Added icon for conditional
+  conditional: <Binary className="h-4 w-4 text-orange-500" />, 
 };
 
 const badgeStyles: Record<NodeStatus, string> = {
@@ -138,7 +137,7 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
         ref={ref}
         id={`node-${id}`} 
         className={cn(
-          'absolute min-w-[250px] max-w-xs bg-card/90 backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] group',
+          'absolute min-w-[250px] max-w-xs bg-card backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] group',
           'border-2',
           cardDynamicStyles[status] || cardDynamicStyles.unknown,
           isSelected && !isConnectingFrom && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30 scale-[1.02]',
