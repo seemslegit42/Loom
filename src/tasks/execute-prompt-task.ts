@@ -1,18 +1,16 @@
 
 'use server';
 /**
- * @fileOverview A task for executing a given prompt.
- * This task now simulates a direct backend interaction or an LLM call,
- * as the /api/chat route has been removed in favor of /api/loom/* endpoints.
+ * @fileOverview A task for executing a given prompt by calling the backend /api/loom/direct endpoint.
  *
- * - executePromptTask - A function that handles the LLM call.
+ * - executePromptTask - A function that handles the LLM call via the backend.
  * - ExecutePromptInput - The input type for the executePromptTask function.
  * - ExecutePromptOutput - The return type for the executePromptTask function.
  */
 
 export interface ExecutePromptInput {
   promptText: string;
-  modelName?: string; // This can be used by a backend API if needed
+  modelName?: string; 
 }
 
 export interface ExecutePromptOutput {
@@ -21,23 +19,61 @@ export interface ExecutePromptOutput {
 }
 
 export async function executePromptTask(input: ExecutePromptInput): Promise<ExecutePromptOutput> {
-  console.log(`[TASK_SIM] executePromptTask (simulating backend). Prompt: "${input.promptText.substring(0, 50)}..." Model: ${input.modelName || 'default'}`);
-
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500));
-
-  if (input.promptText.toLowerCase().includes("error test")) {
-    return {
-      error: "Simulated error during prompt execution (backend task) as requested by 'error test'.",
-    };
-  }
+  console.log(`[TASK_EXECUTE_PROMPT] Calling backend API /api/loom/direct. Prompt: "${input.promptText.substring(0, 50)}..." Model: ${input.modelName || 'default'}`);
 
   if (!input.promptText.trim()) {
-    return { error: "Prompt text cannot be empty (simulated backend validation)." };
+    return { error: "Prompt text cannot be empty." };
   }
 
-  // Simulate a successful response
-  return {
-    responseText: `Simulated LLM response (from backend task) to: "${input.promptText}". Model/Agent ID specified: ${input.modelName || 'default/not specified'}. The actual response would come from the configured backend LLM or agent via /api/loom/start or similar.`,
-  };
+  try {
+    const response = await fetch('/api/loom/direct', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        prompt: input.promptText,
+        modelName: input.modelName 
+      }),
+    });
+
+    if (!response.ok) {
+      // Try to parse error from response body
+      let errorBody;
+      try {
+        errorBody = await response.json();
+      } catch (e) {
+        // Ignore if response body is not JSON or empty
+      }
+      const errorMessage = errorBody?.error || `API request failed with status ${response.status}. Full response: ${await response.text()}`;
+      console.error(`[TASK_EXECUTE_PROMPT] API error: ${errorMessage}`);
+      return { error: errorMessage };
+    }
+
+    if (!response.body) {
+      return { error: "Response body is empty from API /api/loom/direct." };
+    }
+
+    // Handle the streaming response
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulatedText = "";
+    let done = false;
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      done = readerDone;
+      if (value) {
+        accumulatedText += decoder.decode(value, { stream: true });
+      }
+    }
+    // The stream from toDataStreamResponse might include other data if not careful.
+    // For a simple text stream like this, the accumulated text should be the direct LLM output.
+
+    return { responseText: accumulatedText.trim() };
+
+  } catch (e: any) {
+    console.error("[TASK_EXECUTE_PROMPT] Fetch error:", e);
+    return { error: e.message || "An unexpected error occurred while fetching from /api/loom/direct." };
+  }
 }

@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Send, FileText, AlertCircle, Brain } from 'lucide-react';
 import type { ConsoleMessage } from '@/components/panels/console-panel';
 import type { TimelineEvent } from '@/components/panels/timeline-panel';
-import type { BackendExecutePromptOutput } from '@/app/page';
+import { executePromptTask, type ExecutePromptInput, type ExecutePromptOutput } from '@/tasks/execute-prompt-task'; // Updated import
 
 interface PromptExecutorFormProps {
   addConsoleMessage: (type: ConsoleMessage['type'], text: string) => void;
@@ -22,7 +22,7 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
   const [promptText, setPromptText] = useState('');
   const [modelName, setModelName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<BackendExecutePromptOutput | null>(null);
+  const [result, setResult] = useState<ExecutePromptOutput | null>(null); // Using ExecutePromptOutput directly
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -37,40 +37,31 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
     setResult(null);
     setError(null);
 
-    const consoleLog = `Prompt Executor: Executing prompt via backend LLM for: "${promptText.substring(0,50)}..." ${modelName ? `with model/agent ID: ${modelName}` : ''}`;
+    const consoleLog = `Prompt Executor: Executing prompt via backend API /api/loom/direct for: "${promptText.substring(0,50)}..." ${modelName ? `with model: ${modelName}` : ''}`;
     addConsoleMessage('log', consoleLog);
     addTimelineEvent({
       type: 'info',
-      message: `Agent 'Prompt Executor' (via backend) started for prompt: "${promptText.substring(0,30)}..."`,
+      message: `Prompt Executor: Calling backend for prompt: "${promptText.substring(0,30)}..."`,
     });
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+    const taskInput: ExecutePromptInput = { promptText, modelName };
+    const output = await executePromptTask(taskInput);
 
-    let output: BackendExecutePromptOutput;
-
-    if (Math.random() > 0.2) { // Simulate success
-      output = {
-        responseText: `This is a simulated LLM response (from backend) to: "${promptText}". Model/Agent ID specified: ${modelName || 'default/not specified'}. The actual response would come from the configured backend LLM or agent.`,
-      };
+    if (output.error) {
+      setError(output.error);
+      setResult(null); // Ensure no prior result is shown
+      addConsoleMessage('error', `Prompt Executor (backend API): Failed - ${output.error}`);
+      addTimelineEvent({
+        type: 'workflow_failed', // Or a more specific event type like 'llm_call_failed'
+        message: `Prompt Executor (backend API) failed: ${output.error.substring(0,100)}...`,
+      });
+    } else {
       setResult(output);
       setError(null);
-      addConsoleMessage('info', `Prompt Executor (backend): Successfully processed prompt.`);
+      addConsoleMessage('info', `Prompt Executor (backend API): Successfully processed prompt. Response length: ${output.responseText?.length || 0}`);
       addTimelineEvent({
-        type: 'workflow_completed',
-        message: `Agent 'Prompt Executor' (via backend) completed.`,
-      });
-    } else { // Simulate error
-      const errorMessage = "Simulated API Error: The backend LLM or agent could not process the prompt. This could be due to various reasons like invalid input, model overload, or content policy violations.";
-      output = {
-        error: errorMessage,
-      };
-      setResult(output);
-      setError(errorMessage);
-      addConsoleMessage('error', `Prompt Executor (backend): Failed - ${errorMessage}`);
-      addTimelineEvent({
-        type: 'workflow_failed',
-        message: `Agent 'Prompt Executor' (via backend) failed: ${errorMessage.substring(0,100)}...`,
+        type: 'workflow_completed', // Or 'llm_call_succeeded'
+        message: `Prompt Executor (backend API) completed.`,
       });
     }
     setIsLoading(false);
@@ -85,7 +76,7 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
           </Label>
           <Textarea
             id="promptTextInput"
-            placeholder="Enter your prompt for the LLM or backend agent..."
+            placeholder="Enter your prompt for the LLM..."
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
             rows={3}
@@ -95,17 +86,17 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
         </div>
         <div>
           <Label htmlFor="modelNameInput" className="text-xs flex items-center gap-1.5 mb-1">
-            <Brain className="h-3.5 w-3.5 text-primary/80" /> Model / Agent ID (Optional)
+            <Brain className="h-3.5 w-3.5 text-primary/80" /> Model Name (Optional)
           </Label>
           <Input
             id="modelNameInput"
-            placeholder="e.g., gemini-pro, specific_agent_id"
+            placeholder="e.g., mixtral-8x7b-32768 (Groq)"
             value={modelName}
             onChange={(e) => setModelName(e.target.value)}
             className="bg-input/70 backdrop-blur-sm border-border/70 focus:ring-ring"
             disabled={isLoading}
           />
-          <p className="text-xs text-muted-foreground mt-1">The backend will interpret this.</p>
+          <p className="text-xs text-muted-foreground mt-1">If empty, backend default is used.</p>
         </div>
         <Button type="submit" disabled={isLoading || !promptText.trim()} className="w-full" size="sm">
           {isLoading ? (
@@ -113,14 +104,14 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
           ) : (
             <Send className="mr-2 h-4 w-4" />
           )}
-          {isLoading ? 'Executing...' : 'Execute Prompt'}
+          {isLoading ? 'Executing...' : 'Execute Prompt via Backend'}
         </Button>
       </form>
 
-      {error && (!result || !result.responseText) && (
+      {error && (
         <Alert variant="destructive">
            <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error (from Backend)</AlertTitle>
+          <AlertTitle>Error (from Backend API)</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -129,7 +120,7 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
         <div className="space-y-2 pt-2">
           <h4 className="text-sm font-medium flex items-center gap-1.5">
             <FileText className="h-4 w-4 text-primary/90" />
-            LLM Response (from Backend)
+            LLM Response (from Backend API)
           </h4>
           <Textarea
             value={result.responseText}
@@ -139,10 +130,10 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
           />
         </div>
       )}
-       {result && !result.responseText && result.error && (
+       {result && !result.responseText && result.error && ( // Should be caught by the 'error' state above, but as a fallback
         <Alert variant="destructive" className="mt-2">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Execution Error (from Backend)</AlertTitle>
+          <AlertTitle>Execution Error (from Backend API)</AlertTitle>
           <AlertDescription>{result.error}</AlertDescription>
         </Alert>
       )}
@@ -150,4 +141,3 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
     </div>
   );
 }
-
