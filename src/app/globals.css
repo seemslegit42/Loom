@@ -4,105 +4,106 @@
 
 @layer base {
   :root {
-    /* AXEVON Core Color Tokens - Dark Theme */
+    /* Loom Studio Core Color Tokens - Dark Theme */
 
-    /* Obsidian Black (#1C1934) - Role: Primary Text, Dark Base */
-    --background: 247 35% 15%; /* Obsidian Black */
-    /* Vitreous White (#F5FFFA) - Role: Primary Background, Text Contrast */
-    --foreground: 150 100% 98%; /* Vitreous White (for text) */
+    /* Background: Dark Gray (#121212) */
+    --background: 0 0% 7%;
+    /* Foreground: Vitreous White (#F5FFFA) */
+    --foreground: 150 100% 98%;
 
-    /* Imperial Purple (#6A0DAD) - Role: Primary Brand Color, Dominant UI */
-    --primary: 279 86% 37%;      /* Imperial Purple */
-    --primary-foreground: 150 100% 98%; /* Vitreous White (text on primary) */
+    /* Primary: Light Purple (#BB86FC) */
+    --primary: 266 95% 79%;
+    /* Primary Foreground: Obsidian Black (#1C1934) - for text on light purple */
+    --primary-foreground: 247 35% 15%;
 
-    /* Roman Aqua (#20B2AA) - Role: Tertiary Accent, Interactive States */
-    --accent: 177 69% 41%;       /* Roman Aqua */
-    --accent-foreground: 150 100% 98%; /* Vitreous White (text on accent) */
+    /* Accent: Bright Pink (#D81B60) */
+    --accent: 340 76% 49%;
+    /* Accent Foreground: Vitreous White (#F5FFFA) */
+    --accent-foreground: 150 100% 98%;
 
-    /* Patina Green (#3EB991) - Role: Secondary Accent, Success States */
-    --secondary: 160 48% 48%;     /* Patina Green */
-    --secondary-foreground: 150 100% 98%; /* Vitreous White (text on secondary) */
+    /* Secondary Accent: Patina Green (#3EB991) */
+    --secondary: 160 48% 48%;
+    /* Secondary Foreground: Vitreous White (#F5FFFA) */
+    --secondary-foreground: 150 100% 98%;
 
-    /* Derived & Utility Colors */
-    --card: 247 35% 18%; /* Slightly lighter Obsidian Black */
+    /* Card & Popover Background: Obsidian Black (#1C1934) */
+    --card: 247 35% 15%;
     --card-foreground: 150 100% 98%; /* Vitreous White */
 
-    --popover: 247 35% 17%; /* Similar to card, for popovers */
+    --popover: 247 35% 15%; /* Obsidian Black */
     --popover-foreground: 150 100% 98%; /* Vitreous White */
 
-    /* Conchoidal Gray (#8C94A8) - Role: Secondary Text, Borders, UI Elements */
-    --muted: 247 35% 25%; /* Darker gray derived from background for muted elements */
-    --muted-foreground: 223 16% 60%; /* Conchoidal Gray (for softer text) */
+    /* Muted elements background: Slightly lighter than main background */
+    --muted: 0 0% 12%; /* e.g., #1F1F1F */
+    /* Muted Foreground: Conchoidal Gray (#8C94A8) */
+    --muted-foreground: 223 16% 60%;
 
-    /* Destructive actions - standard red for high contrast error states */
+    /* Destructive actions */
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Conchoidal Gray (#8C94A8) - Explicitly for Borders */
-    --border: 223 16% 60%;  /* Conchoidal Gray */
-    --input: 247 35% 22%;   /* Input background - distinct Obsidian Black variant */
-    --ring: 279 86% 55%;    /* Focus ring - Lighter Imperial Purple */
+    /* Borders: Conchoidal Gray (#8C94A8) */
+    --border: 223 16% 60%;
+    /* Input Background: Obsidian Black (#1C1934) */
+    --input: 247 35% 15%;
+    /* Ring: Lighter Light Purple */
+    --ring: 266 95% 85%;
 
     --radius: 0.5rem;
 
-    /* Chart colors - using AXEVON palette */
-    /* --chart-1: Imperial Purple (Primary) */
-    --chart-1: 279 86% 37%;
-    /* --chart-2: Roman Aqua (Accent) */
-    --chart-2: 177 69% 41%;
-    /* --chart-3: Patina Green (Secondary) */
-    --chart-3: 160 48% 48%;
-    /* --chart-4: Gilded Accent (#FFD700) - Role: Rare Highlight */
-    --chart-4: 51 100% 50%;
-    /* --chart-5: Conchoidal Gray */
-    --chart-5: 223 16% 60%;
+    /* Chart colors */
+    --chart-1: 266 95% 79%; /* Primary - Light Purple */
+    --chart-2: 340 76% 49%; /* Accent - Bright Pink */
+    --chart-3: 160 48% 48%; /* Secondary - Patina Green */
+    --chart-4: 51 100% 50%; /* Gilded Accent - #FFD700 */
+    --chart-5: 223 16% 60%; /* Conchoidal Gray */
 
-    /* Sidebar variables themed for consistency - will use the above AXEVON tokens */
-    --sidebar-background: var(--card);
-    --sidebar-foreground: var(--foreground);
-    --sidebar-primary: var(--primary);
-    --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-accent: var(--accent);
-    --sidebar-accent-foreground: var(--accent-foreground);
-    --sidebar-border: var(--border);
-    --sidebar-ring: var(--ring);
+    /* Sidebar variables - using the new Loom Studio tokens */
+    --sidebar-background: var(--card); /* Obsidian Black */
+    --sidebar-foreground: var(--foreground); /* Vitreous White */
+    --sidebar-primary: var(--primary); /* Light Purple */
+    --sidebar-primary-foreground: var(--primary-foreground); /* Obsidian Black */
+    --sidebar-accent: var(--accent); /* Bright Pink */
+    --sidebar-accent-foreground: var(--accent-foreground); /* Vitreous White */
+    --sidebar-border: var(--border); /* Conchoidal Gray */
+    --sidebar-ring: var(--ring); /* Lighter Light Purple */
   }
 
   .dark { /* Ensure .dark mirrors :root as app is dark-mode first */
-    --background: 247 35% 15%;
+    --background: 0 0% 7%;
     --foreground: 150 100% 98%;
-    --primary: 279 86% 37%;
-    --primary-foreground: 150 100% 98%;
-    --accent: 177 69% 41%;
+    --primary: 266 95% 79%;
+    --primary-foreground: 247 35% 15%;
+    --accent: 340 76% 49%;
     --accent-foreground: 150 100% 98%;
     --secondary: 160 48% 48%;
     --secondary-foreground: 150 100% 98%;
-    --card: 247 35% 18%;
+    --card: 247 35% 15%;
     --card-foreground: 150 100% 98%;
-    --popover: 247 35% 17%;
+    --popover: 247 35% 15%;
     --popover-foreground: 150 100% 98%;
-    --muted: 247 35% 25%;
+    --muted: 0 0% 12%;
     --muted-foreground: 223 16% 60%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
     --border: 223 16% 60%;
-    --input: 247 35% 22%;
-    --ring: 279 86% 55%;
+    --input: 247 35% 15%;
+    --ring: 266 95% 85%;
 
-    --chart-1: 279 86% 37%;
-    --chart-2: 177 69% 41%;
+    --chart-1: 266 95% 79%;
+    --chart-2: 340 76% 49%;
     --chart-3: 160 48% 48%;
     --chart-4: 51 100% 50%;
     --chart-5: 223 16% 60%;
 
-    --sidebar-background: 247 35% 18%;
+    --sidebar-background: 247 35% 15%;
     --sidebar-foreground: 150 100% 98%;
-    --sidebar-primary: 279 86% 37%;
-    --sidebar-primary-foreground: 150 100% 98%;
-    --sidebar-accent: 177 69% 41%;
+    --sidebar-primary: 266 95% 79%;
+    --sidebar-primary-foreground: 247 35% 15%;
+    --sidebar-accent: 340 76% 49%;
     --sidebar-accent-foreground: 150 100% 98%;
     --sidebar-border: 223 16% 60%;
-    --sidebar-ring: 279 86% 55%;
+    --sidebar-ring: 266 95% 85%;
   }
 }
 
@@ -116,6 +117,7 @@
 }
 
 .grid-background {
+  /* This class is no longer used by CanvasZone by default but kept for potential other uses */
   background-image:
     linear-gradient(to right, hsl(var(--border)/0.1) 1px, transparent 1px),
     linear-gradient(to bottom, hsl(var(--border)/0.1) 1px, transparent 1px);
@@ -126,8 +128,8 @@
   .iridescent-aurora-bg {
     background: linear-gradient(
       -45deg,
-      hsl(var(--primary)), /* Imperial Purple */
-      hsl(var(--accent)),  /* Roman Aqua */
+      hsl(var(--primary)), /* Light Purple */
+      hsl(var(--accent)),  /* Bright Pink - updated from Roman Aqua */
       hsl(var(--secondary)), /* Patina Green */
       hsl(var(--primary)) /* Loop back to purple for smoother transition */
     );
