@@ -1,4 +1,3 @@
-
 // src/components/ai/webpage-summarizer-form.tsx
 'use client';
 
@@ -36,10 +35,10 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
     setResult(null); 
     setError(null);   
 
-    addConsoleMessage('log', `Webpage Summarizer: Simulating summarization for URL: ${url}`);
+    addConsoleMessage('log', `Webpage Summarizer: Simulating summarization via SuperAGI backend for URL: ${url}`);
     addTimelineEvent({
       type: 'info', 
-      message: `Agent 'Webpage Summarizer' (simulation) started for URL: ${url.substring(0, 50)}...`,
+      message: `Agent 'Webpage Summarizer' (via SuperAGI simulation) started for URL: ${url.substring(0, 50)}...`,
     });
 
     // Simulate API call to FastAPI backend
@@ -55,10 +54,10 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
       };
       setResult(output);
       setError(null);
-      addConsoleMessage('info', `Webpage Summarizer (simulation): Successfully summarized ${url}.`);
+      addConsoleMessage('info', `Webpage Summarizer (SuperAGI simulation): Successfully summarized ${url}.`);
       addTimelineEvent({
         type: 'workflow_completed',
-        message: `Agent 'Webpage Summarizer' (simulation) completed for ${url.substring(0,50)}...`,
+        message: `Agent 'Webpage Summarizer' (SuperAGI simulation) completed for ${url.substring(0,50)}...`,
       });
     } else { // Simulate error
       const errorMessage = "Simulated API Error: The SuperAGI backend could not summarize the webpage. The URL might be invalid or the content inaccessible.";
@@ -68,10 +67,10 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
       };
       setResult(output);
       setError(errorMessage);
-      addConsoleMessage('error', `Webpage Summarizer (simulation): Failed - ${errorMessage}`);
+      addConsoleMessage('error', `Webpage Summarizer (SuperAGI simulation): Failed - ${errorMessage}`);
       addTimelineEvent({
         type: 'workflow_failed', 
-        message: `Agent 'Webpage Summarizer' (simulation) failed: ${errorMessage.substring(0,100)}`,
+        message: `Agent 'Webpage Summarizer' (SuperAGI simulation) failed: ${errorMessage.substring(0,100)}`,
       });
     }
     setIsLoading(false);
@@ -101,14 +100,14 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
           ) : (
             <Search className="mr-2 h-4 w-4" />
           )}
-          {isLoading ? 'Summarizing (Sim)...' : 'Summarize (Simulate)'}
+          {isLoading ? 'Summarizing (Sim SuperAGI)...' : 'Summarize (Simulate SuperAGI)'}
         </Button>
       </form>
 
       {error && (!result || !result.summary) && ( // Show error if error exists and no summary
         <Alert variant="destructive">
            <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error (Simulated)</AlertTitle>
+          <AlertTitle>Error (Simulated SuperAGI)</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -117,7 +116,7 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
         <div className="space-y-2 pt-2">
           <h4 className="text-sm font-medium flex items-center gap-1.5">
             <FileText className="h-4 w-4 text-primary/90" />
-            Summary for: <a href={result.originalUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[150px] sm:max-w-[200px] md:max-w-[220px] inline-block" title={result.originalUrl}>{result.originalUrl}</a>
+            Summary (from SuperAGI Sim) for: <a href={result.originalUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[150px] sm:max-w-[200px] md:max-w-[220px] inline-block" title={result.originalUrl}>{result.originalUrl}</a>
           </h4>
           <Textarea
             value={result.summary}
@@ -130,7 +129,7 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
        {result && !result.summary && result.error && ( // Handles case where API returns an error object without a summary
         <Alert variant="destructive" className="mt-2">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Summarization Error (Simulated)</AlertTitle>
+          <AlertTitle>Summarization Error (Simulated SuperAGI)</AlertTitle>
           <AlertDescription>{result.error}</AlertDescription>
         </Alert>
       )}
