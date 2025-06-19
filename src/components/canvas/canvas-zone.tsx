@@ -66,23 +66,30 @@ export function CanvasZone({
     const nodeRect = nodeEl.getBoundingClientRect();
     const canvasRect = canvasEl.getBoundingClientRect();
     
+    // Attempt to find the viewport for more accurate scroll offset calculations if needed
+    const viewportEl = canvasEl.querySelector('[data-radix-scroll-area-viewport=""]') || canvasEl;
+    const scrollLeft = viewportEl.scrollLeft;
+    const scrollTop = viewportEl.scrollTop;
+    
     const portEl = nodeEl.querySelector(`[data-port-type="${portType}"]`) as HTMLElement;
     let x, y;
 
     if (portEl) {
       const portRect = portEl.getBoundingClientRect();
-      if (portType === 'input') {
-        x = portRect.left + portRect.width / 2 - canvasRect.left + canvasEl.scrollLeft;
-      } else { // output
-        x = portRect.left + portRect.width / 2 - canvasRect.left + canvasEl.scrollLeft;
-      }
-      y = portRect.top + portRect.height / 2 - canvasRect.top + canvasEl.scrollTop;
+      // Calculate position relative to the canvas, accounting for canvas scroll
+      x = portRect.left + portRect.width / 2 - canvasRect.left + scrollLeft;
+      y = portRect.top + portRect.height / 2 - canvasRect.top + scrollTop;
     } else {
       // Fallback if port element not found (should not happen with current WorkflowNode structure)
-      x = portType === 'input'
-        ? nodeRect.left - canvasRect.left + canvasEl.scrollLeft 
-        : nodeRect.right - canvasRect.left + canvasEl.scrollLeft;
-      y = nodeRect.top + nodeRect.height / 2 - canvasRect.top + canvasEl.scrollTop;
+      // This fallback needs to be carefully considered if ports can be truly absent.
+      // For now, assuming ports are always there based on WorkflowNode.tsx structure.
+      x = (portType === 'input' ? nodeRect.left : nodeRect.right) - canvasRect.left + scrollLeft;
+      if (portType === 'input') { // specific adjustment for input port horizontal center
+         x = nodeRect.left + (portEl ? portEl.offsetWidth / 2 : 0) - canvasRect.left + scrollLeft;
+      } else { // output
+         x = nodeRect.right - (portEl ? portEl.offsetWidth / 2 : 0) - canvasRect.left + scrollLeft;
+      }
+      y = nodeRect.top + nodeRect.height / 2 - canvasRect.top + scrollTop;
     }
 
     return { x, y };
@@ -109,12 +116,21 @@ export function CanvasZone({
   useEffect(() => {
     if (connectingState && connectingState.fromNodeId && mousePosition) {
         const fromPos = getPortPosition(connectingState.fromNodeId, 'output');
-        if (fromPos) {
-            const c1x = fromPos.x + Math.abs(mousePosition.x - fromPos.x) * 0.3;
+        if (fromPos && canvasRef.current) {
+            // Adjust mousePosition to be relative to the scrolled content for temporary line
+            const canvasRect = canvasRef.current.getBoundingClientRect();
+            const viewportEl = canvasRef.current.querySelector('[data-radix-scroll-area-viewport=""]') || canvasRef.current;
+            const scrollLeft = viewportEl.scrollLeft;
+            const scrollTop = viewportEl.scrollTop;
+
+            const relativeMouseX = mousePosition.x - canvasRect.left + scrollLeft;
+            const relativeMouseY = mousePosition.y - canvasRect.top + scrollTop;
+
+            const c1x = fromPos.x + Math.abs(relativeMouseX - fromPos.x) * 0.3;
             const c1y = fromPos.y;
-            const c2x = mousePosition.x - Math.abs(mousePosition.x - fromPos.x) * 0.3;
-            const c2y = mousePosition.y;
-            setTempLinePath(`M ${fromPos.x} ${fromPos.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${mousePosition.x} ${mousePosition.y}`);
+            const c2x = relativeMouseX - Math.abs(relativeMouseX - fromPos.x) * 0.3;
+            const c2y = relativeMouseY;
+            setTempLinePath(`M ${fromPos.x} ${fromPos.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${relativeMouseX} ${relativeMouseY}`);
         }
     } else {
         setTempLinePath(null);
@@ -143,17 +159,23 @@ export function CanvasZone({
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    setIsDragActive(false); // Reset drag active state
+    setIsDragActive(false); 
     const nodeInfo = event.dataTransfer.getData('application/json');
     if (nodeInfo) {
       try {
         const { name, type } = JSON.parse(nodeInfo) as { name: string; type: NodeType };
         const canvasEl = canvasRef.current;
         if (!canvasEl) return;
+
         const canvasRect = canvasEl.getBoundingClientRect();
+        // Crucially, get scroll from the Viewport element, not the ScrollArea root.
+        const viewportEl = canvasEl.querySelector('[data-radix-scroll-area-viewport=""]');
+        const scrollLeft = viewportEl?.scrollLeft || canvasEl.scrollLeft || 0;
+        const scrollTop = viewportEl?.scrollTop || canvasEl.scrollTop || 0;
+        
         const position = {
-          x: event.clientX - canvasRect.left + canvasEl.scrollLeft - 125, 
-          y: event.clientY - canvasRect.top + canvasEl.scrollTop - 50, 
+          x: event.clientX - canvasRect.left + scrollLeft - 125, // 125 is approx node width / 2
+          y: event.clientY - canvasRect.top + scrollTop - 50,  // 50 is approx node height / 2
         };
 
         const newNodeData: Omit<WorkflowNodeData, 'id' | 'status'> & { status?: NodeStatus } = {
@@ -171,30 +193,35 @@ export function CanvasZone({
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    // Check if the click is on the canvas background itself, not on a node or other interactive element within it.
+    // Check if the click is on the canvas background itself or the immediate content div.
     if (target === canvasRef.current || 
-        target === canvasRef.current?.firstChild || // This usually targets the direct child of ScrollArea, which is the viewport
-        target.classList.contains('scroll-area-viewport-content') || // More specific content div
-        target.closest('.workflow-node-card') === null // Ensure click is not on a node card
+        target.classList.contains('scroll-area-viewport-content') ||
+        (target.parentElement && target.parentElement.classList.contains('scroll-area-viewport-content') && !target.closest('.workflow-node-card')) || // click on the inner relative div
+        target.closest('.workflow-node-card') === null // General check: not on a node
        ) {
-      onNodeSelected(null); // This will deselect any node and potentially cancel connection
+      onNodeSelected(null); 
     }
   };
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (connectingState && canvasRef.current) {
-        const canvasRect = canvasRef.current.getBoundingClientRect();
-        setMousePosition({
-            x: event.clientX - canvasRect.left + canvasRef.current.scrollLeft,
-            y: event.clientY - canvasRect.top + canvasRef.current.scrollTop,
-        });
-    }
+    // Store mouse position relative to viewport for temp line drawing
+    setMousePosition({
+        x: event.clientX,
+        y: event.clientY,
+    });
   };
+
 
   const displayedNodes = nodes.map(node => ({
     ...node,
     status: nodeExecutionStatus[node.id] || node.status || 'queued',
   }));
+
+  // This is the div that contains the nodes and acts as their relative positioning context.
+  // It needs to be large enough to encompass all nodes and allow scrolling.
+  const nodesContainerRelativeParentStyle = "relative min-h-[800px] min-w-[1200px]"; 
+  // The direct child of ScrollArea, which is also the viewport's direct child.
+  const viewportContentStyle = "p-8 min-h-full relative scroll-area-viewport-content";
 
   return (
     <ScrollArea
@@ -210,7 +237,7 @@ export function CanvasZone({
       onMouseMove={handleMouseMove} 
       ref={canvasRef}
     >
-      <div className="p-8 min-h-full relative scroll-area-viewport-content"> {/* Ensure this class is on the direct child for click handling */}
+      <div className={viewportContentStyle}> 
         {workflowName && (
           <div className="mb-8 p-4 bg-card/80 rounded-lg shadow backdrop-blur-md sticky top-4 z-20">
             <h2 className="text-xl font-headline mb-2 text-primary">
@@ -222,7 +249,8 @@ export function CanvasZone({
             </p>
           </div>
         )}
-        <div className="relative min-h-[800px] min-w-[1200px]"> 
+        {/* This div is the direct positioning context for the absolute positioned WorkflowNodes */}
+        <div className={nodesContainerRelativeParentStyle}> 
             {displayedNodes.map((node) => (
               <WorkflowNode
                 key={node.id}
@@ -234,7 +262,7 @@ export function CanvasZone({
                 onOutputPortClick={onOutputPortClick} 
                 isConnectingFrom={connectingState?.fromNodeId === node.id}
                 connectingState={connectingState}
-                className="workflow-node-card" // Add a class for more precise click detection
+                className="workflow-node-card" 
               />
             ))}
         </div>
@@ -266,7 +294,7 @@ export function CanvasZone({
           )}
         </svg>
         {connectingState && mousePosition && (
-            <MousePointer2 className="h-5 w-5 text-accent absolute pointer-events-none z-30" style={{ transform: `translate(${mousePosition.x -2}px, ${mousePosition.y -2}px)` }}/>
+            <MousePointer2 className="h-5 w-5 text-accent absolute pointer-events-none z-30" style={{ transform: `translate(${mousePosition.x - canvasRef.current!.getBoundingClientRect().left + (canvasRef.current!.querySelector('[data-radix-scroll-area-viewport=""]') || canvasRef.current!).scrollLeft -2}px, ${mousePosition.y - canvasRef.current!.getBoundingClientRect().top + (canvasRef.current!.querySelector('[data-radix-scroll-area-viewport=""]') || canvasRef.current!).scrollTop -2}px)` }}/>
         )}
       </div>
     </ScrollArea>
