@@ -1,3 +1,4 @@
+
 // src/components/ai/prompt-executor-form.tsx
 'use client';
 
@@ -33,14 +34,14 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
     }
 
     setIsLoading(true);
-    setResult(null); 
-    setError(null);   
+    setResult(null);
+    setError(null);
 
-    const consoleLog = `Prompt Executor: Simulating execution via SuperAGI/LLM backend for prompt: "${promptText.substring(0,50)}..." ${modelName ? `with model/agent: ${modelName}` : ''}`;
+    const consoleLog = `Prompt Executor: Executing prompt via backend LLM for: "${promptText.substring(0,50)}..." ${modelName ? `with model/agent ID: ${modelName}` : ''}`;
     addConsoleMessage('log', consoleLog);
     addTimelineEvent({
-      type: 'info', 
-      message: `Agent 'Prompt Executor' (via SuperAGI/LLM simulation) started for prompt: "${promptText.substring(0,30)}..."`,
+      type: 'info',
+      message: `Agent 'Prompt Executor' (via backend) started for prompt: "${promptText.substring(0,30)}..."`,
     });
 
     // Simulate API call
@@ -50,26 +51,26 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
 
     if (Math.random() > 0.2) { // Simulate success
       output = {
-        responseText: `This is a simulated LLM response (via SuperAGI/LLM backend) to: "${promptText}". Model/Agent specified: ${modelName || 'default/not specified'}. The actual response would come from the SuperAGI backend or the configured LLM.`,
+        responseText: `This is a simulated LLM response (from backend) to: "${promptText}". Model/Agent ID specified: ${modelName || 'default/not specified'}. The actual response would come from the configured backend LLM or agent.`,
       };
       setResult(output);
       setError(null);
-      addConsoleMessage('info', `Prompt Executor (SuperAGI/LLM simulation): Successfully processed prompt.`);
+      addConsoleMessage('info', `Prompt Executor (backend): Successfully processed prompt.`);
       addTimelineEvent({
-        type: 'workflow_completed', 
-        message: `Agent 'Prompt Executor' (SuperAGI/LLM simulation) completed.`,
+        type: 'workflow_completed',
+        message: `Agent 'Prompt Executor' (via backend) completed.`,
       });
     } else { // Simulate error
-      const errorMessage = "Simulated API Error: The SuperAGI backend or LLM could not process the prompt. This could be due to various reasons like invalid input, model overload, or content policy violations.";
+      const errorMessage = "Simulated API Error: The backend LLM or agent could not process the prompt. This could be due to various reasons like invalid input, model overload, or content policy violations.";
       output = {
         error: errorMessage,
       };
-      setResult(output); 
-      setError(errorMessage); 
-      addConsoleMessage('error', `Prompt Executor (SuperAGI/LLM simulation): Failed - ${errorMessage}`);
+      setResult(output);
+      setError(errorMessage);
+      addConsoleMessage('error', `Prompt Executor (backend): Failed - ${errorMessage}`);
       addTimelineEvent({
-        type: 'workflow_failed', 
-        message: `Agent 'Prompt Executor' (SuperAGI/LLM simulation) failed: ${errorMessage.substring(0,100)}...`,
+        type: 'workflow_failed',
+        message: `Agent 'Prompt Executor' (via backend) failed: ${errorMessage.substring(0,100)}...`,
       });
     }
     setIsLoading(false);
@@ -84,7 +85,7 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
           </Label>
           <Textarea
             id="promptTextInput"
-            placeholder="Enter your prompt for the LLM or SuperAGI agent..."
+            placeholder="Enter your prompt for the LLM or backend agent..."
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
             rows={3}
@@ -94,17 +95,17 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
         </div>
         <div>
           <Label htmlFor="modelNameInput" className="text-xs flex items-center gap-1.5 mb-1">
-            <Brain className="h-3.5 w-3.5 text-primary/80" /> Model/Agent (Optional for SuperAGI)
+            <Brain className="h-3.5 w-3.5 text-primary/80" /> Model / Agent ID (Optional)
           </Label>
           <Input
             id="modelNameInput"
-            placeholder="e.g., gemini-pro, specific_superagi_agent_id"
+            placeholder="e.g., gemini-pro, specific_agent_id"
             value={modelName}
             onChange={(e) => setModelName(e.target.value)}
             className="bg-input/70 backdrop-blur-sm border-border/70 focus:ring-ring"
             disabled={isLoading}
           />
-          <p className="text-xs text-muted-foreground mt-1">Backend (SuperAGI) will interpret this.</p>
+          <p className="text-xs text-muted-foreground mt-1">The backend will interpret this.</p>
         </div>
         <Button type="submit" disabled={isLoading || !promptText.trim()} className="w-full" size="sm">
           {isLoading ? (
@@ -112,14 +113,14 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
           ) : (
             <Send className="mr-2 h-4 w-4" />
           )}
-          {isLoading ? 'Executing (Sim SuperAGI)...' : 'Execute Prompt (Simulate SuperAGI)'}
+          {isLoading ? 'Executing...' : 'Execute Prompt'}
         </Button>
       </form>
 
       {error && (!result || !result.responseText) && (
         <Alert variant="destructive">
            <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error (Simulated SuperAGI/LLM)</AlertTitle>
+          <AlertTitle>Error (from Backend)</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -128,7 +129,7 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
         <div className="space-y-2 pt-2">
           <h4 className="text-sm font-medium flex items-center gap-1.5">
             <FileText className="h-4 w-4 text-primary/90" />
-            LLM Response (Simulated via SuperAGI)
+            LLM Response (from Backend)
           </h4>
           <Textarea
             value={result.responseText}
@@ -141,11 +142,12 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
        {result && !result.responseText && result.error && (
         <Alert variant="destructive" className="mt-2">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Execution Error (Simulated SuperAGI/LLM)</AlertTitle>
+          <AlertTitle>Execution Error (from Backend)</AlertTitle>
           <AlertDescription>{result.error}</AlertDescription>
         </Alert>
       )}
-      
+
     </div>
   );
 }
+

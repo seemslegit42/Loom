@@ -36,14 +36,14 @@ interface InspectorPanelProps {
 
 const allNodeStatuses: NodeStatus[] = ['pending', 'queued', 'running', 'completed', 'failed', 'unknown'];
 
-export function InspectorPanel({ 
-  className, 
-  onClose, 
-  selectedNode, 
-  onNodeUpdate, 
-  onNodeDelete, 
-  isMobile, 
-  onRunNode, 
+export function InspectorPanel({
+  className,
+  onClose,
+  selectedNode,
+  onNodeUpdate,
+  onNodeDelete,
+  isMobile,
+  onRunNode,
   isNodeRunning,
   isResizable,
   initialSize
@@ -228,15 +228,15 @@ export function InspectorPanel({
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor={`${panelKey}-modelName`} className="text-xs">Model/Agent (Optional)</Label>
+                <Label htmlFor={`${panelKey}-modelName`} className="text-xs">Model / Agent ID (Optional)</Label>
                 <Input
                   id={`${panelKey}-modelName`}
-                  placeholder="e.g., gpt-4, specific_agent_id"
+                  placeholder="e.g., gemini-pro, specific_agent_id"
                   value={editableConfig?.modelName || ''}
                   onChange={(e) => handleConfigChange('modelName', e.target.value)}
                   className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
                 />
-                 <p className="text-xs text-muted-foreground">Backend (SuperAGI) will determine use.</p>
+                 <p className="text-xs text-muted-foreground">The backend will determine its use.</p>
               </div>
             </div>
           )}
@@ -256,7 +256,7 @@ export function InspectorPanel({
                   rows={3}
                   className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
                 />
-                <p className="text-xs text-muted-foreground">Describe the data transformation. SuperAGI backend will interpret and execute this.</p>
+                <p className="text-xs text-muted-foreground">Describe the data transformation. The backend will interpret and execute this.</p>
               </div>
             </div>
           )}
@@ -276,17 +276,17 @@ export function InspectorPanel({
                   rows={3}
                   className="bg-input/70 backdrop-blur-sm border-input/70 focus:ring-ring"
                 />
-                <p className="text-xs text-muted-foreground">Define the condition. Backend (SuperAGI) will interpret this. Output implies 'true'/'false' paths.</p>
+                <p className="text-xs text-muted-foreground">Define the condition. The backend will interpret this. Output implies 'true'/'false' paths.</p>
               </div>
             </div>
           )}
-          
+
           {(selectedNode.type !== 'prompt' && selectedNode.type !== 'web-summarizer' && selectedNode.type !== 'data-transform' && selectedNode.type !== 'conditional') && (
             <div className="space-y-1 p-3 border border-dashed border-border/50 rounded-md bg-card/50">
               <h4 className="text-xs font-medium flex items-center gap-1.5 text-primary">
                  Generic Node Configuration
               </h4>
-              <p className="text-xs text-muted-foreground">Configuration for '{formatDisplayValue(selectedNode.type)}' nodes will be handled by the SuperAGI backend.</p>
+              <p className="text-xs text-muted-foreground">Configuration for '{formatDisplayValue(selectedNode.type)}' nodes will be handled by the backend.</p>
             </div>
           )}
 
@@ -294,12 +294,12 @@ export function InspectorPanel({
           {output && (
             <div className="mt-3 space-y-2 p-3 border border-dashed border-border/30 rounded-md bg-card/40">
               <h4 className="text-xs font-medium text-primary flex items-center gap-1.5">
-                <FileText className="h-4 w-4" /> Last Simulated Output
+                <FileText className="h-4 w-4" /> Last Output
               </h4>
               {typeof output === 'object' && output !== null && 'error' in output && typeof output.error === 'string' ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle className="text-xs">Task Error During Simulation</AlertTitle>
+                  <AlertTitle className="text-xs">Task Error</AlertTitle>
                   <AlertDescription className="text-xs whitespace-pre-wrap">
                     {output.error}
                   </AlertDescription>
@@ -338,7 +338,7 @@ export function InspectorPanel({
               }
             >
               {nodeIsCurrentlyRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-              {nodeIsCurrentlyRunning ? 'Running (Sim)...' : `Run ${formatDisplayValue(selectedNode.type)} (Simulate)`}
+              {nodeIsCurrentlyRunning ? 'Running...' : `Run ${formatDisplayValue(selectedNode.type)} Node`}
             </Button>
           )}
 
@@ -385,4 +385,4 @@ export function InspectorPanel({
   );
 }
 
-    
+

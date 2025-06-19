@@ -1,3 +1,4 @@
+
 // src/components/panels/agent-hub-panel.tsx
 'use client';
 
@@ -27,17 +28,17 @@ interface Agent {
 }
 
 const initialAgents: Agent[] = [
-  { id: 'superagi-agent-1', name: "Web Research Agent (SuperAGI)", status: "active", tasks: 3, permissions: "Web Search, Summarization", workload: "60%" },
-  { id: 'superagi-agent-2', name: "Task Execution Agent (SuperAGI)", status: "idle", tasks: 0, permissions: "Code Execution, API Calls", workload: "5%" },
-  { id: 'superagi-agent-3', name: "Content Creation Agent (SuperAGI)", status: "paused", tasks: 1, permissions: "Text Generation, Image Generation", workload: "N/A" },
+  { id: 'agent-1', name: "Web Research Agent", status: "active", tasks: 3, permissions: "Web Search, Summarization", workload: "60%" },
+  { id: 'agent-2', name: "Task Execution Agent", status: "idle", tasks: 0, permissions: "Code Execution, API Calls", workload: "5%" },
+  { id: 'agent-3', name: "Content Creation Agent", status: "paused", tasks: 1, permissions: "Text Generation, Image Generation", workload: "N/A" },
 ];
 
 const agentProfiles = [
-  { namePrefix: "Web Intellect (SuperAGI)", permissions: "Web Search, Summarization, Fact Checking", baseWorkload: "10%" },
-  { namePrefix: "Task Orchestrator (SuperAGI)", permissions: "Code Execution, API Calls, File Management", baseWorkload: "5%" },
-  { namePrefix: "Content Synthesizer (SuperAGI)", permissions: "Text Generation, Image Generation, Translation", baseWorkload: "15%" },
-  { namePrefix: "Data Cruncher (SuperAGI)", permissions: "Data Analysis, Report Generation, Trend Identification", baseWorkload: "8%" },
-  { namePrefix: "Support Responder (SuperAGI)", permissions: "FAQ Lookup, Ticket Creation, Basic Chat", baseWorkload: "12%" },
+  { namePrefix: "Web Intellect Agent", permissions: "Web Search, Summarization, Fact Checking", baseWorkload: "10%" },
+  { namePrefix: "Task Orchestrator Agent", permissions: "Code Execution, API Calls, File Management", baseWorkload: "5%" },
+  { namePrefix: "Content Synthesizer Agent", permissions: "Text Generation, Image Generation, Translation", baseWorkload: "15%" },
+  { namePrefix: "Data Cruncher Agent", permissions: "Data Analysis, Report Generation, Trend Identification", baseWorkload: "8%" },
+  { namePrefix: "Support Responder Agent", permissions: "FAQ Lookup, Ticket Creation, Basic Chat", baseWorkload: "12%" },
 ];
 
 
@@ -63,14 +64,14 @@ interface AgentHubPanelProps {
   initialSize?: {width?: string; height?: string};
 }
 
-export function AgentHubPanel({ 
-  className, 
-  onClose, 
-  isMobile, 
-  addConsoleMessage, 
+export function AgentHubPanel({
+  className,
+  onClose,
+  isMobile,
+  addConsoleMessage,
   addTimelineEvent,
   isResizable,
-  initialSize 
+  initialSize
 }: AgentHubPanelProps) {
   const { toast } = useToast();
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
@@ -91,7 +92,7 @@ export function AgentHubPanel({
 
   const handleSelectAgent = (agent: Agent) => {
     setSelectedAgent(agent);
-    addConsoleMessage('log', `SuperAGI Agent "${agent.name}" selected for configuration.`);
+    addConsoleMessage('log', `Agent "${agent.name}" selected for configuration.`);
   };
 
   const handleUpdateAgent = () => {
@@ -104,21 +105,21 @@ export function AgentHubPanel({
     );
     setAgents(updatedAgents);
     const updatedSelectedAgent = updatedAgents.find(a => a.id === selectedAgent.id) || null;
-    setSelectedAgent(updatedSelectedAgent); 
+    setSelectedAgent(updatedSelectedAgent);
 
-    toast({ title: "SuperAGI Agent Updated (Simulated)", description: `Agent "${editableAgentName}" details saved.` });
-    addConsoleMessage('info', `SuperAGI Agent "${editableAgentName}" (ID: ${selectedAgent.id}) configuration updated (simulated).`);
+    toast({ title: "Agent Updated", description: `Agent "${editableAgentName}" details saved (backend interaction simulated).` });
+    addConsoleMessage('info', `Agent "${editableAgentName}" (ID: ${selectedAgent.id}) configuration updated (backend interaction simulated).`);
   };
 
   const handleCancelEdit = () => {
     setSelectedAgent(null);
-    addConsoleMessage('log', `SuperAGI Agent configuration cancelled.`);
+    addConsoleMessage('log', `Agent configuration cancelled.`);
   };
 
 
   const handleSpawnAgent = () => {
     const profile = agentProfiles[spawnProfileIndex];
-    const newAgentId = `superagi-agent-${Date.now()}`;
+    const newAgentId = `agent-${Date.now()}`;
     const agentCountForPrefix = agents.filter(a => a.name.startsWith(profile.namePrefix)).length + 1;
     const newAgentName = `${profile.namePrefix} #${agentCountForPrefix}`;
 
@@ -133,8 +134,8 @@ export function AgentHubPanel({
     setAgents(prev => [...prev, newAgent]);
     setSpawnProfileIndex((prevIndex) => (prevIndex + 1) % agentProfiles.length);
 
-    toast({ title: "SuperAGI Agent Spawned (Simulated)", description: `Agent "${newAgentName}" with capabilities "${profile.permissions}" is now available (simulated SuperAGI backend).` });
-    addConsoleMessage('info', `SuperAGI Agent "${newAgentName}" (type: ${profile.namePrefix}) spawned (simulated call to SuperAGI backend).`);
+    toast({ title: "Agent Provisioned", description: `Agent "${newAgentName}" with capabilities "${profile.permissions}" is now available (backend provisioning simulated).` });
+    addConsoleMessage('info', `Agent "${newAgentName}" (type: ${profile.namePrefix}) provisioned (backend call simulated).`);
   };
 
   const handleResumeAll = () => {
@@ -143,9 +144,9 @@ export function AgentHubPanel({
         agent.status === 'paused' || agent.status === 'idle' ? { ...agent, status: 'active' } : agent
       )
     );
-    toast({ title: "Agent Hub Action (Simulated)", description: "Attempting to resume all eligible SuperAGI agents (simulated call to SuperAGI backend)." });
-    addConsoleMessage('info', 'Agent Hub: Resume all SuperAGI agents action triggered (simulated SuperAGI backend call).');
-    addTimelineEvent({ type: 'info', message: 'All eligible SuperAGI agents resumed (simulated).' });
+    toast({ title: "Agent Hub Action", description: "Attempting to resume all eligible agents (backend interaction simulated)." });
+    addConsoleMessage('info', 'Agent Hub: Resume all agents action triggered (backend call simulated).');
+    addTimelineEvent({ type: 'info', message: 'All eligible agents resumed (simulated).' });
   };
 
   const handlePauseAll = () => {
@@ -154,9 +155,9 @@ export function AgentHubPanel({
         agent.status === 'active' ? { ...agent, status: 'paused' } : agent
       )
     );
-    toast({ title: "Agent Hub Action (Simulated)", description: "Activating Safe Mode: Pausing all active SuperAGI agents (simulated call to SuperAGI backend).", variant: "secondary" });
-    addConsoleMessage('warn', 'Agent Hub: Pause all SuperAGI agents action triggered (simulated SuperAGI backend call).');
-    addTimelineEvent({ type: 'info', message: 'All active SuperAGI agents paused (simulated).' });
+    toast({ title: "Agent Hub Action", description: "Activating Safe Mode: Pausing all active agents (backend interaction simulated).", variant: "secondary" });
+    addConsoleMessage('warn', 'Agent Hub: Pause all agents action triggered (backend call simulated).');
+    addTimelineEvent({ type: 'info', message: 'All active agents paused (simulated).' });
   };
 
   const handleToggleAgentStatus = (agentId: string) => {
@@ -175,15 +176,15 @@ export function AgentHubPanel({
     );
 
     const action = newStatus === 'active' ? 'Resumed' : 'Paused';
-    toast({ title: `SuperAGI Agent ${action} (Simulated)`, description: `Agent "${agentName}" has been ${action.toLowerCase()}.` });
-    addConsoleMessage('info', `SuperAGI Agent "${agentName}" (ID: ${agentId}) ${action.toLowerCase()} (simulated SuperAGI backend).`);
-    addTimelineEvent({ type: 'info', message: `SuperAGI Agent "${agentName}" ${action.toLowerCase()} (simulated).` });
+    toast({ title: `Agent ${action}`, description: `Agent "${agentName}" has been ${action.toLowerCase()} (backend interaction simulated).` });
+    addConsoleMessage('info', `Agent "${agentName}" (ID: ${agentId}) ${action.toLowerCase()} (backend interaction simulated).`);
+    addTimelineEvent({ type: 'info', message: `Agent "${agentName}" ${action.toLowerCase()} (simulated).` });
   };
 
 
   return (
     <BasePanel
-      title="Agent Hub (SuperAGI)"
+      title="Agent Hub"
       icon={<Bot className="h-4 w-4" />}
       className={className}
       onClose={onClose}
@@ -194,25 +195,25 @@ export function AgentHubPanel({
     >
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Connected SuperAGI Agents ({agents.length})</h3>
+          <h3 className="text-sm font-medium">Managed Agents ({agents.length})</h3>
           <Button variant="outline" size="sm" className="text-xs" onClick={handleSpawnAgent}>
             <UserPlus className="h-3 w-3 mr-1.5" />
-            Spawn SuperAGI Agent (Sim)
+            Provision New Agent
           </Button>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" className="text-xs flex-1" onClick={handleResumeAll}>
             <PlayCircle className="h-3 w-3 mr-1.5" />
-            Resume All (Sim SuperAGI)
+            Resume All Agents
           </Button>
           <Button variant="secondary" size="sm" className="text-xs flex-1" onClick={handlePauseAll}>
             <PauseCircle className="h-3 w-3 mr-1.5" />
-            Pause All (Sim SuperAGI)
+            Pause All Agents
           </Button>
         </div>
         <ScrollArea className="pr-2 max-h-40">
           {agents.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">No SuperAGI agents connected. Spawn one to get started.</p>
+            <p className="text-xs text-muted-foreground text-center py-4">No agents connected. Provision one to get started.</p>
           ) : (
             <ul className="space-y-2">
               {agents.map((agent) => (
@@ -222,19 +223,19 @@ export function AgentHubPanel({
                     "p-2.5 rounded-md bg-card/60 border border-border/40 hover:border-primary/50 transition-colors group",
                     selectedAgent?.id === agent.id && "border-primary ring-1 ring-primary bg-primary/5"
                   )}
-                  
+
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span 
+                    <span
                       className="text-sm font-medium text-foreground/90 group-hover:text-primary cursor-pointer"
                       onClick={() => handleSelectAgent(agent)}
                     >
                       {agent.name}
                     </span>
                     <div className="flex items-center gap-2">
-                       <Button 
-                          variant="ghost" 
-                          size="icon" 
+                       <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-6 w-6 text-muted-foreground hover:text-primary"
                           onClick={() => handleToggleAgentStatus(agent.id)}
                           title={agent.status === 'active' ? "Pause Agent" : "Resume Agent"}
@@ -260,7 +261,7 @@ export function AgentHubPanel({
           <Separator className="my-2" />
           <div className="space-y-3 p-2.5 border border-dashed border-border/50 rounded-md bg-card/40">
             <h4 className="text-sm font-medium flex items-center gap-1.5 text-primary">
-              <Edit3 className="h-4 w-4" /> Configure SuperAGI Agent: {selectedAgent.name}
+              <Edit3 className="h-4 w-4" /> Configure Agent: {selectedAgent.name}
             </h4>
             <div className="space-y-1">
               <Label htmlFor="agentNameEdit" className="text-xs">Agent Name</Label>
@@ -272,7 +273,7 @@ export function AgentHubPanel({
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="agentPermissionsEdit" className="text-xs">Agent Capabilities (Simulated SuperAGI Config)</Label>
+              <Label htmlFor="agentPermissionsEdit" className="text-xs">Agent Capabilities (Backend Config)</Label>
               <Input
                 id="agentPermissionsEdit"
                 value={editableAgentPermissions}
@@ -283,7 +284,7 @@ export function AgentHubPanel({
             </div>
             <div className="flex items-center gap-2 mt-2">
               <Button onClick={handleUpdateAgent} size="sm" className="flex-1">
-                <Save className="h-3.5 w-3.5 mr-1.5" /> Save Changes (Sim)
+                <Save className="h-3.5 w-3.5 mr-1.5" /> Save Changes
               </Button>
               <Button onClick={handleCancelEdit} variant="outline" size="sm" className="flex-1">
                 <XCircle className="h-3.5 w-3.5 mr-1.5" /> Cancel
@@ -297,7 +298,7 @@ export function AgentHubPanel({
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium flex items-center gap-1.5">
-          <Globe className="h-4 w-4 text-primary/80" /> Web Agent Utilities (via SuperAGI)
+          <Globe className="h-4 w-4 text-primary/80" /> Web Agent Utilities
         </h3>
         <WebpageSummarizerForm
           addConsoleMessage={addConsoleMessage}
@@ -309,7 +310,7 @@ export function AgentHubPanel({
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium flex items-center gap-1.5">
-          <MessageSquare className="h-4 w-4 text-primary/80" /> LLM Utilities (via SuperAGI/LLM)
+          <MessageSquare className="h-4 w-4 text-primary/80" /> LLM Utilities
         </h3>
         <PromptExecutorForm
           addConsoleMessage={addConsoleMessage}
