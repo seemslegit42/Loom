@@ -374,7 +374,6 @@ export default function LoomStudioPage() {
     });
 
     const queue: string[] = currentNodes.filter(node => inDegree[node.id] === 0).map(node => node.id);
-    let executionOrderIndex = 0;
     let activeSimulations = 0;
     const completedNodes = new Set<string>();
     const failedNodes = new Set<string>();
@@ -392,17 +391,14 @@ export default function LoomStudioPage() {
       }
       const nodeTitle = node.title;
 
-      await new Promise(resolve => setTimeout(resolve, 300 * executionOrderIndex++));
       setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'queued' }));
       addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) queued for visualization.`);
       addTimelineEvent({ nodeId, nodeTitle, type: 'node_queued', message: `Node "${nodeTitle}" queued (visualization).` });
 
-      await new Promise(resolve => setTimeout(resolve, 700));
       setNodeExecutionStatus(prev => ({ ...prev, [nodeId]: 'running' }));
       addConsoleMessage('log', `Node "${nodeTitle}" (ID: ${nodeId}) running (visualization).`);
       addTimelineEvent({ nodeId, nodeTitle, type: 'node_running', message: `Node "${nodeTitle}" running (visualization).` });
       
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 800)); 
       const success = Math.random() > 0.1; 
 
       if (success) {
