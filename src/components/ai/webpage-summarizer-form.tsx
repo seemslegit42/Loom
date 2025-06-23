@@ -12,6 +12,7 @@ import { Loader2, Link, Search, FileText, AlertCircle } from 'lucide-react';
 import type { ConsoleMessage } from '@/components/panels/console-panel';
 import type { TimelineEvent } from '@/components/panels/timeline-panel';
 import type { SummarizeWebpageOutput } from '@/tasks/summarize-webpage-task'; // Use the task's output type
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface WebpageSummarizerFormProps {
   addConsoleMessage: (type: ConsoleMessage['type'], text: string) => void;
@@ -58,8 +59,8 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: `Summarize content from URL: ${url.substring(0, 50)}...`,
-          initialContent: url,
+          workflowType: 'webSummarization',
+          inputData: { url: url },
         }),
       });
 
@@ -77,20 +78,22 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
       let done = false;
       let finalOutputStarted = false;
       let finalSummary = "";
+      let partialChunk = "";
 
       while (!done) {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
-          accumulatedResponse += chunk;
+          partialChunk += chunk;
           
-          const lines = accumulatedResponse.split('\n');
-          accumulatedResponse = lines.pop() || ""; 
+          const lines = partialChunk.split('\n');
+          partialChunk = lines.pop() || ""; 
 
           for (const line of lines) {
             if (line.startsWith("[LOG]")) {
-              currentLogs.push(line.substring(5).trim());
+              const logMsg = line.substring(5).trim();
+              if(logMsg) currentLogs.push(logMsg);
             } else if (line.startsWith("[STREAMING_OUTPUT_START]")) {
               finalOutputStarted = true;
               const contentAfterMarker = line.substring("[STREAMING_OUTPUT_START]".length);
@@ -104,15 +107,16 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
           }
         }
       }
-       if (accumulatedResponse.trim()) {
-          if (accumulatedResponse.startsWith("[LOG]")) {
-              currentLogs.push(accumulatedResponse.substring(5).trim());
-          } else if (accumulatedResponse.startsWith("[STREAMING_OUTPUT_START]")) {
+       if (partialChunk.trim()) {
+          if (partialChunk.startsWith("[LOG]")) {
+              const logMsg = partialChunk.substring(5).trim();
+              if(logMsg) currentLogs.push(logMsg);
+          } else if (partialChunk.startsWith("[STREAMING_OUTPUT_START]")) {
               finalOutputStarted = true;
-              const contentAfterMarker = accumulatedResponse.substring("[STREAMING_OUTPUT_START]".length);
+              const contentAfterMarker = partialChunk.substring("[STREAMING_OUTPUT_START]".length);
               if(contentAfterMarker.trim()) finalSummary += contentAfterMarker + '\n';
           } else if (finalOutputStarted) {
-              finalSummary += accumulatedResponse + '\n';
+              finalSummary += partialChunk + '\n';
           }
       }
 

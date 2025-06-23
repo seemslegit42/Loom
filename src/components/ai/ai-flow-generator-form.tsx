@@ -37,6 +37,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
     setIsLoading(true);
     let finalOutput = "";
     let partialChunk = ""; // To store incomplete lines between chunks
+    let swarmIdFromLogs = "";
 
     const logMarker = "[LOG]";
     const outputStartMarker = "[STREAMING_OUTPUT_START]";
@@ -51,7 +52,10 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: userInput }),
+        body: JSON.stringify({ 
+          workflowType: 'genericPrompt',
+          inputData: userInput 
+        }),
       });
 
       if (!response.ok) {
@@ -75,7 +79,6 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
           const currentBuffer = partialChunk + decodedChunk;
           const lines = currentBuffer.split('\n');
           
-          // The last line might be incomplete, so keep it for the next chunk
           partialChunk = lines.pop() || ""; 
 
           for (const line of lines) {
@@ -94,6 +97,11 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
             if (line.startsWith(logMarker) && !outputStarted) {
               const logMsg = line.substring(logMarker.length).trim();
               addConsoleMessage('log', `Backend: ${logMsg}`);
+              // Try to extract swarmId from logs for later use if needed
+              const swarmIdMatch = logMsg.match(/Swarm ID: ([\w-]+)/);
+              if (swarmIdMatch && swarmIdMatch[1]) {
+                swarmIdFromLogs = swarmIdMatch[1];
+              }
             } else if (outputStarted) {
               finalOutput += line + '\n';
             }
@@ -102,7 +110,6 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
         }
       }
       
-      // Process any remaining partial chunk if it's the end of the stream
       if (partialChunk && outputStarted && !apiErrorFound) {
         finalOutput += partialChunk + '\n';
       } else if (partialChunk && partialChunk.startsWith(logMarker) && !outputStarted && !apiErrorFound) {
@@ -110,20 +117,18 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
          if (logMsg) addConsoleMessage('log', `Backend: ${logMsg}`);
       }
 
-
       if (apiErrorFound) {
         throw new Error(`API returned an error: ${apiErrorFound}`);
       }
 
       if (!finalOutput && !apiErrorFound) {
          addConsoleMessage('warn', "No actionable output received from the AI flow generation API.");
-         // No longer throwing an error, allow empty flow generation if backend just sends logs.
       }
 
       const workflowName = `Flow for: ${userInput.substring(0, 30)}${userInput.length > 30 ? '...' : ''}`;
       const nodeTitle = `AI Generated Step for: ${userInput.substring(0, 20)}${userInput.length > 20 ? '...' : ''}`;
 
-      const nodes: WorkflowNodeData[] = finalOutput.trim() ? [{ // Only create node if there's final output
+      const nodes: WorkflowNodeData[] = finalOutput.trim() ? [{
         id: generateNodeId('ai', workflowName, 0),
         title: nodeTitle,
         description: `AI Generated Step: ${finalOutput.substring(0, 100)}${finalOutput.length > 100 ? "..." : ""}`,
@@ -141,6 +146,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
         nodes: nodes,
         error: false,
         userInput: userInput,
+        swarmId: swarmIdFromLogs,
       };
       
       toast({

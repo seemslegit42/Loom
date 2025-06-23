@@ -7,18 +7,7 @@ export const runtime = 'edge'; // Prefer edge runtime for streaming APIs
 
 export async function POST(req: NextRequest) {
   try {
-    const { workflowType, inputData, prompt } = await req.json();
-
-    // Fallback for older requests that might only send `prompt`
-    if (!workflowType && prompt) {
-      const streamCallbacks: AIStreamCallbacksAndOptions = {
-        onStart: async () => console.log('[API /loom/start] Generic prompt stream started (legacy path).'),
-        onCompletion: async () => console.log('[API /loom/start] Generic prompt stream completed (legacy path).'),
-        onFinal: async () => console.log('[API /loom/start] Generic prompt stream finalized (legacy path).'),
-      };
-      const aiStream = await startGenericPromptSwarm(prompt, prompt, streamCallbacks);
-      return toDataStreamResponse(aiStream);
-    }
+    const { workflowType, inputData } = await req.json();
 
     if (!workflowType || !inputData) {
       return NextResponse.json(
@@ -46,7 +35,7 @@ export async function POST(req: NextRequest) {
         if (typeof inputData !== 'string') {
           return NextResponse.json({ error: 'For "genericPrompt", inputData must be a string.' }, { status: 400 });
         }
-        aiStream = await startGenericPromptSwarm(inputData, inputData, streamCallbacks);
+        aiStream = await startGenericPromptSwarm(inputData, streamCallbacks);
         break;
       case 'webSummarization':
         if (typeof inputData !== 'object' || !inputData.url || typeof inputData.url !== 'string') {

@@ -36,17 +36,15 @@ export async function summarizerAgent(input: AgentInput): Promise<AgentOutput> {
     }
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('text/html')) {
-      // Attempt to read as text anyway, but log a warning
       agentLogs.push(`Warning: Content-Type for ${urlToSummarize} is not text/html (${contentType}). Attempting to parse as text.`);
     }
     webContent = await response.text();
     agentLogs.push(`Successfully fetched content. Length: ${webContent.length} characters.`);
 
-    // Basic HTML stripping (naive, for more complex scenarios a library is better)
-    const plainText = webContent.replace(/<style[^>]*>.*?<\/style>/gs, ' ') // Remove style blocks
-                               .replace(/<script[^>]*>.*?<\/script>/gs, ' ') // Remove script blocks
-                               .replace(/<[^>]*>?/gm, ' ') // Remove all other tags
-                               .replace(/\s+/g, ' ') // Collapse multiple spaces
+    const plainText = webContent.replace(/<style[^>]*>.*?<\/style>/gs, ' ')
+                               .replace(/<script[^>]*>.*?<\/script>/gs, ' ')
+                               .replace(/<[^>]*>?/gm, ' ')
+                               .replace(/\s+/g, ' ')
                                .trim();
     agentLogs.push(`Stripped HTML to plain text. Length: ${plainText.length} characters.`);
     
@@ -54,13 +52,12 @@ export async function summarizerAgent(input: AgentInput): Promise<AgentOutput> {
         throw new Error("After stripping HTML, no text content remained from the URL.");
     }
 
-    const prompt = `Summarize the following text extracted from the webpage "${urlToSummarize}", which is related to the topic "${topic}":\n\n${plainText.substring(0, 25000)}...\n\nProvide a concise summary.`; // Limit input size
-
+    const prompt = `Your task is to provide a concise summary of the following text extracted from the webpage "${urlToSummarize}". The overall goal is related to the topic: "${topic}".\n\n---BEGIN CONTENT---\n${plainText.substring(0, 25000)}...\n---END CONTENT---\n\nSummary:`;
+    
     agentLogs.push(`Sending content to LLM for summarization.`);
     const { text: summary } = await generateText({
       model,
       prompt,
-      // tools: input.tools, // Not using tools in this agent directly
     });
     agentLogs.push(`LLM summarization successful.`);
     return { result: summary, logs: agentLogs };
@@ -75,17 +72,16 @@ export async function summarizerAgent(input: AgentInput): Promise<AgentOutput> {
 // Reviewer Agent
 export async function reviewerAgent(input: AgentInput): Promise<AgentOutput> {
   const model = getGroqModel();
-  const { topic, context } = input; // Context here is the summary from SummarizerAgent
+  const { topic, context } = input;
   const agentLogs: string[] = [];
 
-  const prompt = `Review the following summary on the topic "${topic}". Identify any potential issues or areas for improvement. If it looks good, approve it by stating it's a good summary. If not, suggest changes concisely and constructively:\n\nSummary:\n${context}\n\nReview:`;
+  const prompt = `Your task is to review the following summary on the topic "${topic}". Constructively critique it. Identify potential issues, missing information, or areas for improvement. If the summary is good, confirm its quality. Provide a concise review.\n\n---BEGIN SUMMARY---\n${context}\n---END SUMMARY---\n\nReview:`;
   
   agentLogs.push(`Sending summary to LLM for review.`);
   try {
     const { text } = await generateText({
       model,
       prompt,
-      // tools: input.tools,
     });
     agentLogs.push(`LLM review successful.`);
     return { result: text, logs: agentLogs };
@@ -99,18 +95,26 @@ export async function reviewerAgent(input: AgentInput): Promise<AgentOutput> {
 // Streaming Finalizer Agent
 export async function streamingFinalizerAgent(input: AgentInput) {
   const model = getGroqModel();
-  const { topic, context } = input; // Context here is the reviewed summary
+  const { topic, context } = input;
 
-  const prompt = `The following text about "${topic}" has been summarized and reviewed. Format it as a final, polished output, ready for presentation. Ensure it is coherent and directly addresses the core topic. \n\nReviewed Text:\n${context}\n\nFinal Output:`;
+  // The prompt is now more adaptable.
+  const prompt = `You are an AI assistant. Your goal is to provide a final, polished response based on the provided context and topic.
+  
+Topic/Goal: "${topic}"
+
+Context:
+${context}
+
+Based on the above, provide a comprehensive and well-formatted final response.`;
   
   try {
     const { textStream } = await streamText({
       model,
       prompt,
-      // tools: input.tools,
     });
     return textStream; 
-  } catch (error: any) {
+  } catch (error: any)
+  {
     console.error('StreamingFinalizerAgent Error:', error);
     throw error; 
   }

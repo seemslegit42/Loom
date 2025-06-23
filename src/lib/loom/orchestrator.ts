@@ -1,78 +1,92 @@
 
 import { summarizerAgent, reviewerAgent, streamingFinalizerAgent, type AgentInput } from './agents';
 import { AIStream, type AIStreamCallbacksAndOptions } from '@ai-sdk/ui-utils';
-import { fetchUrlContentTool } from './tools/fetch-url-content-tool'; // Import the tool
 
-export async function startSimpleSwarm(topic: string, initialContent: string, streamCallbacks?: AIStreamCallbacksAndOptions) {
-  console.log(`[LoomOrchestrator] Starting simple swarm for topic: "${topic}"`);
-  const currentLogs: string[] = [`Orchestrator: Initiating swarm for topic "${topic}".`];
-
-  const sendLog = (logMessage: string) => {
-    currentLogs.push(logMessage);
+// Common log sending function
+const sendLog = (logMessage: string, streamCallbacks?: AIStreamCallbacksAndOptions) => {
     if (streamCallbacks?.onToken) {
-      // Ensure newlines for proper client-side parsing if each log is a distinct "chunk"
       streamCallbacks.onToken(`[LOG] ${logMessage}\n`);
     }
-  };
+    console.log(`[LoomOrchestrator] ${logMessage}`);
+};
+
+// Orchestrator for generic prompts
+export async function startGenericPromptSwarm(prompt: string, streamCallbacks?: AIStreamCallbacksAndOptions) {
+  sendLog(`Generic Swarm: Initiating for prompt: "${prompt.substring(0, 50)}..."`);
+  try {
+    if (streamCallbacks?.onStart) await streamCallbacks.onStart();
+
+    const finalizerInput: AgentInput = {
+      topic: prompt,
+      context: prompt, // For generic prompts, context is the prompt itself
+    };
+
+    sendLog('Generic Swarm: Passing prompt directly to StreamingFinalizerAgent.');
+    const textStream = await streamingFinalizerAgent(finalizerInput);
+
+    if (streamCallbacks?.onToken) {
+      streamCallbacks.onToken('\n[STREAMING_OUTPUT_START]\n');
+    }
+    sendLog('Generic Swarm: Streaming final output.');
+
+    return AIStream(textStream, undefined, streamCallbacks);
+
+  } catch (error: any) {
+    const errorMessage = `Generic Swarm orchestration failed: ${error.message}.`;
+    sendLog(`Error - ${errorMessage}`);
+    if (streamCallbacks?.onToken) {
+      streamCallbacks.onToken(`\n[ERROR] ${errorMessage}\n`);
+    }
+    if (streamCallbacks?.onFinal) {
+      await streamCallbacks.onFinal(prompt); // pass original prompt on final
+    }
+    throw new Error(errorMessage);
+  }
+}
+
+// Orchestrator for web summarization
+export async function startWebSummarizationSwarm(url: string, streamCallbacks?: AIStreamCallbacksAndOptions) {
+  sendLog(`Web Summarization Swarm: Initiating for URL: "${url}"`);
 
   try {
     if (streamCallbacks?.onStart) await streamCallbacks.onStart();
 
     // Step 1: Summarizer Agent
-    sendLog(`SummarizerAgent: Processing initial content for topic "${topic}".`);
-    // Provide the fetchUrlContentTool to the summarizerAgent
-    const summarizerInput: AgentInput = { 
-      topic, 
-      context: initialContent,
-      tools: [fetchUrlContentTool] 
-    };
+    sendLog(`Web Summarization Swarm: Calling SummarizerAgent for URL.`);
+    const summarizerInput: AgentInput = { topic: `Summarize webpage at ${url}`, context: url };
     const summaryOutput = await summarizerAgent(summarizerInput);
-    (summaryOutput.logs || []).forEach(log => sendLog(log)); // Agent logs are already prefixed
+    (summaryOutput.logs || []).forEach(log => sendLog(`SummarizerAgent: ${log}`));
     if (summaryOutput.error) throw new Error(`Summarization failed: ${summaryOutput.error}`);
-    sendLog(`SummarizerAgent: Successfully summarized. Output length: ${summaryOutput.result.length}`);
-    console.log('[LoomOrchestrator] Summary obtained.');
-    
+    sendLog(`Web Summarization Swarm: SummarizerAgent completed. Output length: ${summaryOutput.result.length}`);
+
     // Step 2: Reviewer Agent
-    sendLog(`ReviewerAgent: Processing summary for topic "${topic}".`);
-    // Reviewer might not need tools, but pass them along for consistency or future use
-    const reviewerInput: AgentInput = { 
-      topic, 
-      context: summaryOutput.result,
-      tools: [fetchUrlContentTool] // Or an empty array if reviewer definitely doesn't need tools
-    };
+    sendLog(`Web Summarization Swarm: Calling ReviewerAgent with summary.`);
+    const reviewerInput: AgentInput = { topic: `Review of summary for ${url}`, context: summaryOutput.result };
     const reviewOutput = await reviewerAgent(reviewerInput);
-    (reviewOutput.logs || []).forEach(log => sendLog(log));
+    (reviewOutput.logs || []).forEach(log => sendLog(`ReviewerAgent: ${log}`));
     if (reviewOutput.error) throw new Error(`Review failed: ${reviewOutput.error}`);
-    sendLog(`ReviewerAgent: Successfully reviewed. Review: ${reviewOutput.result.substring(0,50)}...`);
-    console.log('[LoomOrchestrator] Review obtained.');
-    
+    sendLog(`Web Summarization Swarm: ReviewerAgent completed. Review: ${reviewOutput.result.substring(0, 50)}...`);
+
     // Step 3: Finalizer Agent (Streaming)
-    sendLog(`StreamingFinalizerAgent: Preparing to stream final output for topic "${topic}".`);
-    const finalizerInput: AgentInput = { 
-      topic, 
-      context: reviewOutput.result,
-      tools: [fetchUrlContentTool] // Or an empty array
-    }; 
+    sendLog(`Web Summarization Swarm: Calling StreamingFinalizerAgent with reviewed summary.`);
+    const finalizerInput: AgentInput = { topic: `Final summary for ${url}`, context: reviewOutput.result };
     const textStream = await streamingFinalizerAgent(finalizerInput);
-    
+
     if (streamCallbacks?.onToken) {
-      // Add a newline before starting the main output for client parsing
-      streamCallbacks.onToken(`\n[STREAMING_OUTPUT_START]\n`);
+      streamCallbacks.onToken('\n[STREAMING_OUTPUT_START]\n');
     }
-    console.log('[LoomOrchestrator] Streaming final output...');
-    
+    sendLog('Web Summarization Swarm: Streaming final output.');
+
     return AIStream(textStream, undefined, streamCallbacks);
 
   } catch (error: any) {
-    console.error('[LoomOrchestrator] Swarm Error:', error);
-    const errorMessage = `Swarm orchestration failed: ${error.message}.`;
-    sendLog(`Orchestrator: Error - ${errorMessage}`);
-    
+    const errorMessage = `Web Summarization Swarm orchestration failed: ${error.message}.`;
+    sendLog(`Error - ${errorMessage}`);
     if (streamCallbacks?.onToken) {
       streamCallbacks.onToken(`\n[ERROR] ${errorMessage}\n`);
     }
-    if (streamCallbacks?.onFinal) { 
-        await streamCallbacks.onFinal(currentLogs.join('\n')); 
+    if (streamCallbacks?.onFinal) {
+      await streamCallbacks.onFinal(url); // pass original url on final
     }
     throw new Error(errorMessage);
   }
