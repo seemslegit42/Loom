@@ -42,9 +42,9 @@ export function BasePanel({
   const { toast } = useToast();
   const [isMinimized, setIsMinimized] = useState(false);
 
-  const [currentSize, setCurrentSize] = useState<{ width: number | null; height: number | null }>(() => {
-    let parsedWidth: number | null = DEFAULT_WIDTH;
-    let parsedHeight: number | null = DEFAULT_HEIGHT;
+  const [currentSize, setCurrentSize] = useState<{ width: number | string | null; height: number | string | null }>(() => {
+    let w: number | string | null = null;
+    let h: number | string | null = null;
 
     if (typeof window !== 'undefined' && isResizable && !isMobile) {
       const storageKey = getStorageKey(title);
@@ -54,10 +54,10 @@ export function BasePanel({
           const parsed = JSON.parse(savedSize);
           if (parsed) {
             if (typeof parsed.width === 'number' && parsed.width >= MIN_WIDTH) {
-              parsedWidth = parsed.width;
+              w = parsed.width;
             }
             if (typeof parsed.height === 'number' && parsed.height >= MIN_HEIGHT) {
-              parsedHeight = parsed.height;
+              h = parsed.height;
             }
           }
         } catch (e) {
@@ -66,46 +66,28 @@ export function BasePanel({
       }
     }
     
-    // Override with initialSizeProp if provided and valid
-    if (initialSizeProp.width === 'auto') {
-      parsedWidth = null; // Indicates CSS should control it
-    } else if (typeof initialSizeProp.width === 'string') {
-      const propW = parseInt(initialSizeProp.width, 10);
-      if (!isNaN(propW) && propW >= MIN_WIDTH) {
-        parsedWidth = propW;
-      } else if (parsedWidth === DEFAULT_WIDTH && isNaN(propW)) { // Only use default if prop was invalid and no localStorage
-         // Keep localStorage or default if prop is invalid
-      }
-    } else if (initialSizeProp.width === undefined && parsedWidth === DEFAULT_WIDTH) {
-       // keep default or localstorage
+    if (w === null && initialSizeProp.width) {
+        if (initialSizeProp.width.includes('%') || initialSizeProp.width === 'auto') {
+            w = initialSizeProp.width;
+        } else {
+            const propW = parseInt(initialSizeProp.width, 10);
+            w = !isNaN(propW) ? Math.max(propW, MIN_WIDTH) : DEFAULT_WIDTH;
+        }
     }
 
-
-    if (initialSizeProp.height === 'auto') {
-      parsedHeight = null; // Indicates CSS should control it
-    } else if (typeof initialSizeProp.height === 'string') {
-      const propH = parseInt(initialSizeProp.height, 10);
-      if (!isNaN(propH) && propH >= MIN_HEIGHT) {
-        parsedHeight = propH;
-      } else if (parsedHeight === DEFAULT_HEIGHT && isNaN(propH)) {
-        // Keep localStorage or default if prop is invalid
-      }
-    } else if (initialSizeProp.height === undefined && parsedHeight === DEFAULT_HEIGHT) {
-      // keep default or localstorage
+    if (h === null && initialSizeProp.height) {
+        if (initialSizeProp.height.includes('%') || initialSizeProp.height === 'auto') {
+            h = initialSizeProp.height;
+        } else {
+            const propH = parseInt(initialSizeProp.height, 10);
+            h = !isNaN(propH) ? Math.max(propH, MIN_HEIGHT) : DEFAULT_HEIGHT;
+        }
     }
     
-    // Ensure defaults if still at initial default and no valid prop/localStorage
-    if (initialSizeProp.width === undefined && parsedWidth === DEFAULT_WIDTH && !localStorage.getItem(getStorageKey(title))?.includes('"width"')) {
-        // If initialSizeProp.width is undefined, and we haven't overridden default with localStorage, it remains default.
-        // If isResizable is true, it should be a number unless 'auto' was specified.
-        // So, if parsedWidth is still default and width was not 'auto', ensure it's the number.
-    }
-     if (initialSizeProp.height === undefined && parsedHeight === DEFAULT_HEIGHT && !localStorage.getItem(getStorageKey(title))?.includes('"height"')) {
-        // Same for height.
-    }
+    if (w === null) w = DEFAULT_WIDTH;
+    if (h === null) h = DEFAULT_HEIGHT;
 
-
-    return { width: parsedWidth, height: parsedHeight };
+    return { width: w, height: h };
   });
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -122,8 +104,8 @@ export function BasePanel({
     let newHeight = initialResizeState.current.height + dy;
 
     setCurrentSize(prevSize => ({
-      width: Math.max(newWidth, MIN_WIDTH), // Becomes number here
-      height: Math.max(newHeight, MIN_HEIGHT) // Becomes number here
+      width: Math.max(newWidth, MIN_WIDTH),
+      height: Math.max(newHeight, MIN_HEIGHT)
     }));
   }, [isResizable, isMobile]); 
 
@@ -135,7 +117,6 @@ export function BasePanel({
 
     if (typeof window !== 'undefined') {
       const storageKey = getStorageKey(title);
-      // Only save if currentSize dimensions are numbers (i.e., pixel values)
       const sizeToSave: Partial<{width: number, height: number}> = {};
       if (typeof currentSize.width === 'number') sizeToSave.width = currentSize.width;
       if (typeof currentSize.height === 'number') sizeToSave.height = currentSize.height;
@@ -162,12 +143,12 @@ export function BasePanel({
     initialResizeState.current = {
       mouseX: e.clientX,
       mouseY: e.clientY,
-      width: panelRef.current?.offsetWidth || (typeof currentSize.width === 'number' ? currentSize.width : DEFAULT_WIDTH),
-      height: panelRef.current?.offsetHeight || (typeof currentSize.height === 'number' ? currentSize.height : DEFAULT_HEIGHT),
+      width: panelRef.current?.offsetWidth || DEFAULT_WIDTH,
+      height: panelRef.current?.offsetHeight || DEFAULT_HEIGHT,
     };
     document.addEventListener('mousemove', handleMouseMoveResize);
     document.addEventListener('mouseup', handleMouseUpResize);
-  }, [isResizable, isMobile, currentSize.width, currentSize.height, handleMouseMoveResize, handleMouseUpResize]);
+  }, [isResizable, isMobile, handleMouseMoveResize, handleMouseUpResize]);
 
 
   const handleMinimize = () => {
@@ -194,8 +175,8 @@ export function BasePanel({
   
   const sizeStyles: React.CSSProperties = isResizable && !isMobile
     ? { 
-        width: typeof currentSize.width === 'number' ? `${currentSize.width}px` : undefined, 
-        height: typeof currentSize.height === 'number' ? `${currentSize.height}px` : undefined 
+        width: typeof currentSize.width === 'number' ? `${currentSize.width}px` : (currentSize.width || undefined), 
+        height: typeof currentSize.height === 'number' ? `${currentSize.height}px` : (currentSize.height || undefined)
       }
     : {};
 

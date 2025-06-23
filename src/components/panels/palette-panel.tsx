@@ -1,4 +1,3 @@
-
 // src/components/panels/palette-panel.tsx
 import { BasePanel } from './base-panel';
 import { Button } from '@/components/ui/button';
@@ -31,6 +30,7 @@ export function PalettePanel({ className, onClose, isMobile }: PalettePanelProps
       className={className}
       onClose={onClose}
       isMobile={isMobile}
+      isResizable={true}
       initialSize={{ width: '280px', height: 'auto' }}
       contentClassName="space-y-2"
     >
