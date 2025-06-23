@@ -11,7 +11,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Send, FileText, AlertCircle, Brain } from 'lucide-react';
 import type { ConsoleMessage } from '@/components/panels/console-panel';
 import type { TimelineEvent } from '@/components/panels/timeline-panel';
-import { executePromptTask, type ExecutePromptInput, type ExecutePromptOutput } from '@/tasks/execute-prompt-task'; // Updated import
+
+export interface ExecutePromptOutput {
+  responseText?: string;
+  error?: string;
+}
 
 interface PromptExecutorFormProps {
   addConsoleMessage: (type: ConsoleMessage['type'], text: string) => void;
@@ -22,7 +26,7 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
   const [promptText, setPromptText] = useState('');
   const [modelName, setModelName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<ExecutePromptOutput | null>(null); // Using ExecutePromptOutput directly
+  const [result, setResult] = useState<ExecutePromptOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -43,28 +47,48 @@ export function PromptExecutorForm({ addConsoleMessage, addTimelineEvent }: Prom
       type: 'info',
       message: `Prompt Executor: Calling backend for prompt: "${promptText.substring(0,30)}..."`,
     });
+    
+    try {
+        const response = await fetch('/api/loom/direct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptText, modelName: modelName }),
+        });
 
-    const taskInput: ExecutePromptInput = { promptText, modelName };
-    const output = await executePromptTask(taskInput);
+        if (!response.ok || !response.body) {
+          const errorData = await response.json().catch(() => ({ error: "Failed to parse error from API" }));
+          throw new Error(errorData.error || `API Error: ${response.status}`);
+        }
 
-    if (output.error) {
-      setError(output.error);
-      setResult(null); // Ensure no prior result is shown
-      addConsoleMessage('error', `Prompt Executor (backend API): Failed - ${output.error}`);
-      addTimelineEvent({
-        type: 'workflow_failed', // Or a more specific event type like 'llm_call_failed'
-        message: `Prompt Executor (backend API) failed: ${output.error.substring(0,100)}...`,
-      });
-    } else {
-      setResult(output);
-      setError(null);
-      addConsoleMessage('info', `Prompt Executor (backend API): Successfully processed prompt. Response length: ${output.responseText?.length || 0}`);
-      addTimelineEvent({
-        type: 'workflow_completed', // Or 'llm_call_succeeded'
-        message: `Prompt Executor (backend API) completed.`,
-      });
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedResponse = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          accumulatedResponse += decoder.decode(value, { stream: true });
+        }
+        
+        setResult({ responseText: accumulatedResponse.trim() });
+        setError(null);
+        addConsoleMessage('info', `Prompt Executor (backend API): Successfully processed prompt. Response length: ${accumulatedResponse.length}`);
+        addTimelineEvent({
+            type: 'workflow_completed',
+            message: `Prompt Executor (backend API) completed.`,
+        });
+
+    } catch (e: any) {
+        setError(e.message);
+        setResult(null);
+        addConsoleMessage('error', `Prompt Executor (backend API): Failed - ${e.message}`);
+        addTimelineEvent({
+            type: 'workflow_failed',
+            message: `Prompt Executor (backend API) failed: ${e.message.substring(0,100)}...`,
+        });
+    } finally {
+        setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

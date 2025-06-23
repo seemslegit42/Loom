@@ -11,8 +11,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Link, Search, FileText, AlertCircle } from 'lucide-react';
 import type { ConsoleMessage } from '@/components/panels/console-panel';
 import type { TimelineEvent } from '@/components/panels/timeline-panel';
-import type { SummarizeWebpageOutput } from '@/tasks/summarize-webpage-task'; // Use the task's output type
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+export interface SummarizeWebpageOutput {
+  summary?: string;
+  originalUrl: string;
+  error?: string;
+  logs?: string[];
+}
 
 interface WebpageSummarizerFormProps {
   addConsoleMessage: (type: ConsoleMessage['type'], text: string) => void;

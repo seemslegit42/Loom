@@ -22,12 +22,17 @@ import { ResizableVerticalPanes } from '@/components/layout/resizable-vertical-p
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 
-// Import task functions and their types
-import { summarizeWebpageTask, type SummarizeWebpageOutput, type SummarizeWebpageInput } from '@/tasks/summarize-webpage-task';
-import { executePromptTask, type ExecutePromptOutput, type ExecutePromptInput } from '@/tasks/execute-prompt-task';
+export interface BackendSummarizeOutput {
+  summary?: string;
+  originalUrl: string;
+  error?: string;
+  logs?: string[];
+}
+export interface BackendExecutePromptOutput {
+  responseText?: string;
+  error?: string;
+}
 
-export interface BackendSummarizeOutput extends SummarizeWebpageOutput {}
-export interface BackendExecutePromptOutput extends ExecutePromptOutput {}
 
 export interface AiGeneratedFlowData {
   message: string | null;
@@ -408,7 +413,7 @@ export default function LoomStudioPage() {
       return;
     }
 
-    let nodeOutput: SummarizeWebpageOutput | ExecutePromptOutput | Record<string, any> | null = null;
+    let nodeOutput: BackendSummarizeOutput | BackendExecutePromptOutput | Record<string, any> | null = null;
     let nodeError: string | undefined = undefined;
 
     const runType = nodeToRun.type === 'web-summarizer' ? 'Web Summarizer' : nodeToRun.type === 'prompt' ? 'Prompt Node' : 'Node';
@@ -417,8 +422,8 @@ export default function LoomStudioPage() {
     if (selectedNode?.id === nodeId) {
       setSelectedNode(prev => prev ? {...prev, status: 'running'} : null);
     }
-    addConsoleMessage('info', `Executing individual ${runType}: "${nodeToRun.title}" (ID: ${nodeId}) - Calling task.`);
-    addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_running', message: `Executing individual ${runType}: ${nodeToRun.title} (task)` });
+    addConsoleMessage('info', `Executing individual ${runType}: "${nodeToRun.title}" (ID: ${nodeId}) - Calling backend API.`);
+    addTimelineEvent({ nodeId, nodeTitle: nodeToRun.title, type: 'node_running', message: `Executing individual ${runType}: ${nodeToRun.title} (API)` });
 
     try {
       if (nodeToRun.type === 'web-summarizer') {
@@ -427,13 +432,19 @@ export default function LoomStudioPage() {
           nodeError = "URL is missing for Web Summarizer.";
           nodeOutput = { error: nodeError, originalUrl: url || '' };
         } else {
-          const taskInput: SummarizeWebpageInput = { url };
-          nodeOutput = await summarizeWebpageTask(taskInput);
-          if (nodeOutput.error) nodeError = nodeOutput.error;
-
-          if (nodeOutput.logs && nodeOutput.logs.length > 0) {
-             nodeOutput.logs.forEach(log => addConsoleMessage('log', `[Task: ${nodeToRun.title}] ${log}`, generatedFlow?.swarmId));
+          const response = await fetch('/api/loom/summarize-url', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ url })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            nodeError = data.error || 'Failed to summarize from API.';
+            nodeOutput = { error: nodeError, originalUrl: url };
+          } else {
+            nodeOutput = data;
           }
+          if ((nodeOutput as BackendSummarizeOutput).error) nodeError = (nodeOutput as BackendSummarizeOutput).error;
         }
       } else if (nodeToRun.type === 'prompt') {
         const promptText = nodeToRun.config?.promptText;
@@ -442,9 +453,28 @@ export default function LoomStudioPage() {
           nodeError = "Prompt text is missing for Prompt Node.";
           nodeOutput = { error: nodeError };
         } else {
-          const taskInput: ExecutePromptInput = { promptText, modelName };
-          nodeOutput = await executePromptTask(taskInput);
-          if (nodeOutput.error) nodeError = nodeOutput.error;
+          const response = await fetch('/api/loom/direct', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ prompt: promptText, modelName })
+          });
+
+          if (!response.ok || !response.body) {
+             const errorData = await response.json().catch(() => ({ error: "Failed to parse error from API" }));
+             nodeError = errorData.error || `API Error: ${response.status}`;
+             nodeOutput = { error: nodeError };
+          } else {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedText = "";
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              accumulatedText += decoder.decode(value, { stream: true });
+            }
+            nodeOutput = { responseText: accumulatedText.trim() };
+          }
+          if ((nodeOutput as BackendExecutePromptOutput).error) nodeError = (nodeOutput as BackendExecutePromptOutput).error;
         }
       } else {
         nodeError = `Execution for node type '${nodeToRun.type}' (${nodeToRun.title}) is not implemented with a real backend task.`;
@@ -474,16 +504,16 @@ export default function LoomStudioPage() {
     if (selectedNode?.id === nodeId) setSelectedNode(updatedNodeData);
 
     if (nodeError) {
-      addConsoleMessage('error', `Individual ${runType} "${updatedNodeData.title}" (task) failed: ${nodeError}`);
-      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Individual execution (task) failed: ${nodeError.substring(0,100)}...` });
+      addConsoleMessage('error', `Individual ${runType} "${updatedNodeData.title}" (API) failed: ${nodeError}`);
+      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_failed', message: `Individual execution (API) failed: ${nodeError.substring(0,100)}...` });
       toast({
         title: "Node Execution Failed",
         description: `Task for "${updatedNodeData.title}" (${runType}) failed: ${nodeError}`,
         variant: "destructive"
       });
     } else {
-      addConsoleMessage('info', `Individual ${runType} "${updatedNodeData.title}" (task) completed.`);
-      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: `Individual ${runType} execution (task) completed.` });
+      addConsoleMessage('info', `Individual ${runType} "${updatedNodeData.title}" (API) completed.`);
+      addTimelineEvent({ nodeId, nodeTitle: updatedNodeData.title, type: 'node_completed', message: `Individual ${runType} execution (API) completed.` });
       toast({
         title: "Node Executed",
         description: `Task for "${updatedNodeData.title}" (${runType}) completed successfully.`

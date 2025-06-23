@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-// Using BackendSummarizeOutput and BackendExecutePromptOutput from page.tsx types for simulated output
 import type { BackendSummarizeOutput, BackendExecutePromptOutput } from '@/app/page';
 
 

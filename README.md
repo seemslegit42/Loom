@@ -49,18 +49,18 @@ The API is designed to be modular and extensible.
 *   **`POST /api/loom/start`**:
     *   Initiates a new AI workflow swarm or a specific agent task.
     *   **Request Body** (JSON):
-        *   `workflowType` (string, optional): Specifies the type of workflow. Examples: `"genericPrompt"`, `"webSummarization"`. If omitted or for basic prompts, `prompt` field is primary.
-        *   `inputData` (string or object, optional): Data for the specified `workflowType`. For `"webSummarization"`, this would be `{ "url": "http://example.com" }`. For `"genericPrompt"`, this is the prompt string.
-        *   `prompt` (string, optional): A general input prompt. If `workflowType` and `inputData` are not provided, `prompt` can be used. For simple flows, it might be treated as both `topic` and `initialContent`.
-        *   `topic` (string, optional, legacy): The main subject or goal for the swarm.
-        *   `initialContent` (string or object, optional, legacy): Initial data or context for the swarm.
+        *   `workflowType` (string, required): Specifies the type of workflow. Examples: `"genericPrompt"`, `"webSummarization"`.
+        *   `inputData` (string or object, required): Data for the specified `workflowType`. For `"webSummarization"`, this would be `{ "url": "http://example.com" }`. For `"genericPrompt"`, this is the prompt string.
     *   **Response**: A streaming response (`text/event-stream` or similar via `toDataStreamResponse`) containing logs and the final output from the agent swarm or task.
     *   **Example Usages (curl)**:
-        General Prompt (full agent chain):
+        Generic Prompt (full agent chain):
         ```bash
         curl -X POST http://localhost:9002/api/loom/start \
         -H "Content-Type: application/json" \
-        -d '{"prompt": "Tell me about quantum computing."}' \
+        -d '{
+              "workflowType": "genericPrompt", 
+              "inputData": "Tell me about quantum computing."
+            }' \
         --no-buffer
         ```
         Web Summarization (full agent chain):
@@ -89,7 +89,7 @@ The API is designed to be modular and extensible.
         ```
 
 *   **`POST /api/loom/summarize-url`**:
-    *   Fetches content from a given URL and summarizes it using the Groq LLM.
+    *   Fetches content from a given URL and summarizes it using the Groq LLM. This is a non-streaming, direct utility endpoint.
     *   **Request Body** (JSON):
         *   `url` (string, required): The URL of the webpage to summarize.
     *   **Response** (JSON, non-streaming):
