@@ -255,27 +255,31 @@ export function CanvasZone({
             ))}
         </div>
         {!workflowName && displayedNodes.length === 0 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-muted-foreground py-20 pointer-events-none"> {/* This div will be on top of the grid-background of its parent */}
-            <Sparkles className="h-16 w-16 mb-4 text-primary/50" /> 
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-muted-foreground py-20 pointer-events-none">
+            <Sparkles className="h-16 w-16 mb-4 text-primary/50 opacity-50" />
             <h2 className="text-2xl font-headline mb-2 text-foreground/90">Your Creative Canvas Awaits</h2>
             <p className="max-w-md text-sm">
-              Drag elements from the Palette or use AI to generate a new workflow.
-              Connect nodes to bring your ideas to life.
+              Use the <span className="font-semibold text-primary/90">AI prompt</span> to generate a new workflow,
+              <br />or drag nodes from the <span className="font-semibold text-primary/90">Palette</span> to start building.
             </p>
           </div>
         )}
 
-        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible z-0"> {/* This SVG is relative to viewportContentStyle */}
+        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible z-0">
           <defs>
-            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+            <linearGradient id="connection-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="hsl(var(--accent))" />
+              <stop offset="100%" stopColor="hsl(var(--primary))" />
+            </linearGradient>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
               <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--primary))" />
             </marker>
-             <marker id="arrowhead-temp" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+             <marker id="arrowhead-temp" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
               <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--accent))" />
             </marker>
           </defs>
           {linePathData.map((d, i) => (
-            <path key={`conn-${i}`} d={d} stroke="hsl(var(--primary))" strokeWidth="2.5" fill="none" markerEnd="url(#arrowhead)" />
+            <path key={`conn-${i}`} d={d} stroke="url(#connection-gradient)" strokeWidth="2.5" fill="none" markerEnd="url(#arrowhead)" />
           ))}
           {tempLinePath && (
             <path d={tempLinePath} stroke="hsl(var(--accent))" strokeWidth="2.5" strokeDasharray="5,5" fill="none" markerEnd="url(#arrowhead-temp)" />

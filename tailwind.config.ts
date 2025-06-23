@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -91,12 +92,18 @@ export default {
         'panel-glow': { // This can be further refined or used for specific highlights
           '0%, 100%': { boxShadow: '0 0 4px hsl(var(--accent)), 0 0 8px hsl(var(--accent))' },
           '50%': { boxShadow: '0 0 10px hsl(var(--accent)), 0 0 18px hsl(var(--accent))' },
+        },
+        'pulse-accent': {
+          '50%': {
+            boxShadow: '0 0 0 5px hsl(var(--accent) / 0.5)',
+          }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'panel-glow': 'panel-glow 2.5s ease-in-out infinite',
+        'pulse-accent': 'pulse-accent 1.5s ease-in-out infinite',
       },
     },
   },

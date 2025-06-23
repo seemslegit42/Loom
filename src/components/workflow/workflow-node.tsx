@@ -1,3 +1,4 @@
+
 // src/components/workflow/workflow-node.tsx
 import React, { useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -125,11 +126,11 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
       }
     };
 
-    const portBaseStyle = "node-port absolute w-4 h-4 bg-card border-2 border-primary rounded-full cursor-pointer hover:bg-primary/50 transition-colors flex items-center justify-center z-10";
+    const portBaseStyle = "node-port absolute w-4 h-4 bg-card border-2 border-primary rounded-full cursor-pointer hover:bg-primary/50 transition-all flex items-center justify-center z-10";
     const outputPortConnectingStyle = isConnectingFrom ? "ring-2 ring-accent ring-offset-1 ring-offset-card animate-pulse" : "";
     
     // Highlight input port if a connection is in progress from another node and this node is selected
-    const inputPortTargetableStyle = connectingState && connectingState.fromNodeId !== id && isSelected ? "bg-green-400/80 border-green-600" : "";
+    const inputPortTargetableStyle = connectingState && connectingState.fromNodeId !== id && isSelected ? "bg-accent/80 border-accent animate-pulse-accent" : "";
 
 
     return (
@@ -140,7 +141,7 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
           'absolute min-w-[250px] max-w-xs bg-card backdrop-blur-lg shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] group',
           'border-2',
           cardDynamicStyles[status] || cardDynamicStyles.unknown,
-          isSelected && !isConnectingFrom && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-accent/30 scale-[1.02]',
+          isSelected && !isConnectingFrom && 'ring-2 ring-offset-2 ring-offset-background ring-accent shadow-lg shadow-accent/20 scale-[1.02]',
           className
         )}
         style={{
@@ -200,4 +201,3 @@ export const WorkflowNode = React.forwardRef<HTMLDivElement, WorkflowNodeProps>(
 );
 
 WorkflowNode.displayName = 'WorkflowNode';
-
