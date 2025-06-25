@@ -1,196 +1,249 @@
 // src/app/dashboard/page.tsx
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import {
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-} from 'recharts';
-import { Workflow, CheckCircle2, AlertCircle, Bot, Activity, BrainCircuit } from 'lucide-react';
-import Link from 'next/link';
+  BrainCircuit,
+  Home,
+  ChevronDown,
+  Search,
+  Bell,
+  LayoutGrid,
+  UserCircle,
+  Clock,
+  Cpu,
+  MemoryStick,
+  Users,
+  HardDrive,
+  Network,
+  Rocket,
+  Sparkles,
+  Bot,
+  GitBranch,
+  XCircle,
+  CheckCircle,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
-// Mock data for demonstration
-const kpiData = {
-  totalWorkflows: 12,
-  successfulRuns: 138,
-  failedRuns: 14,
-  activeAgents: 5,
-};
-
-const chartData = [
-  { name: 'Jan', runs: 40, failed: 5 },
-  { name: 'Feb', runs: 30, failed: 3 },
-  { name: 'Mar', runs: 55, failed: 8 },
-  { name: 'Apr', runs: 48, failed: 4 },
-  { name: 'May', runs: 62, failed: 6 },
-  { name: 'Jun', runs: 50, failed: 2 },
+const systemSnapshotData = [
+  { name: 'CPU Load', value: 35, color: 'bg-cyan-400', icon: <Cpu className="h-5 w-5" /> },
+  { name: 'Memory Usage', value: 62, color: 'bg-cyan-400', icon: <MemoryStick className="h-5 w-5" /> },
+  { name: 'Active Agents', value: 5, color: 'bg-amber-400', icon: <Users className="h-5 w-5" /> },
+  { name: 'Disk Usage', value: 45, valueText: '450GB / 1TB', color: 'bg-cyan-400', icon: <HardDrive className="h-5 w-5" /> },
+  { name: 'Network Sent', valueText: '1.2 GB', icon: <Network className="h-5 w-5" /> },
+  { name: 'Network Received', valueText: '8.5 GB', icon: <Network className="h-5 w-5" /> },
+  { name: 'System Uptime', valueText: '12d 4h 32m', icon: <Clock className="h-5 w-5" /> },
 ];
 
-const recentActivities = [
-    { id: 'act_1', description: 'Web Summarization for example.com completed.', type: 'Workflow Success', timestamp: '5m ago', status: 'completed' },
-    { id: 'act_2', description: 'Agent "Web Intellect" provisioned.', type: 'Agent Action', timestamp: '1h ago', status: 'info' },
-    { id: 'act_3', description: 'Generic prompt "Quantum Computing" failed.', type: 'Workflow Failure', timestamp: '2h ago', status: 'failed' },
-    { id: 'act_4', description: 'User manually ran "Prompt Node".', type: 'Manual Action', timestamp: '3h ago', status: 'info' },
-    { id: 'act_5', description: 'Workflow "My Custom Flow" saved.', type: 'User Action', timestamp: '1d ago', status: 'info' },
+const agentPresenceData = [
+    { name: 'OrionCore_7B', description: 'Optimizing dynamic resource allocation...', status: 'Processing', time: 'Now', statusColor: 'text-cyan-400' },
+    { name: 'NexusGuard_Alpha', description: 'Actively monitoring inbound/outbound netwo...', status: 'Idle', time: '2m ago', statusColor: 'text-green-400' },
+    { name: 'Helios_Stream_Processor', description: 'Continuously analyzing high-volume sen...', status: 'Processing', time: 'Now', statusColor: 'text-cyan-400' },
+    { name: 'NovaSys_QueryEngine', description: 'Awaiting complex user queries and data retri...', status: 'Idle', time: '10s ago', statusColor: 'text-green-400' },
+    { name: 'Cygnus_BackupAgent', description: 'Scheduled integrity check failed on target...', status: 'Error', time: '5m ago', statusColor: 'text-red-400' },
 ];
 
-const statusBadgeVariant: Record<string, 'default' | 'destructive' | 'secondary' | 'outline'> = {
-    completed: 'default', // Using default for success to make it stand out
-    failed: 'destructive',
-    info: 'secondary',
-};
+const orchestrationFeedData = [
+    { name: 'Agent Task: Analyze User Sentiment', time: '0 seconds ago', status: 'failure' },
+    { name: 'Agent Task: Deploy Microservice v1.2', time: '3 minutes ago', status: 'success' },
+    { name: 'Agent Task: Backup Database Cluster', time: '15 minutes ago', status: 'success' },
+];
 
-const statusIcon: Record<string, React.ReactNode> = {
-    completed: <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />,
-    failed: <AlertCircle className="h-4 w-4 text-destructive shrink-0" />,
-    info: <Activity className="h-4 w-4 text-muted-foreground shrink-0" />,
-};
+const statusBadgeVariant : Record<string, "default" | "destructive" | "secondary" | "outline"> = {
+  success: 'default',
+  failure: 'destructive',
+}
 
+const statusBadgeText: Record<string, string> = {
+    success: "Success",
+    failure: "Failure",
+}
 
 export default function DashboardPage() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-         <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 shadow-sm backdrop-blur-lg sm:px-6 lg:px-8">
-             <div className="flex items-center gap-2 md:gap-4">
-                <Link href="/" className="flex items-center gap-2">
-                    <BrainCircuit className="h-8 w-8 text-primary" />
-                    <h1 className="font-headline text-xl md:text-2xl font-semibold text-foreground">
-                    Loom Studio
-                    </h1>
-                </Link>
-            </div>
-             <nav>
-                <Link href="/dashboard" className="text-sm font-medium text-primary ring-offset-background transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Dashboard</Link>
-             </nav>
-        </header>
+    <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
+      <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-background/60 px-6 backdrop-blur-xl">
+        <div className="flex items-center gap-4">
+          <BrainCircuit className="h-8 w-8 text-white" />
+          <h1 className="font-headline text-xl font-semibold text-white hidden md:block">
+            AEVON OS
+          </h1>
+          <Separator orientation="vertical" className="h-6 bg-white/10 hidden md:block" />
+          <Button variant="ghost" className="gap-2 text-white hover:bg-white/10 hover:text-white">
+            <Home className="h-4 w-4" />
+            <span className="hidden md:inline">Home Dashboard</span>
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </div>
 
-        <main className="flex-1 p-4 md:p-8">
-            <h1 className="text-3xl font-bold font-headline mb-6">Dashboard</h1>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Workflows</CardTitle>
-                        <Workflow className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{kpiData.totalWorkflows}</div>
-                        <p className="text-xs text-muted-foreground">+2 since last month</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Successful Runs</CardTitle>
-                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{kpiData.successfulRuns}</div>
-                        <p className="text-xs text-muted-foreground">+20.1% from last month</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Failed Runs</CardTitle>
-                        <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{kpiData.failedRuns}</div>
-                        <p className="text-xs text-muted-foreground">-5 since last month</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
-                        <Bot className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{kpiData.activeAgents}</div>
-                         <p className="text-xs text-muted-foreground">+1 since last hour</p>
-                    </CardContent>
-                </Card>
-            </div>
+        <div className="flex-1 px-4 lg:px-12">
+            <Button variant="outline" className="w-full max-w-lg mx-auto justify-between bg-black/20 border-white/20 text-muted-foreground hover:bg-black/30 hover:text-muted-foreground pr-2">
+                <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4" />
+                    <span>Command or Search (Ctrl+K)...</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <XCircle className="h-5 w-5 text-muted-foreground/50" />
+                    <Separator orientation='vertical' className='h-5 bg-white/20' />
+                    <span className="text-xs">⌘K</span>
+                </div>
+            </Button>
+        </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mt-4">
-                <Card className="lg:col-span-4">
-                    <CardHeader>
-                        <CardTitle>Workflow Runs Overview</CardTitle>
-                        <CardDescription>Monthly successful vs failed runs.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={chartData}>
-                                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-                                <Tooltip
-                                    contentStyle={{
-                                        background: "hsl(var(--background))",
-                                        borderColor: "hsl(var(--border))",
-                                        borderRadius: "var(--radius)",
-                                    }}
-                                />
-                                <Legend wrapperStyle={{fontSize: "12px"}} />
-                                <Bar dataKey="runs" name="Successful" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="failed" name="Failed" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
-                <Card className="lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Recent Activity</CardTitle>
-                         <CardDescription>A log of recent events in your studio.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Event</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead className="text-right">Time</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {recentActivities.map((activity) => (
-                                    <TableRow key={activity.id}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                {statusIcon[activity.status] || <Activity className="h-4 w-4 text-muted-foreground shrink-0" />}
-                                                <span className="font-medium">{activity.description}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={statusBadgeVariant[activity.status] || 'secondary'}>{activity.type}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">{activity.timestamp}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+            <LayoutGrid className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+            <Bell className="h-5 w-5" />
+          </Button>
+          <Separator orientation="vertical" className="h-6 bg-white/10" />
+          <div className="flex items-center gap-2 text-sm text-white">
+            <Clock className="h-5 w-5" />
+            <span>{formatTime(time)} UTC</span>
+          </div>
+          <Separator orientation="vertical" className="h-6 bg-white/10" />
+          <div className="flex items-center gap-2">
+            <UserCircle className="h-8 w-8 text-white" />
+            <div className="text-xs">
+              <p className="font-semibold text-white">Admin User</p>
+              <p className="text-green-400">Session: Active</p>
             </div>
-        </main>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 p-6 grid grid-cols-12 auto-rows-min gap-6">
+        <Card className="col-span-12 lg:col-span-5 row-span-2 flex flex-col bg-primary/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="h-5 w-5 text-accent" /> AI Assistant
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col items-center justify-center text-center">
+            <div className="relative w-48 h-48 mb-6">
+              <div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse"></div>
+              <Image src="https://placehold.co/200x200.png" alt="AI Orb" data-ai-hint="abstract orb" width={192} height={192} className="relative rounded-full" />
+            </div>
+            <p className="text-lg text-muted-foreground max-w-xs">
+              Analyze product sales, compare revenue, or ask for insights.
+            </p>
+          </CardContent>
+          <div className="p-4 mt-auto">
+            <Textarea placeholder="Ask the AI assistant..." className="bg-black/20 border-white/10 mb-2 focus:border-accent" />
+            <Button className="w-full bg-gradient-to-r from-primary to-accent text-white">Send Prompt</Button>
+          </div>
+        </Card>
+
+        <Card className="col-span-12 md:col-span-6 lg:col-span-4 row-span-2 bg-primary/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <LayoutGrid className="h-5 w-5 text-accent" /> System Snapshot
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {systemSnapshotData.map((item, index) => (
+              <div key={index}>
+                <div className="flex justify-between items-center text-sm mb-1">
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    {item.icon}
+                    {item.name}
+                  </span>
+                  <span className={cn('font-semibold', item.color && 'text-white')}>{item.valueText || `${item.value}%`}</span>
+                </div>
+                {item.value && <Progress value={item.value} className={cn('h-2', item.color)} />}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-12 md:col-span-6 lg:col-span-3 row-span-2 bg-primary/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bot className="h-5 w-5 text-accent" /> Agent Presence
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {agentPresenceData.map((agent, index) => (
+              <div key={index} className="p-3 rounded-lg bg-black/20">
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className="font-semibold text-sm text-white">{agent.name}</h4>
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <div className={cn('w-2 h-2 rounded-full', agent.statusColor.replace('text-', 'bg-'))}></div>
+                    <span className={agent.statusColor}>{agent.status}</span>
+                    <span className="text-muted-foreground">({agent.time})</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{agent.description}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-12 md:col-span-6 lg:col-span-5 bg-primary/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <AppWindow className="h-5 w-5 text-accent" /> Micro-Apps
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-3 gap-4">
+            <Button variant="outline" className="h-24 flex-col gap-2 bg-black/20 border-accent/30 text-accent hover:bg-accent/10">
+              <Rocket className="h-6 w-6" /> Launch
+            </Button>
+            <Button variant="outline" className="h-24 flex-col gap-2 bg-black/20 border-accent/30 text-accent hover:bg-accent/10">
+              <Rocket className="h-6 w-6" /> Launch
+            </Button>
+            <Button variant="outline" className="h-24 flex-col gap-2 bg-black/20 border-accent/30 text-accent hover:bg-accent/10">
+              <Rocket className="h-6 w-6" /> Launch
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-12 md:col-span-6 lg:col-span-7 bg-primary/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <GitBranch className="h-5 w-5 text-accent" /> Live Orchestration Feed
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {orchestrationFeedData.map((item, index) => (
+               <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-black/20">
+                <div className="flex items-center gap-3">
+                    {item.status === 'success' ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-red-500" />}
+                    <div>
+                        <p className="text-sm text-white">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.time}</p>
+                    </div>
+                </div>
+                <Badge variant={statusBadgeVariant[item.status]}>{statusBadgeText[item.status]}</Badge>
+               </div>
+            ))}
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }
