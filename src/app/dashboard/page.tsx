@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { WorkflowEfficiencyChart } from '@/components/dashboard/workflow-efficiency-chart';
+
 import {
   BrainCircuit,
   Home,
@@ -23,14 +25,16 @@ import {
   HardDrive,
   Network,
   Rocket,
-  Sparkles,
-  Bot,
   GitBranch,
   XCircle,
   CheckCircle,
+  TrendingUp,
+  BarChart2,
+  Settings,
+  Bot
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
+
 
 const systemSnapshotData = [
   { name: 'CPU Load', value: 35, color: 'bg-cyan-400', icon: <Cpu className="h-5 w-5" /> },
@@ -51,9 +55,9 @@ const agentPresenceData = [
 ];
 
 const orchestrationFeedData = [
-    { name: 'Agent Task: Analyze User Sentiment', time: '0 seconds ago', status: 'failure' },
-    { name: 'Agent Task: Deploy Microservice v1.2', time: '3 minutes ago', status: 'success' },
-    { name: 'Agent Task: Backup Database Cluster', time: '15 minutes ago', status: 'success' },
+    { name: 'Agent Task: Analyze User Sentiment', time: '0 seconds ago', status: 'failure', agentId: 'OrionCore_7B', duration: '1.2s', logs: ['Initiated sentiment analysis on user input #8492.', 'Error: API call to sentiment service failed with timeout.', 'Task marked as failed.'] },
+    { name: 'Agent Task: Deploy Microservice v1.2', time: '3 minutes ago', status: 'success', agentId: 'NexusGuard_Alpha', duration: '45.8s', logs: ['Starting deployment for microservice `auth-v1.2`...', 'Image pulled successfully.', 'Container started and passed health checks.', 'Deployment successful.'] },
+    { name: 'Agent Task: Backup Database Cluster', time: '15 minutes ago', status: 'success', agentId: 'Cygnus_BackupAgent', duration: '5.3m', logs: ['Connecting to primary database cluster...', 'Snapshot initiated.', 'Snapshot verification complete.', 'Backup successfully transferred to cold storage.'] },
 ];
 
 const statusBadgeVariant : Record<string, "default" | "destructive" | "secondary" | "outline"> = {
@@ -137,28 +141,7 @@ export default function DashboardPage() {
       </header>
 
       <main className="flex-1 p-6 grid grid-cols-12 auto-rows-min gap-6">
-        <Card className="col-span-12 lg:col-span-5 row-span-2 flex flex-col bg-primary/5 border-white/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-5 w-5 text-accent" /> AI Assistant
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col items-center justify-center text-center">
-            <div className="relative w-48 h-48 mb-6">
-              <div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse"></div>
-              <Image src="https://placehold.co/200x200.png" alt="AI Orb" data-ai-hint="abstract orb" width={192} height={192} className="relative rounded-full" />
-            </div>
-            <p className="text-lg text-muted-foreground max-w-xs">
-              Analyze product sales, compare revenue, or ask for insights.
-            </p>
-          </CardContent>
-          <div className="p-4 mt-auto">
-            <Textarea placeholder="Ask the AI assistant..." className="bg-black/20 border-white/10 mb-2 focus:border-accent" />
-            <Button className="w-full bg-gradient-to-r from-primary to-accent text-white">Send Prompt</Button>
-          </div>
-        </Card>
-
-        <Card className="col-span-12 md:col-span-6 lg:col-span-4 row-span-2 bg-primary/5 border-white/10">
+        <Card className="col-span-12 md:col-span-7 lg:col-span-4 bg-primary/5 border-white/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <LayoutGrid className="h-5 w-5 text-accent" /> System Snapshot
@@ -179,8 +162,8 @@ export default function DashboardPage() {
             ))}
           </CardContent>
         </Card>
-
-        <Card className="col-span-12 md:col-span-6 lg:col-span-3 row-span-2 bg-primary/5 border-white/10">
+        
+        <Card className="col-span-12 md:col-span-5 lg:col-span-3 bg-primary/5 border-white/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Bot className="h-5 w-5 text-accent" /> Agent Presence
@@ -203,44 +186,73 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="col-span-12 md:col-span-6 lg:col-span-5 bg-primary/5 border-white/10">
+        <Card className="col-span-12 lg:col-span-5 bg-primary/5 border-white/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <AppWindow className="h-5 w-5 text-accent" /> Micro-Apps
+              <LayoutGrid className="h-5 w-5 text-accent" /> Application View
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-3 gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Button variant="outline" className="h-24 flex-col gap-2 bg-black/20 border-accent/30 text-accent hover:bg-accent/10">
-              <Rocket className="h-6 w-6" /> Launch
+              <Rocket className="h-6 w-6" /> Launch App
             </Button>
             <Button variant="outline" className="h-24 flex-col gap-2 bg-black/20 border-accent/30 text-accent hover:bg-accent/10">
-              <Rocket className="h-6 w-6" /> Launch
+              <BarChart2 className="h-6 w-6" /> Analytics
             </Button>
             <Button variant="outline" className="h-24 flex-col gap-2 bg-black/20 border-accent/30 text-accent hover:bg-accent/10">
-              <Rocket className="h-6 w-6" /> Launch
+              <Settings className="h-6 w-6" /> Settings
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="col-span-12 md:col-span-6 lg:col-span-7 bg-primary/5 border-white/10">
+        <Card className="col-span-12 lg:col-span-7 bg-primary/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-5 w-5 text-accent" /> Workflow Efficiency
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+             <WorkflowEfficiencyChart />
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-12 lg:col-span-5 bg-primary/5 border-white/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <GitBranch className="h-5 w-5 text-accent" /> Live Orchestration Feed
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {orchestrationFeedData.map((item, index) => (
-               <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-black/20">
-                <div className="flex items-center gap-3">
-                    {item.status === 'success' ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-red-500" />}
-                    <div>
-                        <p className="text-sm text-white">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.time}</p>
-                    </div>
-                </div>
-                <Badge variant={statusBadgeVariant[item.status]}>{statusBadgeText[item.status]}</Badge>
-               </div>
-            ))}
+          <CardContent className="space-y-2">
+             <Accordion type="single" collapsible className="w-full">
+                {orchestrationFeedData.map((item, index) => (
+                    <AccordionItem value={`item-${index}`} key={index} className="bg-black/20 rounded-lg px-4 border-b-0">
+                        <AccordionTrigger className="py-3 text-left hover:no-underline">
+                            <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center gap-3">
+                                    {item.status === 'success' ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-red-500" />}
+                                    <div>
+                                        <p className="text-sm text-white font-medium">{item.name}</p>
+                                        <p className="text-xs text-muted-foreground">{item.time}</p>
+                                    </div>
+                                </div>
+                                <Badge variant={statusBadgeVariant[item.status]}>{statusBadgeText[item.status]}</Badge>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-3 text-xs">
+                           <div className="space-y-2 pl-8 text-muted-foreground">
+                             <p><strong>Agent ID:</strong> {item.agentId}</p>
+                             <p><strong>Duration:</strong> {item.duration}</p>
+                             <div className="space-y-1">
+                                <strong>Logs:</strong>
+                                <div className="p-2 bg-black/30 rounded-md font-mono">
+                                    {item.logs.map((log, logIndex) => <p key={logIndex}>{log}</p>)}
+                                </div>
+                             </div>
+                           </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
           </CardContent>
         </Card>
       </main>
