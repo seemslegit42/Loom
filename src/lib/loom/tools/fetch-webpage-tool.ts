@@ -1,9 +1,10 @@
+
 'use server';
 /**
  * @fileOverview A Vercel AI SDK tool for fetching text content from a given URL.
  */
 
-import { tool } from '@ai-sdk/core';
+import { tool } from 'ai';
 import { z } from 'zod'; // Using zod from 'zod' as ai-sdk doesn't re-export it.
 
 const FetchWebpageToolInputSchema = z.object({

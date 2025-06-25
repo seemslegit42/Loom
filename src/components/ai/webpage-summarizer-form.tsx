@@ -56,8 +56,7 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
       type: 'info',
       message: `Web Summarizer: Calling backend for URL: ${url.substring(0, 50)}...`,
     });
-
-    let accumulatedResponse = "";
+    
     const currentLogs: string[] = [];
 
     try {
@@ -85,6 +84,7 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
       let finalOutputStarted = false;
       let finalSummary = "";
       let partialChunk = "";
+      let apiErrorFound = "";
 
       while (!done) {
         const { value, done: readerDone } = await reader.read();
@@ -105,29 +105,31 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
               const contentAfterMarker = line.substring("[STREAMING_OUTPUT_START]".length);
               if(contentAfterMarker.trim()) finalSummary += contentAfterMarker + '\n';
             } else if (line.startsWith("[ERROR]")) {
-              const apiError = line.substring("[ERROR]".length).trim();
-              throw new Error(`API returned an error in stream: ${apiError}`);
+              apiErrorFound = line.substring("[ERROR]".length).trim();
+              addConsoleMessage('error', `API Error: ${apiErrorFound}`);
+              break;
             } else if (finalOutputStarted) {
               finalSummary += line + '\n';
             }
           }
+          if (apiErrorFound) break;
         }
       }
-       if (partialChunk.trim()) {
+       if (partialChunk.trim() && !apiErrorFound) {
           if (partialChunk.startsWith("[LOG]")) {
               const logMsg = partialChunk.substring(5).trim();
               if(logMsg) currentLogs.push(logMsg);
-          } else if (partialChunk.startsWith("[STREAMING_OUTPUT_START]")) {
-              finalOutputStarted = true;
-              const contentAfterMarker = partialChunk.substring("[STREAMING_OUTPUT_START]".length);
-              if(contentAfterMarker.trim()) finalSummary += contentAfterMarker + '\n';
           } else if (finalOutputStarted) {
               finalSummary += partialChunk + '\n';
           }
       }
-
+      
       setApiLogs(currentLogs);
       currentLogs.forEach(log => addConsoleMessage('log', `Summarizer API Log: ${log}`));
+
+      if (apiErrorFound) {
+          throw new Error(apiErrorFound);
+      }
 
       if (finalSummary.trim()) {
         const output: SummarizeWebpageOutput = { summary: finalSummary.trim(), originalUrl: url, logs: currentLogs };
@@ -141,11 +143,12 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
 
     } catch (e: any) {
       console.error("[WebpageSummarizerForm] Error:", e);
-      setError(e.message || "An unexpected error occurred while summarizing the webpage via backend.");
+      const errorMessage = e.message || "An unexpected error occurred while summarizing the webpage via backend.";
+      setError(errorMessage);
       setResult(null);
-      addConsoleMessage('error', `Webpage Summarizer (via backend API): Failed - ${e.message}`);
-      addTimelineEvent({ type: 'workflow_failed', message: `Web Summarizer (backend API) failed: ${e.message.substring(0,100)}`});
-       currentLogs.forEach(log => addConsoleMessage('log', `Summarizer API Log (on error): ${log}`));
+      addConsoleMessage('error', `Webpage Summarizer (via backend API): Failed - ${errorMessage}`);
+      addTimelineEvent({ type: 'workflow_failed', message: `Web Summarizer (backend API) failed: ${errorMessage.substring(0,100)}`});
+      currentLogs.forEach(log => addConsoleMessage('log', `Summarizer API Log (on error): ${log}`));
     } finally {
       setIsLoading(false);
     }
@@ -224,7 +227,6 @@ export function WebpageSummarizerForm({ addConsoleMessage, addTimelineEvent }: W
           )}
         </Alert>
       )}
-
     </div>
   );
 }

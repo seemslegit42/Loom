@@ -1,5 +1,5 @@
 
-import { generateText, streamText, type CoreTool } from '@ai-sdk/core';
+import { generateText, streamText, type CoreTool } from 'ai';
 import { getGroqModel } from '@/lib/ai-tools/groq';
 
 export interface AgentInput {

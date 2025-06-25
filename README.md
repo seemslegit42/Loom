@@ -13,33 +13,26 @@ The Loom Studio API provides endpoints for orchestrating AI workflows using a mu
 ### Setup
 
 1.  **Environment Variables**:
-    Ensure you have a `.env` file in the root of your project with the following variables:
+    Create a `.env.local` file in the root of your project with the following variables. Replace the placeholder values with your actual service credentials.
     ```env
     # Groq LLM Configuration
     GROQ_API_KEY=your_groq_api_key_here
     GROQ_MODEL_NAME=mixtral-8x7b-32768 # Or your preferred default Groq model
 
-    # For server-side API calls to itself (e.g., tasks calling API routes)
-    NEXT_PUBLIC_APP_URL=http://localhost:9002
-
-    # Loom API Configuration (Examples for future, more advanced integrations)
-    # SUPERAGI_API_ENDPOINT=https://your_superagi_instance/api
-    # CREWAI_API_ENDPOINT=https://your_crewai_service/api
-
-    # Swarm Settings (Examples)
-    LOOM_SWARM_DEFAULT_MODEL=mixtral-8x7b-32768 # Overrides GROQ_MODEL_NAME for swarm agents if set
-    LOOM_SWARM_MAX_ITERATIONS=5 # Example: for controlling agent loops
+    # Firebase Configuration (for client-side features like the console log)
+    # Get these from your Firebase project's settings.
+    NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key-here
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+    NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
     ```
-    Replace `your_groq_api_key_here` with your actual Groq API key.
 
 2.  **Install Dependencies**:
     If you haven't already, or if `package.json` was updated, run:
     ```bash
     npm install
-    # or
-    yarn install
-    # or
-    pnpm install
     ```
 
 ### API Endpoints
@@ -55,7 +48,7 @@ The API is designed to be modular and extensible.
     *   **Example Usages (curl)**:
         Generic Prompt (full agent chain):
         ```bash
-        curl -X POST http://localhost:9002/api/loom/start \
+        curl -X POST http://localhost:3000/api/loom/start \
         -H "Content-Type: application/json" \
         -d '{
               "workflowType": "genericPrompt", 
@@ -65,7 +58,7 @@ The API is designed to be modular and extensible.
         ```
         Web Summarization (full agent chain):
         ```bash
-        curl -X POST http://localhost:9002/api/loom/start \
+        curl -X POST http://localhost:3000/api/loom/start \
         -H "Content-Type: application/json" \
         -d '{
               "workflowType": "webSummarization",
@@ -82,7 +75,7 @@ The API is designed to be modular and extensible.
     *   **Response**: A streaming response (`text/event-stream`) with the LLM's direct output.
     *   **Example Usage (curl)**:
         ```bash
-        curl -X POST http://localhost:9002/api/loom/direct \
+        curl -X POST http://localhost:3000/api/loom/direct \
         -H "Content-Type: application/json" \
         -d '{"prompt": "What is the capital of France?"}' \
         --no-buffer
@@ -102,45 +95,17 @@ The API is designed to be modular and extensible.
         ```
     *   **Example Usage (curl)**:
         ```bash
-        curl -X POST http://localhost:9002/api/loom/summarize-url \
+        curl -X POST http://localhost:3000/api/loom/summarize-url \
         -H "Content-Type: application/json" \
         -d '{"url": "https://example.com/article"}'
         ```
-
-*   **`GET /api/loom/status`**:
-    *   Returns the current status of the Loom API service, including Groq provider configuration.
-    *   **Current Implementation**: Provides API service status and LLM config status. Full swarm state tracking is a future enhancement.
-    *   **Response** (JSON):
-        ```json
-        {
-          "serviceName": "Loom API",
-          "timestamp": "YYYY-MM-DDTHH:mm:ss.sssZ",
-          "groqProviderStatus": "Configured" / "API Key Missing",
-          "defaultGroqModel": "mixtral-8x7b-32768",
-          "swarmFeatureStatus": "Detailed swarm status tracking requires persistent state management."
-        }
-        ```
-
-*   **`POST /api/loom/step`**: (Placeholder)
-    *   Conceptually sends a follow-up message to an ongoing workflow swarm.
-    *   **Request Body** (JSON):
-        *   `swarmId` (string, required): The ID of the active swarm.
-        *   `message` (string, optional) or `prompt` (string, optional).
-    *   **Current Implementation**: Placeholder. Returns a message indicating that true stepping functionality requires robust session and state management.
-
-*   **`GET /api/loom/logs`**:
-    *   Streams detailed step-by-step debug output for a specific swarm (`swarmId`) or general recent activity.
-    *   **Query Parameters**:
-        *   `swarmId` (string, optional): The ID of the swarm to retrieve logs for. If omitted, will attempt to retrieve general logs.
-    *   **Current Implementation**: Fetches logs from Firestore for the given `swarmId` (if provided) or general `console_logs` (if no `swarmId`).
-    *   **Response**: A streaming response (`text/plain`) with log entries.
+*   **Other Endpoints**: `status`, `step`, and `logs` are available but are mostly placeholders for future, more advanced state management and monitoring.
 
 ### Architecture Notes
 
 *   **Agents**: Defined in `src/lib/loom/agents.ts`. These are functions that perform specific tasks using the Groq LLM and Vercel AI SDK tools.
-*   **Orchestrator**: Orchestration logic is in `src/lib/loom/orchestrator.ts`. The `startSimpleSwarm` function chains agents sequentially for the generic prompt flow.
+*   **Orchestrator**: Orchestration logic is in `src/lib/loom/orchestrator.ts`. The `startGenericPromptSwarm` and `startWebSummarizationSwarm` functions manage the workflow sequences.
 *   **LLM Provider**: Groq integration is managed via `@ai-sdk/provider-groq` and configured in `src/lib/ai-tools/groq.ts`.
-*   **Tools**: Reusable functions for agents (e.g., fetching URL content) are in `src/lib/loom/tools/`.
 *   **Modularity**: The structure allows for adding new agents, modifying orchestration flows, and potentially integrating different LLM providers or tools.
 
 This API is the backend foundation for Loom™ Studio's AI capabilities.

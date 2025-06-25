@@ -1,5 +1,5 @@
 
-import { createGroq } from '@ai-sdk/provider-groq';
+import { createGroq } from '@ai-sdk/groq';
 
 // Ensure GROQ_API_KEY is available in your environment variables
 const groqApiKey = process.env.GROQ_API_KEY;

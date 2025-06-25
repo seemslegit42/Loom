@@ -118,7 +118,7 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
       }
 
       if (apiErrorFound) {
-        throw new Error(`API returned an error: ${apiErrorFound}`);
+        throw new Error(apiErrorFound);
       }
 
       if (!finalOutput && !apiErrorFound) {
@@ -168,14 +168,15 @@ export function AiFlowGeneratorForm({ onFlowGenerated, addConsoleMessage }: AiFl
       };
 
       toast({
-        title: "AI Flow Generation Failed (Backend API)",
+        title: "AI Flow Generation Failed",
         description: errorMessage,
         variant: "destructive",
       });
       onFlowGenerated(generatedData);
     } finally {
       setIsLoading(false);
-      setUserInput(''); 
+      // Do not clear user input on failure, so they can retry
+      // setUserInput(''); 
     }
   };
 

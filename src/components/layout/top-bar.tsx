@@ -1,10 +1,9 @@
-
 // src/components/layout/top-bar.tsx
 import type { GenerateFlowFormState } from '@/lib/actions/ai'; // This type might be from the old structure, check usage
 import { AiFlowGeneratorForm } from '@/components/ai/ai-flow-generator-form';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BrainCircuit, Search, Settings, UserCircle, Menu, FolderKanban, FileText, BookMarked, Eye, ShieldQuestion, LayoutGrid, Settings2, Bot, ListOrdered, Terminal } from 'lucide-react';
+import { BrainCircuit, Search, Settings, UserCircle, Menu, FolderKanban, FileText, BookMarked, Eye, ShieldQuestion, LayoutGrid, Settings2, Bot, ListOrdered, Terminal, LayoutDashboard } from 'lucide-react';
 import type { PanelVisibility, AiGeneratedFlowData } from '@/app/page'; 
 import {
   DropdownMenu,
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 import type { ConsoleMessage } from '@/components/panels/console-panel';
+import Link from 'next/link';
 
 
 interface TopBarProps {
@@ -63,6 +63,9 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
+              <DropdownMenuItem asChild className="cursor-pointer">
+                 <Link href="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard</Link>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleComingSoon("Projects")} className="cursor-pointer">
                  <FolderKanban className="mr-2 h-4 w-4" /> Projects
               </DropdownMenuItem>
@@ -88,6 +91,9 @@ export function TopBar({ onFlowGenerated, addConsoleMessage, panelVisibility, to
         </h1>
         <Separator orientation="vertical" className={`h-8 ${isMobile ? 'hidden' : 'block'}`} />
         <nav className={`items-center gap-1 ${isMobile ? 'hidden' : 'flex md:flex'}`}>
+          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-accent-foreground hover:bg-accent/20">
+            <Link href="/dashboard"><LayoutDashboard className="mr-1.5 h-4 w-4"/> Dashboard</Link>
+          </Button>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-accent" onClick={() => handleComingSoon("Projects")}>
             Projects
           </Button>
